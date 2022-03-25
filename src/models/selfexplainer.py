@@ -12,34 +12,10 @@ from utils.loss import TotalVariationConv, ClassMaskAreaLoss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 
 class InterpretableFCNN(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, class_mask_min_area=0.05, class_mask_max_area=0.3, use_mask_coherency_loss=True, use_mask_variation_loss=True,
-                 mask_variation_regularizer=1.0, use_mask_area_loss=True, mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, ncmask_total_area_regularizer=0.3, 
-                 metrics_threshold=-1.0, save_masked_images=False, save_masks=False, save_all_class_masks=False, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, save_path="./results/"):
 
         super().__init__()
 
-        self.dataset = dataset
-
-        self.setup_model(num_classes)
-
-        self.setup_losses(dataset=dataset, class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
-        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
-
-        # Hyperparameters
-        self.learning_rate = learning_rate
-        self.use_mask_coherency_loss = use_mask_coherency_loss
-        self.use_mask_variation_loss = use_mask_variation_loss
-        self.mask_variation_regularizer = mask_variation_regularizer
-        self.use_mask_area_loss = use_mask_area_loss
-        self.mask_area_constraint_regularizer = mask_area_constraint_regularizer
-        self.mask_total_area_regularizer = mask_total_area_regularizer
-        self.ncmask_total_area_regularizer = ncmask_total_area_regularizer
-
-        # Image display/save settings
-        self.save_masked_images = save_masked_images
-        self.save_masks = save_masks
-        self.save_all_class_masks = save_all_class_masks
-        self.save_path = Path(save_path)
 
         self.learning_rate = learning_rate
 
@@ -47,24 +23,10 @@ class InterpretableFCNN(pl.LightningModule):
         self.model = Deeplabv3Resnet50ExplainerModel(num_classes=num_classes)
 
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
-        self.total_variation_conv = TotalVariationConv()
-
-        if dataset == "CUB":
-            self.classification_loss_fn = nn.CrossEntropyLoss()
-        else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss()
-
-        self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
+        pass
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset == "CUB":
-            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
-        else:
-            self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-            self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-            self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        pass
 
     def forward(self, image, targets):
         t_seg, t_mask, t_ncmask, t_logits = self._forward(image, targets)
