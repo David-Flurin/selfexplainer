@@ -83,6 +83,7 @@ trainer = pl.Trainer(
     callbacks = [early_stop_callback],
     gpus = [0] if torch.cuda.is_available() else 0,
     detect_anomaly = True,
+    log_every_n_steps = 1,
     checkpoint_callback = args.checkpoint_callback#,
     #profiler=profiler
 )
