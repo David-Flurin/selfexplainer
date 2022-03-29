@@ -5,13 +5,13 @@ from torch import nn
 from torch.optim import Adam
 from pathlib import Path
 
-from models.explainer import Deeplabv3Resnet50ExplainerModel
+from models.DeepLabv3 import Deeplabv3Resnet50Model
 from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 
-class InterpretableFCNN(pl.LightningModule):
+class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, save_path="./results/"):
 
         super().__init__()
@@ -19,8 +19,11 @@ class InterpretableFCNN(pl.LightningModule):
 
         self.learning_rate = learning_rate
 
+        self.segmentation_net = self.setup_model(num_classes)
+        self.dataset = dataset
+
     def setup_model(self, num_classes):
-        self.model = Deeplabv3Resnet50ExplainerModel(num_classes=num_classes)
+        self.model = Deeplabv3Resnet50Model(num_classes=num_classes)
 
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         pass
@@ -51,11 +54,13 @@ class InterpretableFCNN(pl.LightningModule):
         
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
-            classification_loss_teacher = self.classification_loss_fn(t_logits, labels)
-            classification_loss_student = self.classification_loss_fn(s_logits, labels)
+            classification_loss_first_pass = self.classification_loss_fn(t_logits, labels)
+            classification_loss_second_pass = self.classification_loss_fn(s_logits, labels)
+            classification_loss_third_pass = self.classification_loss_fn(s_logits, labels)
         else:
-            classification_loss_teacher = self.classification_loss_fn(t_logits, targets)
-            classification_loss_student = self.classification_loss_fn(s_logits, targets)
+            classification_loss_first_pass = self.classification_loss_fn(t_logits, labels)
+            classification_loss_second_pass = self.classification_loss_fn(s_logits, labels)
+            classification_loss_third_pass = self.classification_loss_fn(s_logits, labels)
 
         logits_similarity_loss = (t_logits - s_logits).abs().mean()
         classification_loss = classification_loss_teacher + classification_loss_student + logits_similarity_loss

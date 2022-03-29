@@ -15,7 +15,7 @@ def str2bool(v):
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
 def get_parser():
-    parser = ArgumentParser(description='NN Explainer', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = ArgumentParser(description='Selfexplainer', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add('-c', '--config', is_config_file=True, help='config file path')
     parser.add('--arg_log', default=False, type=str2bool, help='save arguments to config file')
 
@@ -40,42 +40,42 @@ def get_parser():
 
     # General Model Parameters
     parser.add_argument('--train_model', default=True, type=str2bool, help='If True, specified model will be trained. If False, model will be tested.')
-    parser.add_argument('--use_imagenet_pretraining', default=True, type=str2bool, help='If True, classifiers use a pretrained backbone from ImageNet pretraining')
-    parser.add_argument('--fix_classifier_backbone', default=True, type=str2bool, help='Whether to fix the wait for the classifiers backbone')
-    parser.add_argument('--fix_classifier', default=True, type=str2bool, help='If True, classifier  is frozen. Strongly recommended for Explainer training.')
-    parser.add_argument('--model_to_train', choices=['explainer', 'classifier', 'fcnn'], default='explainer', type=str, help='which model architecture should be used for training or testing')
-    parser.add_argument('--classifier_type', choices=['vgg16', 'resnet50'], default='vgg16', type=str, help='type of classifier architecture to use')
-    parser.add_argument('--explainer_classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained explainer. Also contains the weights for the associated classifier.')
-    parser.add_argument('--classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained classifier.')
-    parser.add_argument('--fcnn_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained self-explainer.')
+    # parser.add_argument('--use_imagenet_pretraining', default=True, type=str2bool, help='If True, classifiers use a pretrained backbone from ImageNet pretraining')
+    # parser.add_argument('--fix_classifier_backbone', default=True, type=str2bool, help='Whether to fix the wait for the classifiers backbone')
+    # parser.add_argument('--fix_classifier', default=True, type=str2bool, help='If True, classifier  is frozen. Strongly recommended for Explainer training.')
+    parser.add_argument('--model_to_train', choices=['explainer', 'classifier', 'selfexplainer'], default='explainer', type=str, help='which model architecture should be used for training or testing')
+    # parser.add_argument('--classifier_type', choices=['vgg16', 'resnet50'], default='vgg16', type=str, help='type of classifier architecture to use')
+    # parser.add_argument('--explainer_classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained explainer. Also contains the weights for the associated classifier.')
+    # parser.add_argument('--classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained classifier.')
+    parser.add_argument('--checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained self-explainer.')
 
     # Model-specific parameters
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='learning rate used by the Adam optimizer')
-    parser.add_argument('--use_mask_variation_loss', default=True, type=str2bool, help='whether to use variation loss on the mask.')
-    parser.add_argument('--use_mask_area_loss', default=True, type=str2bool, help='whether to use area loss on the mask.')
-    parser.add_argument('--use_mask_coherency_loss', default=True, type=str2bool, help='whether to use mask coherency loss (only for self-explainer architecture)')
-    parser.add_argument('--entropy_regularizer', default=1.0, type=float, help='loss weighting term for entropy loss')
-    parser.add_argument('--mask_variation_regularizer', default=1.0, type=float, help='loss weighting term for mask variation loss')
-    parser.add_argument('--mask_area_constraint_regularizer', default=1.0, type=float, help='loss weighting term for overall mask area constraint (currently not used!)')
-    parser.add_argument('--mask_total_area_regularizer', default=0.1, type=float, help='loss weighting term for the total area loss')
-    parser.add_argument('--ncmask_total_area_regularizer', default=0.3, type=float, help='loss weighting term for the area constraints for the individual class segmentation masks')
+    # parser.add_argument('--use_mask_variation_loss', default=True, type=str2bool, help='whether to use variation loss on the mask.')
+    # parser.add_argument('--use_mask_area_loss', default=True, type=str2bool, help='whether to use area loss on the mask.')
+    # parser.add_argument('--use_mask_coherency_loss', default=True, type=str2bool, help='whether to use mask coherency loss (only for self-explainer architecture)')
+    # parser.add_argument('--entropy_regularizer', default=1.0, type=float, help='loss weighting term for entropy loss')
+    # parser.add_argument('--mask_variation_regularizer', default=1.0, type=float, help='loss weighting term for mask variation loss')
+    # parser.add_argument('--mask_area_constraint_regularizer', default=1.0, type=float, help='loss weighting term for overall mask area constraint (currently not used!)')
+    # parser.add_argument('--mask_total_area_regularizer', default=0.1, type=float, help='loss weighting term for the total area loss')
+    # parser.add_argument('--ncmask_total_area_regularizer', default=0.3, type=float, help='loss weighting term for the area constraints for the individual class segmentation masks')
 
-    parser.add_argument('--target_mask_min_area', default=0.05, type=float, help='minimum area for the overall mask area constraint (currently not used!)')
-    parser.add_argument('--target_mask_max_area', default=0.5, type=float, help='maximum area for the overall mask area constraint (currently not used!)')
-    parser.add_argument('--class_mask_min_area', default=0.05, type=float, help='minimum area for the area constraints for the individual class segmentation masks')
-    parser.add_argument('--class_mask_max_area', default=0.3, type=float, help='maximum area for the area constraints for the individual class segmentation masks')
+    # parser.add_argument('--target_mask_min_area', default=0.05, type=float, help='minimum area for the overall mask area constraint (currently not used!)')
+    # parser.add_argument('--target_mask_max_area', default=0.5, type=float, help='maximum area for the overall mask area constraint (currently not used!)')
+    # parser.add_argument('--class_mask_min_area', default=0.05, type=float, help='minimum area for the area constraints for the individual class segmentation masks')
+    # parser.add_argument('--class_mask_max_area', default=0.3, type=float, help='maximum area for the area constraints for the individual class segmentation masks')
 
     # Image display parameters
-    parser.add_argument('--show_images', default=False, type=str2bool, help='If true, displays images and corresponding masked images during testing. Requires testing batch size to be 1.')
-    parser.add_argument('--show_all_class_masks', default=False, type=str2bool, help='If true, displays individual class masks during testing. Requires VOC dataset. Requires testing batch size to be 1.')
-    parser.add_argument('--show_max_activation_for_class_id', default=None, type=int, help='If true, highlights point of maximum activation for given class id. Requires testing batch size to be 1.')
-    parser.add_argument('--save_masks', default=False, type=str2bool, help='If true, masks are saved to location specified by save_path (see below)')
-    parser.add_argument('--save_masked_images', default=False, type=str2bool, help='If true, masked images are saved to location specified by save_path (see below)')
-    parser.add_argument('--save_all_class_masks', default=False, type=str2bool, help='Unused.')
+    # parser.add_argument('--show_images', default=False, type=str2bool, help='If true, displays images and corresponding masked images during testing. Requires testing batch size to be 1.')
+    # parser.add_argument('--show_all_class_masks', default=False, type=str2bool, help='If true, displays individual class masks during testing. Requires VOC dataset. Requires testing batch size to be 1.')
+    # parser.add_argument('--show_max_activation_for_class_id', default=None, type=int, help='If true, highlights point of maximum activation for given class id. Requires testing batch size to be 1.')
+    # parser.add_argument('--save_masks', default=False, type=str2bool, help='If true, masks are saved to location specified by save_path (see below)')
+    # parser.add_argument('--save_masked_images', default=False, type=str2bool, help='If true, masked images are saved to location specified by save_path (see below)')
+    # parser.add_argument('--save_all_class_masks', default=False, type=str2bool, help='Unused.')
     parser.add_argument('--save_path', default='./results/', type=str, help='Path to where masks and/or masked images are saved if corresponding options are set to true.')
 
     # Metrics parameters
-    parser.add_argument('--metrics_threshold', default=-1.0, type=float, help='Threshold for logit to count as positive vs. negative prediction. Use -1.0 for Explainer and 0.0 for classifier.')
+    # parser.add_argument('--metrics_threshold', default=-1.0, type=float, help='Threshold for logit to count as positive vs. negative prediction. Use -1.0 for Explainer and 0.0 for classifier.')
 
     return parser
 
