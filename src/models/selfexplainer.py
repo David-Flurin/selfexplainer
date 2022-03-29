@@ -81,10 +81,12 @@ class SelfExplainer(pl.LightningModule):
             classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
         classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
+        self.log('classification_loss', classification_loss)
 
         loss = classification_loss
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
+            self.log('similarity_loss', similarity_loss)
             loss += similarity_loss
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
@@ -119,8 +121,7 @@ class SelfExplainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
-        #i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
-        i_seg, i_mask, i_ncmask, i_logits =self(image, targets)
+        i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
 
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)

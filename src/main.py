@@ -72,11 +72,11 @@ early_stop_callback = EarlyStopping(
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="max",
-    stopping_threshold=5.
+    mode="min",
+    #stopping_threshold=5.
 )
 
-profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
+#profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
 trainer = pl.Trainer(
     logger = logger,
