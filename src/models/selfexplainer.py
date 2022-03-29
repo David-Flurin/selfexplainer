@@ -1,92 +1,115 @@
 import torch
 import pytorch_lightning as pl
 
-from torch import nn
+from torch import nn, softmax
 from torch.optim import Adam
 from pathlib import Path
 
 from models.DeepLabv3 import Deeplabv3Resnet50Model
 from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, mask_similarity_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
+from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
 
         self.learning_rate = learning_rate
+        self.weighting_koeff = weighting_koeff
 
-        self.segmentation_net = self.setup_model(num_classes)
+        self.model = Deeplabv3Resnet50Model(num_classes=num_classes)
         self.dataset = dataset
 
-    def setup_model(self, num_classes):
-        self.model = Deeplabv3Resnet50Model(num_classes=num_classes)
+        self.use_similarity_loss = use_similarity_loss
 
-    def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
-        pass
+        self.setup_losses(dataset=dataset)
+        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
+
+
+    def setup_losses(self, dataset):
+        if dataset == "CUB":
+            self.classification_loss_fn = nn.CrossEntropyLoss()
+        else:
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        pass
+        if self.dataset == "CUB":
+            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
+            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
+            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
+        else:
+            self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+            self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+            self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
     def forward(self, image, targets):
-        t_seg, t_mask, t_ncmask, t_logits = self._forward(image, targets)
-        masked_image = t_mask.unsqueeze(1) * image
-        s_seg, s_mask, s_ncmask, s_logits = self._forward(masked_image, targets)
+        i_seg, i_mask, i_ncmask, i_logits = self._forward(image, targets)
+        masked_image = i_mask.unsqueeze(1) * image
+        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets)
+        target_mask_inversed = torch.ones_like(i_mask) - i_mask
+        inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
+        b_seg, b_mask, b_ncmask, b_logits = self._forward(masked_image, targets)
 
-        return t_seg, s_seg, t_mask, s_mask, t_ncmask, s_ncmask, t_logits, s_logits
+        return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
     def _forward(self, image, targets):
         segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets) # [batch_size, height, width]
-        target_mask_inversed = torch.ones_like(target_mask) - target_mask
 
-        logits = segmentations.mean(dim=(2,3)) # [batch_size, num_classes]
-        
+        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        logits = weighted_segmentations.sum(dim=(2,3))
+
         return segmentations, target_mask, non_target_mask, logits
         
     def training_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
-        t_seg, s_seg, t_mask, s_mask, t_ncmask, s_ncmask, t_logits, s_logits = self(image, targets)
+        i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
         
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
-            classification_loss_first_pass = self.classification_loss_fn(t_logits, labels)
-            classification_loss_second_pass = self.classification_loss_fn(s_logits, labels)
-            classification_loss_third_pass = self.classification_loss_fn(s_logits, labels)
+            classification_loss_initial = self.classification_loss_fn(i_logits, labels)
+            classification_loss_object = self.classification_loss_fn(o_logits, labels)
+            classification_loss_background = self.classification_loss_fn(b_logits, labels)
         else:
-            classification_loss_first_pass = self.classification_loss_fn(t_logits, labels)
-            classification_loss_second_pass = self.classification_loss_fn(s_logits, labels)
-            classification_loss_third_pass = self.classification_loss_fn(s_logits, labels)
+            classification_loss_initial = self.classification_loss_fn(i_logits, targets)
+            classification_loss_object = self.classification_loss_fn(o_logits, targets)
+            classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        logits_similarity_loss = (t_logits - s_logits).abs().mean()
-        classification_loss = classification_loss_teacher + classification_loss_student + logits_similarity_loss
+        classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
 
         loss = classification_loss
 
-        if self.use_mask_variation_loss:
-            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
-            loss += mask_variation_loss
+        if self.use_similarity_loss:
+            similarity_loss = mask_similarity_loss(i_mask, o_mask)
+            loss += similarity_loss
 
-        if self.use_mask_area_loss:
-            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
-            mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
-            mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
-            loss += mask_area_loss
+        # if self.use_mask_variation_loss:
+        #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
+        #     loss += mask_variation_loss
 
-        if self.use_mask_coherency_loss:
-            mask_coherency_loss = (t_mask - s_mask).abs().mean()
-            loss += mask_coherency_loss
+        # if self.use_mask_area_loss:
+        #     mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
+        #     mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
+        #     mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+        #     loss += mask_area_loss
+
+        # if self.use_mask_coherency_loss:
+        #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
+        #     loss += mask_coherency_loss
+
+        
 
         self.log('loss', loss)
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
-            self.valid_metrics(s_logits, labels)
+            self.valid_metrics(o_logits, labels)
         else:
-            self.valid_metrics(s_logits, targets)
+            self.valid_metrics(o_logits, targets)
 
         return loss
 
@@ -97,41 +120,46 @@ class SelfExplainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
-        t_seg, s_seg, t_mask, s_mask, t_ncmask, s_ncmask, t_logits, s_logits = self(image, targets)
+        i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
         
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
-            classification_loss_teacher = self.classification_loss_fn(t_logits, labels)
-            classification_loss_student = self.classification_loss_fn(s_logits, labels)
+            classification_loss_initial = self.classification_loss_fn(i_logits, labels)
+            classification_loss_object = self.classification_loss_fn(o_logits, labels)
+            classification_loss_background = self.classification_loss_fn(b_logits, labels)
         else:
-            classification_loss_teacher = self.classification_loss_fn(t_logits, targets)
-            classification_loss_student = self.classification_loss_fn(s_logits, targets)
+            classification_loss_initial = self.classification_loss_fn(i_logits, targets)
+            classification_loss_object = self.classification_loss_fn(o_logits, targets)
+            classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        logits_similarity_loss = (t_logits - s_logits).abs().mean()
-        classification_loss = classification_loss_teacher + classification_loss_student + logits_similarity_loss
+        classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
 
         loss = classification_loss
 
-        if self.use_mask_variation_loss:
-            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
-            loss += mask_variation_loss
+        if self.use_similarity_loss:
+            similarity_loss = mask_similarity_loss(i_mask, o_mask)
+            loss += similarity_loss
 
-        if self.use_mask_area_loss:
-            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
-            mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
-            mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
-            loss += mask_area_loss
+        # if self.use_mask_variation_loss:
+        #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
+        #     loss += mask_variation_loss
 
-        if self.use_mask_coherency_loss:
-            mask_coherency_loss = (t_mask - s_mask).abs().mean()
-            loss += mask_coherency_loss
+        # if self.use_mask_area_loss:
+        #     mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
+        #     mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
+        #     mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+        #     loss += mask_area_loss
+
+        # if self.use_mask_coherency_loss:
+        #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
+        #     loss += mask_coherency_loss
 
         self.log('val_loss', loss)
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
-            self.valid_metrics(s_logits, labels)
+            self.valid_metrics(o_logits, labels)
         else:
-            self.valid_metrics(s_logits, targets)
+            self.valid_metrics(o_logits, targets) 
 
     def validation_epoch_end(self, outs):
         self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)

@@ -112,4 +112,15 @@ def entropy_loss(logits):
     return entropy_loss
 
 
+def mask_similarity_loss(fmask, smask):
+    '''Compute L2 loss over pixel distances between initial mask and object mask.'''
+
+    batch_size, h, w = fmask.size()
+    batch_losses = (fmask - smask).abs().sum((1,2)) / (w*h)
+    return batch_losses.mean()
+
+
+
+
+
 
