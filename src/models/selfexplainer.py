@@ -59,10 +59,9 @@ class SelfExplainer(pl.LightningModule):
     def _forward(self, image, targets):
         segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets) # [batch_size, height, width]
-
+        
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
         logits = weighted_segmentations.sum(dim=(2,3))
-
         return segmentations, target_mask, non_target_mask, logits
         
     def training_step(self, batch, batch_idx):
@@ -81,12 +80,13 @@ class SelfExplainer(pl.LightningModule):
             classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
         classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
-        self.log('classification_loss', classification_loss)
+        self.log('classification_loss', float(classification_loss))
 
         loss = classification_loss
+        
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
-            self.log('similarity_loss', similarity_loss)
+            self.log('similarity_loss', float(similarity_loss))
             loss += similarity_loss
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
@@ -105,13 +105,15 @@ class SelfExplainer(pl.LightningModule):
         #self.i += 1.
         #self.log('iterations', self.i, prog_bar=True)
 
-        self.log('loss', loss)
-        
+        self.log('loss', float(loss))
+       
+        '''
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             self.valid_metrics(o_logits, labels)
         else:
             self.valid_metrics(o_logits, targets)
+        '''
         return loss
 
     def training_epoch_end(self, outs):
