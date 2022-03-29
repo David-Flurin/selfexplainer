@@ -29,6 +29,7 @@ class SelfExplainer(pl.LightningModule):
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
+        #self.i = 0.
 
     def setup_losses(self, dataset):
         if dataset == "CUB":
@@ -53,7 +54,6 @@ class SelfExplainer(pl.LightningModule):
         target_mask_inversed = torch.ones_like(i_mask) - i_mask
         inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
         b_seg, b_mask, b_ncmask, b_logits = self._forward(masked_image, targets)
-
         return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
     def _forward(self, image, targets):
@@ -69,7 +69,7 @@ class SelfExplainer(pl.LightningModule):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
-        
+
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(i_logits, labels)
@@ -83,11 +83,9 @@ class SelfExplainer(pl.LightningModule):
         classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
 
         loss = classification_loss
-
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
             loss += similarity_loss
-
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
@@ -102,15 +100,16 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        
+        #self.i += 1.
+        #self.log('iterations', self.i, prog_bar=True)
 
         self.log('loss', loss)
+        
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             self.valid_metrics(o_logits, labels)
         else:
             self.valid_metrics(o_logits, targets)
-
         return loss
 
     def training_epoch_end(self, outs):
@@ -120,8 +119,9 @@ class SelfExplainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
-        i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
-        
+        #i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
+        i_seg, i_mask, i_ncmask, i_logits =self(image, targets)
+
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(i_logits, labels)
@@ -132,14 +132,12 @@ class SelfExplainer(pl.LightningModule):
             classification_loss_object = self.classification_loss_fn(o_logits, targets)
             classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
+        classification_loss = classification_loss_initial #+ classification_loss_object + classification_loss_background
 
         loss = classification_loss
-
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
             loss += similarity_loss
-
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
@@ -160,7 +158,7 @@ class SelfExplainer(pl.LightningModule):
             self.valid_metrics(o_logits, labels)
         else:
             self.valid_metrics(o_logits, targets) 
-
+   
     def validation_epoch_end(self, outs):
         self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
         self.valid_metrics.reset()

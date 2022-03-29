@@ -3,6 +3,7 @@ import os
 import datetime
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.profiler import AdvancedProfiler
 from pathlib import Path
 
 from data.dataloader import VOCDataModule, COCODataModule, CUB200DataModule
@@ -67,19 +68,23 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="val_loss",
+    monitor="iterations",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
+    mode="max",
+    stopping_threshold=5.
 )
+
+profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
 trainer = pl.Trainer(
     logger = logger,
     callbacks = [early_stop_callback],
     gpus = [0] if torch.cuda.is_available() else 0,
     terminate_on_nan = True,
-    checkpoint_callback = args.checkpoint_callback,
+    checkpoint_callback = args.checkpoint_callback#,
+    #profiler=profiler
 )
 
 if args.train_model:
