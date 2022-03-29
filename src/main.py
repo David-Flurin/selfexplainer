@@ -68,7 +68,7 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="iterations",
+    monitor="val_loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
@@ -82,7 +82,7 @@ trainer = pl.Trainer(
     logger = logger,
     callbacks = [early_stop_callback],
     gpus = [0] if torch.cuda.is_available() else 0,
-    terminate_on_nan = True,
+    detect_anomaly = True,
     checkpoint_callback = args.checkpoint_callback#,
     #profiler=profiler
 )
