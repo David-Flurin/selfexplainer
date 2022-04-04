@@ -62,8 +62,8 @@ def get_target_dictionary(include_background_class):
 
     return target_dict
 
-def extract_masks(segmentations, target_vectors):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def extract_masks(segmentations, target_vectors, gpu=0):
+    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
 
     batch_size, num_classes, h, w = segmentations.size()
 
