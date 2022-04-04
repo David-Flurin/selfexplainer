@@ -5,15 +5,17 @@ from torch import nn, softmax
 from torch.optim import Adam
 from pathlib import Path
 
+from copy import deepcopy
+
 from models.DeepLabv3 import Deeplabv3Resnet50Model
 from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, mask_similarity_loss
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, metrics_threshold=-1.0, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
@@ -22,9 +24,11 @@ class SelfExplainer(pl.LightningModule):
         self.weighting_koeff = weighting_koeff
 
         self.model = Deeplabv3Resnet50Model(num_classes=num_classes)
+        self.frozen = None
         self.dataset = dataset
 
         self.use_similarity_loss = use_similarity_loss
+        self.use_entropy_loss = use_entropy_loss
 
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
@@ -50,14 +54,17 @@ class SelfExplainer(pl.LightningModule):
     def forward(self, image, targets):
         i_seg, i_mask, i_ncmask, i_logits = self._forward(image, targets)
         masked_image = i_mask.unsqueeze(1) * image
-        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets)
+        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=True)
         target_mask_inversed = torch.ones_like(i_mask) - i_mask
         inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
-        b_seg, b_mask, b_ncmask, b_logits = self._forward(masked_image, targets)
+        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=True)
         return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
-    def _forward(self, image, targets):
-        segmentations = self.model(image) # [batch_size, num_classes, height, width]
+    def _forward(self, image, targets, frozen=False):
+        if frozen:
+            segmentations = self.frozen(image)
+        else:
+            segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets) # [batch_size, height, width]
 
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
@@ -68,19 +75,23 @@ class SelfExplainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
+        self.frozen = deepcopy(self.model)
+        for _,p in self.frozen.named_parameters():
+            p.requires_grad_(False)
+
         i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
 
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(i_logits, labels)
-            classification_loss_object = self.classification_loss_fn(o_logits, labels)
-            classification_loss_background = self.classification_loss_fn(b_logits, labels)
+            #classification_loss_object = self.classification_loss_fn(o_logits, labels)
+            #classification_loss_background = self.classification_loss_fn(b_logits, labels)
         else:
             classification_loss_initial = self.classification_loss_fn(i_logits, targets)
-            classification_loss_object = self.classification_loss_fn(o_logits, targets)
-            classification_loss_background = self.classification_loss_fn(b_logits, targets)
+            #classification_loss_object = self.classification_loss_fn(o_logits, targets)
+            #classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        classification_loss = classification_loss_initial + classification_loss_object + classification_loss_background
+        classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
 
         loss = classification_loss
@@ -88,6 +99,11 @@ class SelfExplainer(pl.LightningModule):
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
             self.log('similarity_loss', similarity_loss)
             loss += similarity_loss
+
+        if self.use_entropy_loss:
+            background_entropy_loss = entropy_loss(b_logits)
+            self.log('background entropy loss', background_entropy_loss)
+            loss += background_entropy_loss
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
@@ -121,6 +137,9 @@ class SelfExplainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
+        self.frozen = deepcopy(self.model)
+        for _,p in self.frozen.named_parameters():
+            p.requires_grad_(False)
         i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
 
         if self.dataset == "CUB":
@@ -139,6 +158,11 @@ class SelfExplainer(pl.LightningModule):
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(i_mask, o_mask)
             loss += similarity_loss
+
+        if self.use_entropy_loss:
+            background_entropy_loss = entropy_loss(b_logits)
+            self.log('background entropy loss', background_entropy_loss)
+            loss += background_entropy_loss
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
