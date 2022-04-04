@@ -56,7 +56,7 @@ else:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -76,16 +76,16 @@ early_stop_callback = EarlyStopping(
     #stopping_threshold=5.
 )
 
-#profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
+profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
 trainer = pl.Trainer(
     logger = logger,
     callbacks = [early_stop_callback],
-    gpus = [0] if torch.cuda.is_available() else 0,
+    gpus = [args.gpu] if torch.cuda.is_available() else 0,
     detect_anomaly = True,
     log_every_n_steps = 20,
-    enable_checkpointing = args.checkpoint_callback#,
-    #profiler=profiler
+    enable_checkpointing = args.checkpoint_callback,
+    profiler=profiler
 )
 
 if args.train_model:

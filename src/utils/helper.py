@@ -1,7 +1,7 @@
 import torch
 
-def get_targets_from_annotations(annotations, dataset, include_background_class=False):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0):
+    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
     
     if dataset == "VOC":
         target_dict = get_target_dictionary(include_background_class)

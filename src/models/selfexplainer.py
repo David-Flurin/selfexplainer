@@ -15,10 +15,11 @@ from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, metrics_threshold=-1.0, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, gpu=0, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
+        self.gpu = gpu
 
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
@@ -73,7 +74,7 @@ class SelfExplainer(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset)
+        targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
         self.frozen = deepcopy(self.model)
         for _,p in self.frozen.named_parameters():
             p.requires_grad_(False)
@@ -138,7 +139,7 @@ class SelfExplainer(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset)
+        targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
         self.frozen = deepcopy(self.model)
         for _,p in self.frozen.named_parameters():
             p.requires_grad_(False)
@@ -192,7 +193,7 @@ class SelfExplainer(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset)
+        targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
         t_seg, s_seg, t_mask, s_mask, t_ncmask, s_ncmask, t_logits, s_logits = self(image, targets)
 
         if self.save_masked_images and image.size()[0] == 1:

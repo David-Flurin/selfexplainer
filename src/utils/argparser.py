@@ -33,6 +33,7 @@ def get_parser():
     parser.add_argument('--seed', default=42, type=int, help='seed for all random number generators in pytorch, numpy, and python.random')
     parser.add_argument('--use_tensorboard_logger', default=False, type=str2bool, help='whether to use tensorboard')
     parser.add_argument('--checkpoint_callback', default=True, type=str2bool, help='if true, trained model will be automatically saved')
+    parser.add_argument('--gpu', default=0, type=str2bool, help='Number of the GPU to be used')
 
     # Early stopping Parameters
     parser.add_argument('--early_stop_min_delta', default=0.001, type=float, help='threshold for early stopping condition')
