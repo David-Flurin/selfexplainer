@@ -77,7 +77,6 @@ early_stop_callback = EarlyStopping(
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
-
 trainer = pl.Trainer(
     logger = logger,
     callbacks = [early_stop_callback],
