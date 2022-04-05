@@ -68,12 +68,12 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="val_loss",
+    monitor="iterations",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=5.
+    mode="max",
+    stopping_threshold=2.
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
