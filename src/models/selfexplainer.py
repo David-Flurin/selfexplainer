@@ -15,11 +15,12 @@ from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, gpu=0, metrics_threshold=-1.0, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
         self.gpu = gpu
+        self.profiler = profiler
 
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
@@ -34,7 +35,7 @@ class SelfExplainer(pl.LightningModule):
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
-        #self.i = 0.
+        self.i = 0.
 
     def setup_losses(self, dataset):
         if dataset == "CUB":
@@ -55,10 +56,10 @@ class SelfExplainer(pl.LightningModule):
     def forward(self, image, targets):
         i_seg, i_mask, i_ncmask, i_logits = self._forward(image, targets)
         masked_image = i_mask.unsqueeze(1) * image
-        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=True)
+        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=False)
         target_mask_inversed = torch.ones_like(i_mask) - i_mask
         inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
-        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=True)
+        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=False)
         return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
     def _forward(self, image, targets, frozen=False):
@@ -68,9 +69,16 @@ class SelfExplainer(pl.LightningModule):
             segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
-        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        logits = weighted_segmentations.sum(dim=(2,3))
+        #weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        #logits = weighted_segmentations.sum(dim=(2,3))
+        logits = self.measure_weighting(segmentations)
         return segmentations, target_mask, non_target_mask, logits
+
+    def measure_weighting(self, segmentations):
+        with self.profiler.profile("softmax_weighing"):
+            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+            logits = weighted_segmentations.sum(dim=(2,3))
+        return logits
         
     def training_step(self, batch, batch_idx):
         image, annotations = batch
@@ -119,8 +127,8 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        #self.i += 1.
-        #self.log('iterations', self.i, prog_bar=True)
+        self.i += 1.
+        self.log('iterations', self.i, prog_bar=True)
 
         self.log('loss', float(loss))
        
