@@ -19,6 +19,8 @@ if args.arg_log:
     write_config_file(args)
 
 pl.seed_everything(args.seed)
+profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
+
 
 # Set up Logging
 if args.use_tensorboard_logger:
@@ -56,7 +58,7 @@ else:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -68,16 +70,15 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="val_loss",
+    monitor="iterations",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=5.
+    mode="max",
+    stopping_threshold=5.
 )
 
-profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
-
+#profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 trainer = pl.Trainer(
     logger = logger,
     callbacks = [early_stop_callback],
