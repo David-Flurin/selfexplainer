@@ -15,11 +15,12 @@ from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, gpu=0, metrics_threshold=-1.0, save_path="./results/"):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
         self.gpu = gpu
+        self.profiler = profiler
 
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
@@ -68,9 +69,16 @@ class SelfExplainer(pl.LightningModule):
             segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
-        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        logits = weighted_segmentations.sum(dim=(2,3))
+        #weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        #logits = weighted_segmentations.sum(dim=(2,3))
+        logits = self.measure_weighting(segmentations)
         return segmentations, target_mask, non_target_mask, logits
+
+    def measure_weighting(self, segmentations):
+        with self.profiler.profile("softmax_weighing"):
+            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+            logits = weighted_segmentations.sum(dim=(2,3))
+        return logits
         
     def training_step(self, batch, batch_idx):
         image, annotations = batch
