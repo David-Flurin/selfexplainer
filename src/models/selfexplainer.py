@@ -56,10 +56,10 @@ class SelfExplainer(pl.LightningModule):
     def forward(self, image, targets):
         i_seg, i_mask, i_ncmask, i_logits = self._forward(image, targets)
         masked_image = i_mask.unsqueeze(1) * image
-        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=False)
+        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=True)
         target_mask_inversed = torch.ones_like(i_mask) - i_mask
         inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
-        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=False)
+        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=True)
         return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
     def _forward(self, image, targets, frozen=False):
@@ -83,10 +83,11 @@ class SelfExplainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
+        
         self.frozen = deepcopy(self.model)
         for _,p in self.frozen.named_parameters():
             p.requires_grad_(False)
-
+        
         i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
 
         if self.dataset == "CUB":
@@ -148,16 +149,18 @@ class SelfExplainer(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
+        
         self.frozen = deepcopy(self.model)
         for _,p in self.frozen.named_parameters():
             p.requires_grad_(False)
+        
         i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits = self(image, targets)
-
+        
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(i_logits, labels)
-            classification_loss_object = self.classification_loss_fn(o_logits, labels)
-            classification_loss_background = self.classification_loss_fn(b_logits, labels)
+            #classification_loss_object = self.classification_loss_fn(o_logits, labels)
+            #classification_loss_background = self.classification_loss_fn(b_logits, labels)
         else:
             classification_loss_initial = self.classification_loss_fn(i_logits, targets)
             classification_loss_object = self.classification_loss_fn(o_logits, targets)
