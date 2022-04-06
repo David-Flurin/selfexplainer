@@ -70,12 +70,12 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="iterations",
+    monitor="val_loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="max",
-    stopping_threshold=5.
+    mode="min"
+    #stopping_threshold=5.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
@@ -85,8 +85,8 @@ trainer = pl.Trainer(
     gpus = [args.gpu] if torch.cuda.is_available() else 0,
     #detect_anomaly = True,
     log_every_n_steps = 20,
-    enable_checkpointing = args.checkpoint_callback,
-    profiler=profiler
+    enable_checkpointing = args.checkpoint_callback
+    #profiler=profiler
 )
 
 if args.train_model:

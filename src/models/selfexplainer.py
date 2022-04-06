@@ -56,10 +56,10 @@ class SelfExplainer(pl.LightningModule):
     def forward(self, image, targets):
         i_seg, i_mask, i_ncmask, i_logits = self._forward(image, targets)
         masked_image = i_mask.unsqueeze(1) * image
-        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=True)
+        o_seg, o_mask, o_ncmask, o_logits = self._forward(masked_image, targets, frozen=False)
         target_mask_inversed = torch.ones_like(i_mask) - i_mask
         inverted_masked_image = target_mask_inversed.unsqueeze(1) * image
-        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=True)
+        b_seg, b_mask, b_ncmask, b_logits = self._forward(inverted_masked_image, targets, frozen=False)
         return i_seg, o_seg, b_seg, i_mask, o_mask, b_mask, i_ncmask, o_ncmask, b_ncmask, i_logits, o_logits, b_logits
 
     def _forward(self, image, targets, frozen=False):
