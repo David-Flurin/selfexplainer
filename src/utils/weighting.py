@@ -7,9 +7,10 @@ def softmax_weighting(t, k):
         If k >> 1, it is Global Max Pooling.'''
 
     batch_size, num_classes, h, w = t.size()
+    weighted = torch.zeros(batch_size, num_classes, h, w)
     for i in range(batch_size):
         for c in range(num_classes):
             weights = torch.softmax(t[i, c].view(h*w) * k, 0)
-            t[i, c] = torch.reshape(weights, (h, w)) * t[i, c]
-    return  t
+            weighted[i, c] = torch.reshape(weights, (h, w)) * t[i, c]
+    return  weighted
 
