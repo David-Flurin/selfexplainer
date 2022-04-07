@@ -10,6 +10,6 @@ def softmax_weighting(t, k):
     for i in range(batch_size):
         for c in range(num_classes):
             weights = torch.softmax(t[i, c].view(h*w) * k, 0)
-            t[i, c] = torch.reshape(weights, (h, w))
+            t[i, c] = torch.reshape(weights, (h, w)) * t[i, c]
     return  t
 
