@@ -1,6 +1,6 @@
 import torch
 
-def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0):
+def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
     
     if dataset == "VOC":
@@ -30,6 +30,20 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
         for i in range(batch_size):
             target = annotations[i]['target']
             target_vectors[i][target] = 1.0
+
+    elif dataset == "TOY":
+        target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            targets = annotations[i]['objects']
+            for obj in targets:
+                if toy_target == 'texture':
+                    name = obj[1]
+                else:
+                    name = obj[0]
+                index = target_dict[name]
+                target_vectors[i][index] = 1.0
 
     return target_vectors
 
@@ -62,6 +76,21 @@ def get_target_dictionary(include_background_class):
 
     return target_dict
 
+def get_toy_target_dictionary(include_background_class, toy_target):
+    if toy_target == 'texture':
+        target_dict = {'bubblewrap' : 0, 'forest' : 1, 'fur' : 2, 'moss' : 3, 'paint' : 4, 'rock' : 5, 'wood' : 6
+                }
+    elif toy_target == 'shape':
+        target_dict = {'circle' : 0, 'triangle' : 1, 'square' : 2, 'pentagon' : 3, 'hexagon' : 4, 'octagon' : 5, 'heart' : 6, 'star': 7, 'cross': 8
+                }
+    else:
+        raise ValueError('Target type must be texture or shape')
+
+    if include_background_class:
+        target_dict['background'] = len(target_dict.values())
+        
+    return target_dict
+
 def extract_masks(segmentations, target_vectors, gpu=0):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
 
@@ -78,4 +107,22 @@ def extract_masks(segmentations, target_vectors, gpu=0):
         non_target_masks[i] = (segmentations[i][non_class_indices]).amax(dim=0)
 
     return target_masks.sigmoid(), non_target_masks.sigmoid()
+
+
+class Distribution():
+    def __init__(self):
+        self.count = {}
+
+    def update(self, name):
+        if name in self.count:
+            self.count[name] += 1
+        else:
+            self.count[name] = 1
+    
+    def print_distribution(self):
+        total = sum(self.count.values())
+        string = ''
+        for name, i in self.count.items():
+            string += f'{name}: {i/total:.2f}, '
+        print(string)
 

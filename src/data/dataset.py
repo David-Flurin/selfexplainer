@@ -7,6 +7,8 @@ import torchvision
 from PIL import Image
 from pycocotools.coco import COCO
 
+from toy_dataset import generator
+
 class COCODataset(Dataset):
     def __init__(self, root, annotation, transform_fn=None):
         self.root = root
@@ -41,6 +43,34 @@ class COCODataset(Dataset):
 
     def __len__(self):
         return len(self.ids)
+
+
+class ToyDataset(Dataset):
+    def __init__(self, epoch_length, transform_fn=None):
+        self.ids = range(0, epoch_length)
+        self.transform = transform_fn
+        base = '/'.join(generator.__file__.split('/')[0:-1])
+        self.generator = generator.Generator(pathlib.Path(base, 'foreground.txt'), pathlib.Path(base, 'background.txt'))
+        self.shapes = {}
+        self.foreground_textures = {}
+        self.background_textures = {}
+        for t in self.generator.f_texture_names:
+            self.foreground_textures[t] = 0
+        for t in self.generator.b_texture_names:
+            self.background_textures[t] = 0
+
+    def __getitem__(self, index):
+        sample = self.generator.generate_sample(1)       
+
+        if self.transform is not None:
+            img = self.transform(Image.fromarray(sample['image']))
+
+        return img, {'objects': sample['objects'], 'background': sample['background']}
+
+    def __len__(self):
+        return len(self.ids)
+
+
 
 class CUB200Dataset(Dataset):
     def __init__(self, root, annotations, transform_fn=None):

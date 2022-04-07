@@ -6,9 +6,10 @@ from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 from pathlib import Path
 
-from data.dataloader import VOCDataModule, COCODataModule, CUB200DataModule
+from data.dataloader import ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
+from models.classifier import Classifier
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -51,6 +52,12 @@ elif args.dataset == "CUB":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
     )
     num_classes = 200
+elif args.dataset == "TOY":
+    data_module = ToyDataModule(
+        epoch_length=args.epoch_length, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        test_batch_size=args.test_batch_size
+    )
+    num_classes = 8
 else:
     raise Exception("Unknown dataset " + args.dataset)
 
@@ -58,6 +65,15 @@ else:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
+    )
+    if args.checkpoint != None:
+        model = model.load_from_checkpoint(
+            args.fcnn_checkpoint,
+            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
+        )
+elif args.model_to_train == "classifier":
+    model = Classifier(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:

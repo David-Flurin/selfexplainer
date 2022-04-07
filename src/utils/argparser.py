@@ -20,8 +20,9 @@ def get_parser():
     parser.add('--arg_log', default=False, type=str2bool, help='save arguments to config file')
 
     # Dataset parameters
-    parser.add_argument('--dataset', choices=['VOC', 'COCO', 'CUB'], default='VOC', type=str, help='which dataset to use')
+    parser.add_argument('--dataset', default='VOC', type=str, help='which dataset to use')
     parser.add_argument('--data_base_path', default='../datasets/', type=str, help='Base bath of the datasets. Should contain subdirectories with the different datasets.')
+    parser.add_argument('--epoch_length', default=1000, type=int, help='Number of training samples per epoch when using Toy dataset.')
 
     # Data processing parameters
     parser.add_argument('--train_batch_size', default=16, type=int, help='batch size used for training')
