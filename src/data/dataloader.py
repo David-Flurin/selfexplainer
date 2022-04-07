@@ -131,13 +131,14 @@ class ToyDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer)
-        self.val = ToyDataset(100, transform_fn=self.test_transformer)
+        #self.val = ToyDataset(0, transform_fn=self.test_transformer)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+        #return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+        return None
 
     def test_dataloader(self):
         return None

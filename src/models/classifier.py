@@ -36,6 +36,8 @@ class Classifier(pl.LightningModule):
             self.b_text_dist = Distribution()
             self.shapes_dist = Distribution()
 
+        self.i = 0
+
 
     def setup_losses(self):
         self.classification_loss_fn = nn.BCEWithLogitsLoss()
@@ -67,6 +69,9 @@ class Classifier(pl.LightningModule):
         logits = self(image, targets)
         loss = self.classification_loss_fn(logits, targets)
         self.log('loss', float(loss))
+
+        self.i += 1.
+        self.log('iterations', self.i, prog_bar=True)
        
         self.train_metrics(logits, targets)
         return loss

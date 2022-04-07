@@ -8,7 +8,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from models.DeepLabv3 import Deeplabv3Resnet50Model
-from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks
+from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
@@ -32,10 +32,15 @@ class SelfExplainer(pl.LightningModule):
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
 
+        if self.dataset == 'TOY':
+            self.f_tex_dist = Distribution()
+            self.b_text_dist = Distribution()
+            self.shapes_dist = Distribution()
+
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
-        #self.i = 0.
+        self.i = 0.
 
     def setup_losses(self, dataset):
         if dataset == "CUB":
@@ -89,10 +94,18 @@ class SelfExplainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
+
+        if self.dataset == 'TOY':
+            for a in annotations:
+                for obj in a['objects']:
+                    self.shapes_dist.update(obj[0])
+                    self.f_tex_dist.update(obj[1])
+            self.b_text_dist.update(a['background'])
         
-        self.frozen = deepcopy(self.model)
-        for _,p in self.frozen.named_parameters():
-            p.requires_grad_(False)
+        if self.use_similarity_loss or self.use_entropy_loss:
+            self.frozen = deepcopy(self.model)
+            for _,p in self.frozen.named_parameters():
+                p.requires_grad_(False)
         
         output = self(image, targets)
 
@@ -133,8 +146,8 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        # self.i += 1.
-        # self.log('iterations', self.i, prog_bar=True)
+        self.i += 1.
+        self.log('iterations', self.i, prog_bar=True)
 
         self.log('loss', float(loss))
        
@@ -150,6 +163,9 @@ class SelfExplainer(pl.LightningModule):
     def training_epoch_end(self, outs):
         self.log('train_metrics', self.train_metrics.compute())
         self.train_metrics.reset()
+        self.f_tex_dist.print_distribution()
+        self.b_text_dist.print_distribution()
+        self.shapes_dist.print_distribution()
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
