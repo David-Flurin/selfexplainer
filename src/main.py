@@ -91,7 +91,7 @@ early_stop_callback = EarlyStopping(
     patience=args.early_stop_patience,
     verbose=False,
     mode="min"
-    #stopping_threshold=2.
+    #stopping_threshold=5.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
