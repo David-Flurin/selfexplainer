@@ -81,8 +81,10 @@ class SelfExplainer(pl.LightningModule):
             segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
-        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        logits = weighted_segmentations.sum(dim=(2,3))
+        #weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        #logits = weighted_segmentations.sum(dim=(2,3))
+        logits = segmentations.mean((2,3))
+        
         return segmentations, target_mask, non_target_mask, logits
 
     def measure_weighting(self, segmentations):
@@ -146,8 +148,8 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        self.i += 1.
-        self.log('iterations', self.i, prog_bar=True)
+        # self.i += 1.
+        # self.log('iterations', self.i, prog_bar=True)
 
         self.log('loss', float(loss))
        
@@ -163,9 +165,11 @@ class SelfExplainer(pl.LightningModule):
     def training_epoch_end(self, outs):
         self.log('train_metrics', self.train_metrics.compute())
         self.train_metrics.reset()
+        '''
         self.f_tex_dist.print_distribution()
         self.b_text_dist.print_distribution()
         self.shapes_dist.print_distribution()
+        '''
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
