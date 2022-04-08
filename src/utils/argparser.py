@@ -28,7 +28,7 @@ def get_parser():
     # Data processing parameters
     parser.add_argument('--train_batch_size', default=16, type=int, help='batch size used for training')
     parser.add_argument('--val_batch_size', default=16, type=int, help='batch size used for validation')
-    parser.add_argument('--test_batch_size', default=16, type=int, help='batch size used for testing')
+    parser.add_argument('--test_batch_size', default=1, type=int, help='batch size used for testing')
     parser.add_argument('--use_data_augmentation', default=False, type=str2bool, help='set to true to enable data augmentation on training images')
 
     # Trainer Parameters

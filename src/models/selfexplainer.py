@@ -164,7 +164,7 @@ class SelfExplainer(pl.LightningModule):
 
         self.log('loss', float(loss))
        
-        self.valid_metrics(output['image'][3], targets)
+        self.train_metrics(output['image'][3], targets)
         return loss
 
     def training_epoch_end(self, outs):
