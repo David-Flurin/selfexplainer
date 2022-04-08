@@ -23,6 +23,7 @@ def get_parser():
     parser.add_argument('--dataset', default='VOC', type=str, help='which dataset to use')
     parser.add_argument('--data_base_path', default='../datasets/', type=str, help='Base bath of the datasets. Should contain subdirectories with the different datasets.')
     parser.add_argument('--epoch_length', default=1000, type=int, help='Number of training samples per epoch when using Toy dataset.')
+    parser.add_argument('--test_samples', default=100, type=int, help='Number of test samples when using Toy dataset.')
 
     # Data processing parameters
     parser.add_argument('--train_batch_size', default=16, type=int, help='batch size used for training')
@@ -73,8 +74,8 @@ def get_parser():
     # parser.add_argument('--show_images', default=False, type=str2bool, help='If true, displays images and corresponding masked images during testing. Requires testing batch size to be 1.')
     # parser.add_argument('--show_all_class_masks', default=False, type=str2bool, help='If true, displays individual class masks during testing. Requires VOC dataset. Requires testing batch size to be 1.')
     # parser.add_argument('--show_max_activation_for_class_id', default=None, type=int, help='If true, highlights point of maximum activation for given class id. Requires testing batch size to be 1.')
-    # parser.add_argument('--save_masks', default=False, type=str2bool, help='If true, masks are saved to location specified by save_path (see below)')
-    # parser.add_argument('--save_masked_images', default=False, type=str2bool, help='If true, masked images are saved to location specified by save_path (see below)')
+    parser.add_argument('--save_masks', default=False, type=str2bool, help='If true, masks are saved to location specified by save_path (see below)')
+    parser.add_argument('--save_masked_images', default=False, type=str2bool, help='If true, masked images are saved to location specified by save_path (see below)')
     # parser.add_argument('--save_all_class_masks', default=False, type=str2bool, help='Unused.')
     parser.add_argument('--save_path', default='./results/', type=str, help='Path to where masks and/or masked images are saved if corresponding options are set to true.')
 

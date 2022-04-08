@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 import torchvision
 from PIL import Image
 from pycocotools.coco import COCO
+from random import randint
 
 from toy_dataset import generator
 
@@ -59,13 +60,21 @@ class ToyDataset(Dataset):
         for t in self.generator.b_texture_names:
             self.background_textures[t] = 0
 
+        
+
+        
+
+        
+
     def __getitem__(self, index):
         sample = self.generator.generate_sample(1)       
 
         if self.transform is not None:
             img = self.transform(Image.fromarray(sample['image']))
 
-        return img, {'objects': sample['objects'], 'background': sample['background']}
+        filename = f'{randint(0, 9999):05d}'
+
+        return img, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
 
     def __len__(self):
         return len(self.ids)

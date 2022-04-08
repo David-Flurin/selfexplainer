@@ -1,5 +1,6 @@
 import torch
 import os
+import shutil
 import datetime
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
@@ -10,6 +11,7 @@ from data.dataloader import ToyDataModule, VOCDataModule, COCODataModule, CUB200
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
+from utils.image_display import save_masked_image
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -25,7 +27,7 @@ profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
 # Set up Logging
 if args.use_tensorboard_logger:
-    log_dir = "tb_logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    log_dir = Path(args.save_path, "tb_logs")
     logger = pl.loggers.TensorBoardLogger(log_dir, name="Selfexplainer")
 else:
     logger = False
@@ -54,10 +56,10 @@ elif args.dataset == "CUB":
     num_classes = 200
 elif args.dataset == "TOY":
     data_module = ToyDataModule(
-        epoch_length=args.epoch_length, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        epoch_length=args.epoch_length, test_samples=args.test_samples, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
         test_batch_size=args.test_batch_size
     )
-    num_classes = 8
+    num_classes = 7
 else:
     raise Exception("Unknown dataset " + args.dataset)
 
@@ -65,7 +67,8 @@ else:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, save_masked_images=args.save_masked_images,
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -84,14 +87,19 @@ elif args.model_to_train == "classifier":
 else:
     raise Exception("Unknown model type: " + args.model_to_train)
 
+# Create results folder
+if os.path.exists(args.save_path) and os.path.isdir(args.save_path):
+        shutil.rmtree(args.save_path)
+os.makedirs(args.save_path)
+
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="loss",
+    monitor="iterations",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=1.
+    mode="max",
+    stopping_threshold=0.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
@@ -107,6 +115,6 @@ trainer = pl.Trainer(
 
 if args.train_model:
     trainer.fit(model=model, datamodule=data_module)
-    trainer.test()
+    trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)
