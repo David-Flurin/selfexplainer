@@ -94,12 +94,12 @@ os.makedirs(args.save_path)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="iterations",
+    monitor="loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="max",
-    stopping_threshold=0.
+    mode="min",
+    #stopping_threshold=0.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
