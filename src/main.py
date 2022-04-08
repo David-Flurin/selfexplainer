@@ -67,7 +67,8 @@ else:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, save_masked_images=args.save_masked_images,
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+        use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:

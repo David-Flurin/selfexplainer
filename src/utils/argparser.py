@@ -54,8 +54,9 @@ def get_parser():
 
     # Model-specific parameters
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='learning rate used by the Adam optimizer')
-    parser.add_argument('--use_similarity_loss', default=True, type=str2bool, help='whether to use similaity loss between image and obejct pass.')
-    parser.add_argument('--use_entropy_loss', default=True, type=str2bool, help='whether to use entropy loss on background logits.')
+    parser.add_argument('--use_similarity_loss', default=False, type=str2bool, help='whether to use similaity loss between image and obejct pass.')
+    parser.add_argument('--use_entropy_loss', default=False, type=str2bool, help='whether to use entropy loss on background logits.')
+    parser.add_argument('--use_weighted_loss', default=False, type=str2bool, help='whether to use a dynamically weighted loss.')
     # parser.add_argument('--use_mask_variation_loss', default=True, type=str2bool, help='whether to use variation loss on the mask.')
     # parser.add_argument('--use_mask_area_loss', default=True, type=str2bool, help='whether to use area loss on the mask.')
     # parser.add_argument('--use_mask_coherency_loss', default=True, type=str2bool, help='whether to use mask coherency loss (only for self-explainer architecture)')

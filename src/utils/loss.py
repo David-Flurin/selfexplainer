@@ -2,6 +2,8 @@ import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
 
+import math
+
 from torch import nn
 
 class TotalVariationConv(pl.LightningModule):
@@ -118,6 +120,10 @@ def mask_similarity_loss(fmask, smask):
     batch_size, h, w = fmask.size()
     batch_losses = (fmask - smask).abs().sum((1,2)) / (w*h)
     return batch_losses.mean()
+
+def weighted_loss(l_1, l_2, steepness, offset):
+    loss1 = l_1.item()
+    return l_1 + min(1., math.exp(-steepness * (loss1 - offset))) * l_2
 
 
 

@@ -10,12 +10,12 @@ from copy import deepcopy
 from models.DeepLabv3 import Deeplabv3Resnet50Model
 from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=True, use_entropy_loss=True,
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
     save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
@@ -33,6 +33,7 @@ class SelfExplainer(pl.LightningModule):
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
+        self.use_weighted_loss = use_weighted_loss
 
         self.save_path = save_path
         self.save_masked_images = save_masked_images
@@ -135,16 +136,22 @@ class SelfExplainer(pl.LightningModule):
         self.log('iterations', self.i)
         self.i += 1
 
-        loss = classification_loss
         
+
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
-            loss += similarity_loss
+            obj_back_loss = similarity_loss
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
             self.log('background entropy loss', background_entropy_loss)
-            loss += background_entropy_loss
+            obj_back_loss -= background_entropy_loss
+
+        if self.use_weighted_loss and self.use_similarity_loss and self.use_entropy_loss:
+            loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
+        else:
+            loss = classification_loss + obj_back_loss
+
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
