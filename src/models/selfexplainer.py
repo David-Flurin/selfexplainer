@@ -14,6 +14,8 @@ from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
+from matplotlib import pyplot as plt
+
 class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
     save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
@@ -136,6 +138,13 @@ class SelfExplainer(pl.LightningModule):
         self.log('iterations', self.i)
         self.i += 1
 
+         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
+        # f, axes = plt.subplots(3,1) 
+        # axes[0].imshow(output['image'][1][0].detach())
+        # axes[1].imshow(output['object'][1][0].detach())
+        # axes[2].imshow(image[0].T)
+        # plt.show()
+
         
 
         if self.use_similarity_loss:
@@ -147,10 +156,13 @@ class SelfExplainer(pl.LightningModule):
             self.log('background entropy loss', background_entropy_loss)
             obj_back_loss -= background_entropy_loss
 
-        if self.use_weighted_loss and self.use_similarity_loss and self.use_entropy_loss:
-            loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
+        if self.use_weighted_loss:
+            if self.use_similarity_loss or self.use_entropy_loss:
+                loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
+            else:
+                loss = classification_loss + obj_back_loss
         else:
-            loss = classification_loss + obj_back_loss
+            loss = classification_loss
 
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
@@ -297,3 +309,8 @@ class SelfExplainer(pl.LightningModule):
 
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=self.learning_rate)
+
+    def on_save_checkpoint(self, checkpoint):
+        for k in list(checkpoint['state_dict'].keys()):
+            if k.startswith('frozen'):
+                del checkpoint['state_dict'][k]

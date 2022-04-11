@@ -114,11 +114,11 @@ def entropy_loss(logits):
     return entropy_loss
 
 
-def mask_similarity_loss(fmask, smask):
-    '''Compute L2 loss over pixel distances between initial mask and object mask.'''
+def mask_similarity_loss(imask, omask):
+    '''Compute L1 loss over pixel distances between initial mask and object mask.'''
 
-    batch_size, h, w = fmask.size()
-    batch_losses = (fmask - smask).abs().sum((1,2)) / (w*h)
+    batch_size, h, w = imask.size()
+    batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum()
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):

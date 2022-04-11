@@ -73,8 +73,10 @@ if args.model_to_train == "selfexplainer":
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
-            args.fcnn_checkpoint,
-            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
+            args.checkpoint,
+            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+        use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
         )
 elif args.model_to_train == "classifier":
     model = Classifier(
@@ -82,7 +84,7 @@ elif args.model_to_train == "classifier":
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
-            args.fcnn_checkpoint,
+            args.checkpoint,
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
         )
 else:
