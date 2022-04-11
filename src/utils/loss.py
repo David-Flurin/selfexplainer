@@ -6,6 +6,8 @@ import math
 
 from torch import nn
 
+from matplotlib import pyplot as plt
+
 class TotalVariationConv(pl.LightningModule):
     def __init__(self):
         super().__init__()
@@ -118,7 +120,7 @@ def mask_similarity_loss(imask, omask):
     '''Compute L1 loss over pixel distances between initial mask and object mask.'''
 
     batch_size, h, w = imask.size()
-    batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum()
+    batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):

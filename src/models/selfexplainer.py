@@ -138,11 +138,17 @@ class SelfExplainer(pl.LightningModule):
         self.log('iterations', self.i)
         self.i += 1
 
-         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
-        # f, axes = plt.subplots(3,1) 
-        # axes[0].imshow(output['image'][1][0].detach())
-        # axes[1].imshow(output['object'][1][0].detach())
-        # axes[2].imshow(image[0].T)
+        #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
+        # b_s,_,_,_ = image.size()
+        # for b in range(2):
+        #     f, axes = plt.subplots(3,8) 
+        #     f.set_size_inches(12,8)
+        #     for s in range(7):
+        #         axes[0][s].imshow(output['image'][0][b][s].detach(), vmin=-5, vmax=5)
+        #         axes[1][s].imshow(output['object'][0][b][s].detach(),vmin=-5, vmax=5)
+        #     axes[0][7].imshow(output['image'][1][b].detach(), vmin=0, vmax=1)
+        #     axes[1][7].imshow(output['object'][1][b].detach(), vmin=0, vmax=1)
+        #     axes[2][0].imshow(image[b].T)
         # plt.show()
 
         
