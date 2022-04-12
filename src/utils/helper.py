@@ -81,7 +81,7 @@ def get_target_dictionary(include_background_class):
 
 def get_toy_target_dictionary(include_background_class, toy_target):
     if toy_target == 'texture':
-        target_dict = {'bubblewrap' : 0, 'forest' : 1, 'fur' : 2, 'moss' : 3, 'paint' : 4, 'rock' : 5, 'wood' : 6
+        target_dict = {'bubblewrap' : 0, 'forest' : 1, 'fur' : 2, 'moss' : 3, 'paint' : 4, 'rock' : 5, 'wood' : 6, 'splatter': 7 
                 }
     elif toy_target == 'shape':
         target_dict = {'circle' : 0, 'triangle' : 1, 'square' : 2, 'pentagon' : 3, 'hexagon' : 4, 'octagon' : 5, 'heart' : 6, 'star': 7, 'cross': 8
