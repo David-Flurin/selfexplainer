@@ -135,8 +135,8 @@ class SelfExplainer(pl.LightningModule):
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
 
-        self.log('iterations', self.i)
-        self.i += 1
+        # self.log('iterations', self.i)
+        # self.i += 1
 
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
