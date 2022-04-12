@@ -17,6 +17,8 @@ import git
 g = git.cmd.Git('.')
 g.pull()
 
+quit()
+
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 
