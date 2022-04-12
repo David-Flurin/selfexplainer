@@ -12,8 +12,13 @@ from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
 from utils.image_display import save_masked_image
+import git 
+
+g = git.cmd.Git('.')
+g.pull()
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
+
 
 parser = get_parser()
 args = parser.parse_args()
