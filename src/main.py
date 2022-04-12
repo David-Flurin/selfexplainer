@@ -97,7 +97,17 @@ else:
 
 # Create results folder
 if os.path.exists(args.save_path) and os.path.isdir(args.save_path):
-        shutil.rmtree(args.save_path)
+    subdirs = os.listdir(args.save_path)
+    versions = []
+    for dirs in subdirs:
+        d = dirs.split('_')
+        if d[0] == 'version':
+            versions.append(int(d[-1]))
+    if len(versions) > 0:
+        new_version = max(versions) + 1
+    else:
+        new_version = 0
+    args.save_path += f'/version_{new_version}'
 os.makedirs(args.save_path)
 
 # Define Early Stopping condition
