@@ -163,8 +163,8 @@ class SelfExplainer(pl.LightningModule):
             self.log('background entropy loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
-        if self.use_weighted_loss:
-            if self.use_similarity_loss or self.use_entropy_loss:
+        if self.use_similarity_loss or self.use_entropy_loss:
+            if self.use_weighted_loss:
                 loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
             else:
                 loss = classification_loss + obj_back_loss
