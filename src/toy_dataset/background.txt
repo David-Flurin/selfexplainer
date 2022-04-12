@@ -6,3 +6,10 @@ Paper.jpg
 Sand.jpg
 Snow.jpg
 Water.jpg
+Checkerboard.jpg
+Cobblestone.jpg
+Woodchips.jpg
+Rust.jpg
+Plaster.jpg
+Mud2.jpg
+Planks.jpg
