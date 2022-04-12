@@ -155,12 +155,13 @@ class SelfExplainer(pl.LightningModule):
 
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
+            self.log('similarity loss', similarity_loss)
             obj_back_loss = similarity_loss
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
             self.log('background entropy loss', background_entropy_loss)
-            obj_back_loss -= background_entropy_loss
+            obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
         if self.use_weighted_loss:
             if self.use_similarity_loss or self.use_entropy_loss:
