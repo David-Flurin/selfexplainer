@@ -14,8 +14,8 @@ from models.classifier import Classifier
 from utils.image_display import save_masked_image
 import git 
 
-g = git.cmd.Git('.')
-g.pull()
+#g = git.cmd.Git('.')
+#g.pull()
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
