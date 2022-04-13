@@ -81,8 +81,7 @@ if args.save_path:
                 versions.append(int(d[-1]))
         if len(versions) > 0:
             new_version = max(versions) + 1
-    else:
-        args.save_path += f'/version_{new_version}'
+    args.save_path += f'/version_{new_version}'
     os.makedirs(args.save_path)
 
 
@@ -90,14 +89,14 @@ if args.save_path:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
             args.checkpoint,
-            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
         )

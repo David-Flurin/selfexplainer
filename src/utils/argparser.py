@@ -43,7 +43,7 @@ def get_parser():
 
     # General Model Parameters
     parser.add_argument('--train_model', default=True, type=str2bool, help='If True, specified model will be trained. If False, model will be tested.')
-    # parser.add_argument('--use_imagenet_pretraining', default=True, type=str2bool, help='If True, classifiers use a pretrained backbone from ImageNet pretraining')
+    parser.add_argument('--use_imagenet_pretraining', default=True, type=str2bool, help='If True, classifiers use a pretrained backbone from ImageNet pretraining')
     # parser.add_argument('--fix_classifier_backbone', default=True, type=str2bool, help='Whether to fix the wait for the classifiers backbone')
     # parser.add_argument('--fix_classifier', default=True, type=str2bool, help='If True, classifier  is frozen. Strongly recommended for Explainer training.')
     parser.add_argument('--model_to_train', choices=['explainer', 'classifier', 'selfexplainer'], default='explainer', type=str, help='which model architecture should be used for training or testing')
