@@ -17,7 +17,6 @@ from evaluation.plot import plot_losses
 
 # #g = git.cmd.Git('.')
 # #g.pull()
-print("HALLO")
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
