@@ -12,6 +12,7 @@ from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
 from utils.image_display import save_masked_image
+from evaluation.plot import plot_losses
 # import git 
 
 # #g = git.cmd.Git('.')
@@ -113,11 +114,11 @@ if args.save_path:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="loss",
+    monitor="total_loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
+    mode="max",
     #stopping_threshold=0.
 )
 
@@ -127,13 +128,17 @@ trainer = pl.Trainer(
     callbacks = [early_stop_callback],
     gpus = [args.gpu] if torch.cuda.is_available() else 0,
     #detect_anomaly = True,
-    log_every_n_steps = 20,
+    log_every_n_steps = 1,
     enable_checkpointing = args.checkpoint_callback
     #profiler=profiler
 )
 
 if args.train_model:
     trainer.fit(model=model, datamodule=data_module)
+    if logger:
+        plot_dir = args.save_path + '/plots'
+        os.makedirs(plot_dir)
+        plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'total_loss'], plot_dir)
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)
