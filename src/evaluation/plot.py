@@ -70,6 +70,7 @@ def plot_losses(event_folder, names, save_path):
     for loss, steps in losses.items():
         steps = list(set(steps) | set(steps.keys()))
     steps = sorted(steps)
+    steps = [s for s in steps if s % 5 == 0]
     values = {}
     for n in names:
         values[n] = []
@@ -79,7 +80,10 @@ def plot_losses(event_folder, names, save_path):
                 values[loss].append(s[step])
 
     for loss, values in values.items():
-        plt.plot(steps, values, label = loss)
+        alpha = 0.8
+        if loss == 'total_loss':
+            alpha = 1.
+        plt.plot(steps, values, label = loss, linewidth=1., alpha=alpha)
     plt.legend()
     plt.grid()
     plt.savefig(save_path + '/losses.png')
