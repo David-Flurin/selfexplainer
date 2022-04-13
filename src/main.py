@@ -16,6 +16,7 @@ from utils.image_display import save_masked_image
 
 # #g = git.cmd.Git('.')
 # #g.pull()
+print("HALLO")
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
