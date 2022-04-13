@@ -98,6 +98,7 @@ else:
 
 # Create results folder
 if args.save_path:
+    new_version = 0
     if os.path.exists(args.save_path) and os.path.isdir(args.save_path):
         subdirs = os.listdir(args.save_path)
         versions = []
@@ -107,8 +108,7 @@ if args.save_path:
                 versions.append(int(d[-1]))
         if len(versions) > 0:
             new_version = max(versions) + 1
-        else:
-            new_version = 0
+    else:
         args.save_path += f'/version_{new_version}'
     os.makedirs(args.save_path)
 
