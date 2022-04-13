@@ -135,9 +135,6 @@ class SelfExplainer(pl.LightningModule):
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
 
-        # self.log('iterations', self.i)
-        # self.i += 1
-
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
         # for b in range(2):
@@ -155,12 +152,12 @@ class SelfExplainer(pl.LightningModule):
 
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
-            self.log('similarity loss', similarity_loss)
+            self.log('similarity_loss', similarity_loss)
             obj_back_loss = similarity_loss
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
-            self.log('background entropy loss', background_entropy_loss)
+            self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
         if self.use_similarity_loss or self.use_entropy_loss:
@@ -186,9 +183,9 @@ class SelfExplainer(pl.LightningModule):
         #     loss += mask_coherency_loss
 
         # self.i += 1.
-        # self.log('iterations', self.i, prog_bar=True)
+        # self.log('iterations', self.i)
 
-        self.log('loss', float(loss))
+        self.log('total_loss', float(loss))
        
         self.train_metrics(output['image'][3], targets)
         return loss
