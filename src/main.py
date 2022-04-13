@@ -69,18 +69,34 @@ elif args.dataset == "TOY":
 else:
     raise Exception("Unknown dataset " + args.dataset)
 
+# Create results folder
+if args.save_path:
+    new_version = 0
+    if os.path.exists(args.save_path) and os.path.isdir(args.save_path):
+        subdirs = os.listdir(args.save_path)
+        versions = []
+        for dirs in subdirs:
+            d = dirs.split('_')
+            if d[0] == 'version':
+                versions.append(int(d[-1]))
+        if len(versions) > 0:
+            new_version = max(versions) + 1
+    args.save_path += f'/version_{new_version}'
+    os.makedirs(args.save_path)
+
+
 # Set up model
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
             args.checkpoint,
-            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_weighted_loss=args.use_weighted_loss, 
+            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
         )
@@ -96,21 +112,6 @@ elif args.model_to_train == "classifier":
 else:
     raise Exception("Unknown model type: " + args.model_to_train)
 
-# Create results folder
-if args.save_path:
-    if os.path.exists(args.save_path) and os.path.isdir(args.save_path):
-        subdirs = os.listdir(args.save_path)
-        versions = []
-        for dirs in subdirs:
-            d = dirs.split('_')
-            if d[0] == 'version':
-                versions.append(int(d[-1]))
-        if len(versions) > 0:
-            new_version = max(versions) + 1
-        else:
-            new_version = 0
-        args.save_path += f'/version_{new_version}'
-    os.makedirs(args.save_path)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(

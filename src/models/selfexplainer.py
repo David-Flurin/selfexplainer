@@ -17,7 +17,7 @@ from utils.weighting import softmax_weighting
 from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
     save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
@@ -28,7 +28,7 @@ class SelfExplainer(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
 
-        self.model = Deeplabv3Resnet50Model(num_classes=num_classes)
+        self.model = Deeplabv3Resnet50Model(num_classes=num_classes, pretrained=pretrained)
         self.frozen = None
         self.dataset = dataset
         self.num_classes = num_classes

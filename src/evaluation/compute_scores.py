@@ -9,7 +9,7 @@ from pathlib import Path
 
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
-from data.dataloader import VOCDataModule, COCODataModule
+from data.dataloader import VOCDataModule, COCODataModule, ToyDataModule
 from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
 from utils.helper import get_target_dictionary
 
@@ -34,6 +34,7 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
             model = VGG16ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
         elif model_name == "resnet50":
             model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
+
 
     data_module.setup()
 
