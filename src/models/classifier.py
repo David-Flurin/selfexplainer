@@ -79,9 +79,9 @@ class Classifier(pl.LightningModule):
     def training_epoch_end(self, outs):
         self.log('train_metrics', self.train_metrics.compute())
         self.train_metrics.reset()
-        self.f_tex_dist.print_distribution()
-        self.b_text_dist.print_distribution()
-        self.shapes_dist.print_distribution()
+        # self.f_tex_dist.print_distribution()
+        # self.b_text_dist.print_distribution()
+        # self.shapes_dist.print_distribution()
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
