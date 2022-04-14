@@ -228,7 +228,7 @@ class SelfExplainer(pl.LightningModule):
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
-            self.log('background entropy loss', background_entropy_loss)
+            self.log('background_entropy_loss', background_entropy_loss)
             loss += background_entropy_loss
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
@@ -283,7 +283,7 @@ class SelfExplainer(pl.LightningModule):
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
-            self.log('background entropy loss', background_entropy_loss)
+            #self.log('background entropy loss', background_entropy_loss)
             loss += background_entropy_loss
 
         '''

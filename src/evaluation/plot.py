@@ -67,10 +67,10 @@ def plot_losses(event_folder, names, save_path):
             losses[r[1][1]][r[1][2]] = r[1][3] 
     
     steps = []
-    for loss, steps in losses.items():
-        steps = list(set(steps) | set(steps.keys()))
+    for loss, s in losses.items():
+        steps = list(set(steps) | set(s.keys()))
     steps = sorted(steps)
-    steps = [s for s in steps if s % 5 == 0]
+    #steps = [s for s in steps if s % 5 == 0]
     values = {}
     for n in names:
         values[n] = []
@@ -88,4 +88,3 @@ def plot_losses(event_folder, names, save_path):
     plt.grid()
     plt.savefig(save_path + '/losses.png')
 
-            
