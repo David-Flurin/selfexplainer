@@ -185,7 +185,7 @@ class SelfExplainer(pl.LightningModule):
         # self.i += 1.
         # self.log('iterations', self.i)
 
-        self.log('total_loss', float(loss))
+        self.log('loss', float(loss))
        
         self.train_metrics(output['image'][3], targets)
         return loss

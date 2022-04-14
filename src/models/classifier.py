@@ -28,6 +28,8 @@ class Classifier(pl.LightningModule):
         self.model.fc = nn.Linear(2048, num_classes)
         self.dataset = dataset
 
+        self.num_classes = num_classes
+
         self.setup_losses()
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
@@ -56,7 +58,7 @@ class Classifier(pl.LightningModule):
 
     def training_step(self, a, batch_idx):
         image, annotations = a
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
+        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes = self.num_classes, gpu=self.gpu)
 
         if self.dataset == 'TOY':
             for a in annotations:
