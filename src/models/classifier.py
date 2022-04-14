@@ -105,7 +105,7 @@ class Classifier(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         
         logits = self(image, targets)
-        loss = self.classification_loss_fn(logits)
+        loss = self.classification_loss_fn(logits, targets)
 
         self.log('test_loss', loss)
         self.test_metrics(logits, targets)
