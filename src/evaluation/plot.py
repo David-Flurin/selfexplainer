@@ -79,11 +79,13 @@ def plot_losses(event_folder, names, save_path):
             if step in s.keys():
                 values[loss].append(s[step])
 
-    for loss, values in values.items():
+    for loss, value in values.items():
+        if len(value) == 0:
+            continue
         alpha = 0.8
-        if loss == 'total_loss':
+        if loss == 'loss':
             alpha = 1.
-        plt.plot(steps, values, label = loss, linewidth=1., alpha=alpha)
+        plt.plot(steps, value, label = loss, linewidth=1., alpha=alpha)
     plt.legend()
     plt.grid()
     plt.savefig(save_path + '/losses.png')
