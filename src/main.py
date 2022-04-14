@@ -139,7 +139,7 @@ if args.train_model:
     if logger:
         plot_dir = args.save_path + '/plots'
         os.makedirs(plot_dir)
-        plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'loss'], plot_dir)
+        plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'mask_area_loss', 'loss'], plot_dir)
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)

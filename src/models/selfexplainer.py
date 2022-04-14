@@ -18,7 +18,7 @@ from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
-    save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+    use_mask_area_loss=True, mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
@@ -36,6 +36,9 @@ class SelfExplainer(pl.LightningModule):
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
         self.use_weighted_loss = use_weighted_loss
+        self.mask_area_constraint_regularizer = mask_area_constraint_regularizer
+        self.use_mask_area_loss = use_mask_area_loss
+        self.mask_total_area_regularizer = mask_total_area_regularizer
 
         self.save_path = save_path
         self.save_masked_images = save_masked_images
@@ -172,11 +175,12 @@ class SelfExplainer(pl.LightningModule):
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
 
-        # if self.use_mask_area_loss:
-        #     mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
-        #     mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
-        #     mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
-        #     loss += mask_area_loss
+        if self.use_mask_area_loss:
+            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
+            #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+            self.log('mask_area_loss', mask_area_loss)
+            loss += mask_area_loss
 
         # if self.use_mask_coherency_loss:
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
