@@ -102,7 +102,7 @@ class Classifier(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
+        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         
         logits = self(image, targets)
         loss = self.classification_loss_fn(logits)
