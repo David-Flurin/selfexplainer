@@ -11,6 +11,7 @@ from data.dataloader import ToyDataModule, VOCDataModule, COCODataModule, CUB200
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
+from models.fcn_16 import FCN16
 from utils.image_display import save_masked_image
 from evaluation.plot import plot_losses
 # import git 
@@ -89,6 +90,19 @@ if args.save_path:
 
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
+        use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
+    )
+    if args.checkpoint != None:
+        model = model.load_from_checkpoint(
+            args.checkpoint,
+            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
+        use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
+        )
+elif args.model_to_train == "fcn":
+    model = FCN16(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
