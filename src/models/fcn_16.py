@@ -51,7 +51,7 @@ class FCN16(pl.LightningModule):
         self.dataset = dataset
         self.num_classes = num_classes
 
-        self.model = models.segmentation.fcn_resnet50(pretrained=False, num_classes=num_classes, progress=True)
+        #self.model = models.segmentation.fcn_resnet50(pretrained=False, num_classes=num_classes, progress=True)
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
@@ -82,16 +82,20 @@ class FCN16(pl.LightningModule):
         self.conv0 = ConvBlock(1, 3, 64, kernel=7)
 
         # conv1
-        self.conv1 = ConvBlock(2, 64, 256)
+        self.conv1 = ConvBlock(2, 64, 128)
 
         # conv2
-        self.conv2 = ConvBlock(2, 256, 512)
+        self.conv2 = ConvBlock(2, 128, 256)
 
         # conv3
-        self.conv3 = ConvBlock(1, 512, 1024)
+        self.conv3 = ConvBlock(3, 256, 512)
+
+        self.fc4 = nn.Conv2d(512, 1024, 1)
+        self.relu4 = nn.ReLU(inplace=True)
+        self.drop4 = nn.Dropout2d()
 
         # conv4
-        #self.conv4 = ConvBlock(1, 1024, 2048)
+        #self.conv4 = ConvBlock(3, 1024, 2048)
 
 
         # # fc7
@@ -192,6 +196,9 @@ class FCN16(pl.LightningModule):
 
         # h = self.upscore16(h)
         # h = h[:, :, 27:27 + x.size()[2], 27:27 + x.size()[3]].contiguous()
+        h = self.relu4(self.fc4(h))
+        h = self.drop4(h)
+
         h = self.score(h)
 
         h = torch.nn.functional.interpolate(h, size=x.shape[-2:], mode="bilinear", align_corners=False)
@@ -218,7 +225,7 @@ class FCN16(pl.LightningModule):
         if frozen:
             segmentations = self.frozen(image)
         else:
-            segmentations = self.model(image)['out'] # [batch_size, num_classes, height, width]
+            segmentations = self.model_forward(image)['out'] # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
