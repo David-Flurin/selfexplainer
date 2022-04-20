@@ -10,11 +10,10 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
         super().__init__()
 
         self.seg_metric = SegmentationMetrics(activation='sigmoid')
-        self.add_state("pixel_acc", torch.tensor(0.0))
-        self.add_state("iou", torch.tensor(0.0))
-        self.add_state("precision", torch.tensor(0.0))
-        self.add_state("recall", torch.tensor(0.0))
-        self.i = 0
+        self.add_state("tp", torch.tensor(0.0))
+        self.add_state("fp", torch.tensor(0.0))
+        self.add_state("fn", torch.tensor(0.0))
+        self.add_state("tn", torch.tensor(0.0))
         self.eps = eps
 
     def update(self, pred, true):
@@ -37,28 +36,24 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
             # plt.imshow(mask_true[0])
             # plt.show()
 
-            fp = torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 0)).item()
-            fn = torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 1)).item()
-            tp = torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 1)).item()
-            tn = torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 0)).item()
-                          
-            
-            #pixel_acc, dice, precision, recall = self.seg_metric(mask_true, pred)
-            self.pixel_acc += (tp + tn + self.eps) / (tp + tn + fp + fn + self.eps)
-            self.iou += (tp + self.eps) / (fn + fp + self.eps)
-            self.precision += (tp + self.eps) / (tp + fp + self.eps)
-            self.recall += (tp + self.eps) / (tp + fn + self.eps)
-            self.i += 1
+            self.fp += torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 0))
+            self.fn += torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 1))
+            self.tp += torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 1))
+            self.tn += torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 0))
 
     def compute(self):
-        return {'Accuracy': self.pixel_acc / self.i, 'IoU': self.iou / self.i, 'Precision': self.precision / self.i, 'Recall': self.recall / self.i}
+        self.pixel_acc = (self.tp + self.tn + self.eps) / (self.tp + self.tn + self.fp + self.fn + self.eps)
+        self.iou = (self.tp + self.eps) / (self.fn + self.fp + + self.tp +  self.eps)
+        self.precision = (self.tp + self.eps) / (self.tp + self.fp + self.eps)
+        self.recall = (self.tp + self.eps) / (self.tp + self.fn + self.eps)
+        return {'Accuracy': self.pixel_acc.item(), 'IoU': self.iou.item(), 'Precision': self.precision.item(), 'Recall': self.recall.item()}
 
     def save(self, model, classifier_type, dataset):
         f = open(model + "_" + classifier_type + "_" + dataset + "_" + "test_metrics.txt", "w")
         f.write("Accuracy: " + str(self.accuracy) + "\n")
         f.write("Precision: " + str(self.precision) + "\n")
         f.write("Recall: " + str(self.recall) + "\n")
-        f.write("Dice: " + str(self.dice))
+        f.write("IoU: " + str(self.iou))
         f.close()
 
 
@@ -122,7 +117,7 @@ class SegmentationMetrics(object):
         # for precise result in a single image, plz set batch size to 1
         matrix = np.zeros((3, class_num))
 
-        # calculate tp, fp, fn per class
+        # calculate tp, fp, self.fn per class
         for i in range(class_num):
             # pred shape: (N, H, W)
             class_pred = pred[:, i, :, :]
@@ -146,8 +141,8 @@ class SegmentationMetrics(object):
             gt_flat = class_gt.contiguous().view(-1, )  # shape: (N * H * W, )
 
             tp = torch.sum(gt_flat * pred_flat)
-            fp = torch.sum(pred_flat) - tp
-            fn = torch.sum(gt_flat) - tp
+            self.fp = torch.sum(pred_flat) - tp
+            self.fn = torch.sum(gt_flat) - tp
 
             matrix[:, i] = tp.item(), fp.item(), fn.item()
 
@@ -160,8 +155,8 @@ class SegmentationMetrics(object):
             matrix = matrix[:, 1:]
 
         # tp = np.sum(matrix[0, :])
-        # fp = np.sum(matrix[1, :])
-        # fn = np.sum(matrix[2, :])
+        # self.fp = np.sum(matrix[1, :])
+        # self.fn = np.sum(matrix[2, :])
 
         pixel_acc = (np.sum(matrix[0, :]) +self.eps) / (np.sum(matrix[0, :]) + np.sum(matrix[1, :]) + self.eps)
         dice = (2 * matrix[0] + self.eps) / (2 * matrix[0] + matrix[1] + matrix[2] + self.eps)
@@ -214,15 +209,15 @@ class BinaryMetrics():
         target = gt.view(-1, ).float()
 
         tp = torch.sum(output * target)  # TP
-        fp = torch.sum(output * (1 - target))  # FP
-        fn = torch.sum((1 - output) * target)  # FN
-        tn = torch.sum((1 - output) * (1 - target))  # TN
+        self.fp = torch.sum(output * (1 - target))  # FP
+        self.fn = torch.sum((1 - output) * target)  # FN
+        self.tn = torch.sum((1 - output) * (1 - target))  # TN
 
-        pixel_acc = (tp + tn + self.eps) / (tp + tn + fp + fn + self.eps)
-        dice = (2 * tp + self.eps) / (2 * tp + fp + fn + self.eps)
-        precision = (tp + self.eps) / (tp + fp + self.eps)
-        recall = (tp + self.eps) / (tp + fn + self.eps)
-        specificity = (tn + self.eps) / (tn + fp + self.eps)
+        pixel_acc = (self.tp + self.tn + self.eps) / (self.tp + self.tn + self.fp + self.fn + self.eps)
+        dice = (2 * tp + self.eps) / (2 * tp + self.fp + self.fn + self.eps)
+        precision = (self.tp + self.eps) / (self.tp + self.fp + self.eps)
+        recall = (self.tp + self.eps) / (self.tp + self.fn + self.eps)
+        specificity = (tn + self.eps) / (tn + self.fp + self.eps)
 
         return pixel_acc, dice, precision, specificity, recall
 
