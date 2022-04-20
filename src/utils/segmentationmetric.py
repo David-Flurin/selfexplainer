@@ -6,15 +6,16 @@ import torchmetrics
 
 
 class MultiLabelSegmentationMetrics(torchmetrics.Metric):
-    def __init__(self):
+    def __init__(self, eps=1e-5):
         super().__init__()
 
         self.seg_metric = SegmentationMetrics(activation='sigmoid')
         self.add_state("pixel_acc", torch.tensor(0.0))
-        self.add_state("dice", torch.tensor(0.0))
+        self.add_state("iou", torch.tensor(0.0))
         self.add_state("precision", torch.tensor(0.0))
         self.add_state("recall", torch.tensor(0.0))
         self.i = 0
+        self.eps = eps
 
     def update(self, pred, true):
         with torch.no_grad():
@@ -23,17 +24,28 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
                         
             for i in range(0, c):
                 mask_true[:] += torch.where(true[:, i] > 0, i, 0)
+
+            pred_activ = torch.sigmoid(pred)
+            pred_max = torch.max(pred_activ, dim=1)[0]
+
+            pred_flat = pred_max.contiguous().view(-1, )  # shape: (N * H * W, )
+            gt_flat = mask_true.contiguous().view(-1, )  # shape: (N * H * W, )
+
+            tp = torch.sum(gt_flat * pred_flat)
+            tn = torch.sum((1 - gt_flat) * (1 - pred_flat))
+            fp = torch.sum(pred_flat) - tp
+            fn = torch.sum(gt_flat) - tp
                           
             
-            pixel_acc, dice, precision, recall = self.seg_metric(mask_true, pred)
-            self.pixel_acc += pixel_acc
-            self.dice += dice
-            self.precision += precision
-            self.recall += recall
+            #pixel_acc, dice, precision, recall = self.seg_metric(mask_true, pred)
+            self.pixel_acc += (tp + tn + self.eps) / (tp + tn + fp + fn + self.eps)
+            self.iou += (tp + self.eps) / (fn + fp + self.eps)
+            self.precision += (tp + self.eps) / (tp + fp + self.eps)
+            self.recall += (tp + self.eps) / (tp + fn + self.eps)
             self.i += 1
 
     def compute(self):
-        return {'Accuracy': self.pixel_acc / self.i, 'Dice': self.dice / self.i, 'Precision': self.precision / self.i, 'Recall': self.recall / self.i}
+        return {'Accuracy': self.pixel_acc / self.i, 'IoU': self.iou / self.i, 'Precision': self.precision / self.i, 'Recall': self.recall / self.i}
 
     def save(self, model, classifier_type, dataset):
         f = open(model + "_" + classifier_type + "_" + dataset + "_" + "test_metrics.txt", "w")
@@ -145,7 +157,7 @@ class SegmentationMetrics(object):
         # fp = np.sum(matrix[1, :])
         # fn = np.sum(matrix[2, :])
 
-        pixel_acc = np.sum(matrix[0, :]) / (np.sum(matrix[0, :]) + np.sum(matrix[1, :]) + self.eps)
+        pixel_acc = (np.sum(matrix[0, :]) +self.eps) / (np.sum(matrix[0, :]) + np.sum(matrix[1, :]) + self.eps)
         dice = (2 * matrix[0] + self.eps) / (2 * matrix[0] + matrix[1] + matrix[2] + self.eps)
         precision = (matrix[0] + self.eps) / (matrix[0] + matrix[1] + self.eps)
         recall = (matrix[0] + self.eps) / (matrix[0] + matrix[2] + self.eps)
