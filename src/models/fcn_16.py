@@ -416,7 +416,17 @@ class FCN16(pl.LightningModule):
         self.test_metrics.reset()
 
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=self.learning_rate)
+        optim = Adam(self.parameters(), lr=self.learning_rate)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim)
+        lr_scheduler_config = {
+        "scheduler": lr_scheduler,
+        "interval": "epoch",
+        "frequency": 1,
+        "monitor": "loss",
+        "strict": True,
+        "name": None,
+        }
+        return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
 
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
