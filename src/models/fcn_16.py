@@ -3,6 +3,8 @@ import os.path as osp
 from torch.optim import Adam
 from pathlib import Path
 
+from torchvision import models
+
 
 import torch.nn as nn
 import torch
@@ -48,6 +50,8 @@ class FCN16(pl.LightningModule):
         self.frozen = None
         self.dataset = dataset
         self.num_classes = num_classes
+
+        self.model = models.segmentation.fcn_resnet50(num_classes=num_classes)
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
@@ -244,7 +248,7 @@ class FCN16(pl.LightningModule):
         if frozen:
             segmentations = self.frozen(image)
         else:
-            segmentations = self.model_forward(image) # [batch_size, num_classes, height, width]
+            segmentations = self.model(image)['out'] # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
@@ -274,16 +278,19 @@ class FCN16(pl.LightningModule):
         
         output = self(image, target_vector)
 
-        # from matplotlib import pyplot as plt
-        # t = torch.max(output['image'][0][0].detach(), dim=0)[0]
-        # for i in range(9):
-        #     plt.imshow(output['image'][0][0][i].detach())
-        #     plt.show()
-        # for i in range(9):
-        #     plt.imshow(targets[0][i])
-        #     plt.show()
-        # plt.imshow(torch.max(targets[0], dim=0)[0])
-        # plt.show()
+        from matplotlib import pyplot as plt
+        t = torch.max(output['image'][0][0].detach(), dim=0)[0]
+        plt.imshow(output['image'][1][0].detach())
+        plt.show()
+        for i in range(9):
+            plt.imshow(output['image'][0][0][i].detach())
+            plt.show()
+        for i in range(9):
+            plt.imshow(targets[0][i])
+            plt.show()
+
+        plt.imshow(torch.max(targets[0], dim=0)[0])
+        plt.show()
 
         seg_loss = self.classification_loss_fn(output['image'][0], targets)
         #classification_loss_object = self.classification_loss_fn(o_logits, targets)
