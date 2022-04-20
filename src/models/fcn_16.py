@@ -2,7 +2,7 @@ import os.path as osp
 
 from torch.optim import Adam
 from pathlib import Path
-
+import math
 from torchvision import models
 
 
@@ -52,6 +52,7 @@ class FCN16(pl.LightningModule):
         self.num_classes = num_classes
 
         self.model = models.segmentation.fcn_resnet50(pretrained=False, num_classes=num_classes, progress=True)
+        print(self.model)
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
@@ -79,25 +80,20 @@ class FCN16(pl.LightningModule):
 
     def _init_model(self):
 
+        self.conv0 = ConvBlock(1, 3, 64, kernel=7)
+
         # conv1
-        self.conv1 = ConvBlock(2, 3, 64)
+        self.conv1 = ConvBlock(2, 64, 256)
 
         # conv2
-        self.conv2 = ConvBlock(2, 64, 128)
+        self.conv2 = ConvBlock(2, 256, 512)
 
         # conv3
-        self.conv3 = ConvBlock(3, 128, 256)
+        self.conv3 = ConvBlock(1, 512, 1024)
 
         # conv4
-        self.conv4 = ConvBlock(3, 256, 512)
+        #self.conv4 = ConvBlock(1, 1024, 2048)
 
-        # conv5
-        self.conv5 = ConvBlock(3, 512, 512)
-
-        # fc6
-        self.fc6 = nn.Conv2d(512, 2048, 7)
-        self.relu6 = nn.ReLU(inplace=True)
-        self.drop6 = nn.Dropout2d()
 
         # # fc7
         # self.fc7 = nn.Conv2d(4096, 4096, 1)
@@ -107,12 +103,14 @@ class FCN16(pl.LightningModule):
         # self.score_fr = nn.Conv2d(4096, self.num_classes, 1)
         # self.score_pool4 = nn.Conv2d(512, self.num_classes, 1)
 
+        in_channels = 1024
+        inter_channel = in_channels // 4
         self.score = nn.Sequential(
-            nn.Conv2d(2048, 512, 3, padding=1, bias=False),
-            nn.BatchNorm2d(512),
+            nn.Conv2d(in_channels, inter_channel, 3, padding=1, bias=False),
+            nn.BatchNorm2d(inter_channel),
             nn.ReLU(),
             nn.Dropout(0.1),
-            nn.Conv2d(512, self.num_classes, 1)
+            nn.Conv2d(inter_channel, self.num_classes, 1)
         )
 
         self.upscore2 = nn.ConvTranspose2d(
@@ -151,7 +149,7 @@ class FCN16(pl.LightningModule):
         # from matplotlib import pyplot as plt
         # plt.imshow(x[0].transpose(0,2))
         # plt.show()
-        h = x
+        h = self.conv0(x)
         h = self.conv1(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
@@ -167,18 +165,18 @@ class FCN16(pl.LightningModule):
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.conv4(h)
+        #h = self.conv4(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.conv5(h)
+        #h = self.conv5(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.relu6(self.fc6(h))
-        h = self.drop6(h)
+        # h = self.relu6(self.fc6(h))
+        # h = self.drop6(h)
 
         # h = self.relu7(self.fc7(h))
         # h = self.drop7(h)
@@ -440,7 +438,7 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
 
 class ConvBlock(nn.Module):
 
-    def __init__(self, convolutions, in_channels, out_channels) -> None:
+    def __init__(self, convolutions, in_channels, out_channels, kernel=3) -> None:
         super().__init__()
         layers = []
         for i in range(convolutions):
@@ -449,9 +447,9 @@ class ConvBlock(nn.Module):
             else:
                 i_c = out_channels
             layers += [
-                nn.Conv2d(i_c, out_channels, 3, stride=1, padding=1),
-                nn.ReLU(),
-                nn.BatchNorm2d(out_channels)
+                nn.Conv2d(i_c, out_channels, kernel, stride=1, padding=math.floor(kernel)),
+                nn.BatchNorm2d(out_channels),
+                nn.ReLU()
             ]
         layers.append(nn.MaxPool2d(2, 2, ceil_mode=True))
         self.layers = nn.Sequential(*layers)
