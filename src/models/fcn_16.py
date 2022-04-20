@@ -80,63 +80,47 @@ class FCN16(pl.LightningModule):
     def _init_model(self):
 
         # conv1
-        self.conv1_1 = nn.Conv2d(3, 64, 3, padding=100)
-        self.relu1_1 = nn.ReLU(inplace=True)
-        self.conv1_2 = nn.Conv2d(64, 64, 3, padding=1)
-        self.relu1_2 = nn.ReLU(inplace=True)
-        self.pool1 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/2
+        self.conv1 = ConvBlock(2, 3, 64)
 
         # conv2
-        self.conv2_1 = nn.Conv2d(64, 128, 3, padding=1)
-        self.relu2_1 = nn.ReLU(inplace=True)
-        self.conv2_2 = nn.Conv2d(128, 128, 3, padding=1)
-        self.relu2_2 = nn.ReLU(inplace=True)
-        self.pool2 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/4
+        self.conv2 = ConvBlock(2, 64, 128)
 
         # conv3
-        self.conv3_1 = nn.Conv2d(128, 256, 3, padding=1)
-        self.relu3_1 = nn.ReLU(inplace=True)
-        self.conv3_2 = nn.Conv2d(256, 256, 3, padding=1)
-        self.relu3_2 = nn.ReLU(inplace=True)
-        self.conv3_3 = nn.Conv2d(256, 256, 3, padding=1)
-        self.relu3_3 = nn.ReLU(inplace=True)
-        self.pool3 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/8
+        self.conv3 = ConvBlock(3, 128, 256)
 
         # conv4
-        self.conv4_1 = nn.Conv2d(256, 512, 3, padding=1)
-        self.relu4_1 = nn.ReLU(inplace=True)
-        self.conv4_2 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu4_2 = nn.ReLU(inplace=True)
-        self.conv4_3 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu4_3 = nn.ReLU(inplace=True)
-        self.pool4 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/16
+        self.conv4 = ConvBlock(3, 256, 512)
 
         # conv5
-        self.conv5_1 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_1 = nn.ReLU(inplace=True)
-        self.conv5_2 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_2 = nn.ReLU(inplace=True)
-        self.conv5_3 = nn.Conv2d(512, 512, 3, padding=1)
-        self.relu5_3 = nn.ReLU(inplace=True)
-        self.pool5 = nn.MaxPool2d(2, stride=2, ceil_mode=True)  # 1/32
+        self.conv5 = ConvBlock(3, 512, 512)
 
         # fc6
-        self.fc6 = nn.Conv2d(512, 4096, 7)
+        self.fc6 = nn.Conv2d(512, 2048, 7)
         self.relu6 = nn.ReLU(inplace=True)
         self.drop6 = nn.Dropout2d()
 
-        # fc7
-        self.fc7 = nn.Conv2d(4096, 4096, 1)
-        self.relu7 = nn.ReLU(inplace=True)
-        self.drop7 = nn.Dropout2d()
+        # # fc7
+        # self.fc7 = nn.Conv2d(4096, 4096, 1)
+        # self.relu7 = nn.ReLU(inplace=True)
+        # self.drop7 = nn.Dropout2d()
 
-        self.score_fr = nn.Conv2d(4096, self.num_classes, 1)
-        self.score_pool4 = nn.Conv2d(512, self.num_classes, 1)
+        # self.score_fr = nn.Conv2d(4096, self.num_classes, 1)
+        # self.score_pool4 = nn.Conv2d(512, self.num_classes, 1)
+
+        self.score = nn.Sequential(
+            nn.Conv2d(2048, 512, 3, padding=1, bias=False),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Dropout(0.1),
+            nn.Conv2d(512, self.num_classes, 1)
+        )
 
         self.upscore2 = nn.ConvTranspose2d(
             self.num_classes, self.num_classes, 4, stride=2, bias=False)
         self.upscore16 = nn.ConvTranspose2d(
             self.num_classes, self.num_classes, 32, stride=16, bias=False)
+
+        
 
         #self._initialize_weights()
 
@@ -168,41 +152,27 @@ class FCN16(pl.LightningModule):
         # plt.imshow(x[0].transpose(0,2))
         # plt.show()
         h = x
-        h = self.relu1_1(self.conv1_1(h))
-        h = self.relu1_2(self.conv1_2(h))
-        h = self.pool1(h)
+        h = self.conv1(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.relu2_1(self.conv2_1(h))
-        h = self.relu2_2(self.conv2_2(h))
-        h = self.pool2(h)
+        h = self.conv2(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.relu3_1(self.conv3_1(h))
-        h = self.relu3_2(self.conv3_2(h))
-        h = self.relu3_3(self.conv3_3(h))
-        h = self.pool3(h)
+        h = self.conv3(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.relu4_1(self.conv4_1(h))
-        h = self.relu4_2(self.conv4_2(h))
-        h = self.relu4_3(self.conv4_3(h))
-        h = self.pool4(h)
-        pool4 = h  # 1/16
+        h = self.conv4(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
 
-        h = self.relu5_1(self.conv5_1(h))
-        h = self.relu5_2(self.conv5_2(h))
-        h = self.relu5_3(self.conv5_3(h))
-        h = self.pool5(h)
+        h = self.conv5(h)
 
         # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
         # plt.show()
@@ -210,23 +180,26 @@ class FCN16(pl.LightningModule):
         h = self.relu6(self.fc6(h))
         h = self.drop6(h)
 
-        h = self.relu7(self.fc7(h))
-        h = self.drop7(h)
+        # h = self.relu7(self.fc7(h))
+        # h = self.drop7(h)
 
-        h = self.score_fr(h)
-        h = self.upscore2(h)
-        upscore2 = h  # 1/16
+        # h = self.score_fr(h)
+        # h = self.upscore2(h)
+        # upscore2 = h  # 1/16
 
-        h = self.score_pool4(pool4)
-        h = h[:, :, 5:5 + upscore2.size()[2], 5:5 + upscore2.size()[3]]
-        score_pool4c = h  # 1/16
+        # h = self.score_pool4(pool4)
+        # h = h[:, :, 5:5 + upscore2.size()[2], 5:5 + upscore2.size()[3]]
+        # score_pool4c = h  # 1/16
 
-        h = upscore2 + score_pool4c
+        # h = upscore2 + score_pool4c
 
-        h = self.upscore16(h)
-        h = h[:, :, 27:27 + x.size()[2], 27:27 + x.size()[3]].contiguous()
+        # h = self.upscore16(h)
+        # h = h[:, :, 27:27 + x.size()[2], 27:27 + x.size()[3]].contiguous()
+        h = self.score(h)
 
-        return h
+        h = torch.nn.functional.interpolate(h, size=x.shape[-2:], mode="bilinear", align_corners=False)
+
+        return {'out': h}
 
     def forward(self, image, targets):
         output = {}
@@ -248,7 +221,7 @@ class FCN16(pl.LightningModule):
         if frozen:
             segmentations = self.frozen(image)
         else:
-            segmentations = self.model(image)['out'] # [batch_size, num_classes, height, width]
+            segmentations = self.model_forward(image)['out'] # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
@@ -461,3 +434,25 @@ def cross_entropy2d(input, target, weight=None, size_average=True):
     if size_average:
         loss /= mask.data.sum()
     return loss
+
+
+class ConvBlock(nn.Module):
+
+    def __init__(self, convolutions, in_channels, out_channels) -> None:
+        super().__init__()
+        layers = []
+        for i in range(convolutions):
+            if i == 0:
+                i_c = in_channels
+            else:
+                i_c = out_channels
+            layers += [
+                nn.Conv2d(i_c, out_channels, 3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.BatchNorm2d(out_channels)
+            ]
+        layers.append(nn.MaxPool2d(2, 2, ceil_mode=True))
+        self.layers = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.layers(x)
