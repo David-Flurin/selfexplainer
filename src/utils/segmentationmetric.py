@@ -19,7 +19,7 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
     def update(self, pred, true):
         with torch.no_grad():
             b, c, h, w = true.size()
-            mask_true = torch.zeros((b, h, w))
+            mask_true = torch.zeros((b, h, w), device=true.device)
                         
             for i in range(0, c-1):
                 mask_true[:] += torch.where(true[:, i] > 0, i, 0)

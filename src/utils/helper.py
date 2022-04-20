@@ -56,7 +56,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
     if dataset == "TOY":
         for i in range(b):
             for c,color in enumerate(get_toy_class_colors(include_background_class=include_background_class, toy_target=toy_target)):
-                targets[i, c] = torch.where(torch.all((segmentation[i] == torch.Tensor(color)), dim=-1), 1., 0.)
+                targets[i, c] = torch.where(torch.all((segmentation[i] == torch.tensor(color, device=device)), dim=-1), 1., 0.)
 
     return targets
 
