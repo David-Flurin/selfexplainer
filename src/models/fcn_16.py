@@ -360,10 +360,10 @@ class FCN16(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, seg, annotations = batch
-        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        output = self(image, targets)
+        output = self(image, target_vector)
 
         if self.save_masked_images and image.size()[0] == 1:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
