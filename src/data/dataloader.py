@@ -114,11 +114,12 @@ class CUB200DataModule(pl.LightningDataModule):
 
 class ToyDataModule(pl.LightningDataModule):
 
-    def __init__(self, epoch_length, test_samples, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, epoch_length, test_samples, segmentation=False, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
         super().__init__()
 
         self.epoch_length = epoch_length
         self.test_samples = test_samples
+        self.segmentation = segmentation
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
@@ -131,8 +132,8 @@ class ToyDataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer)
-        self.test = ToyDataset(self.test_samples, transform_fn=self.test_transformer)
+        self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer, segmentation=self.segmentation)
+        self.test = ToyDataset(self.test_samples, transform_fn=self.test_transformer, segmentation=self.segmentation)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
@@ -175,5 +176,11 @@ def get_testing_image_transformer():
 
 def collate_fn(batch):
     data = torch.stack([item[0] for item in batch])
-    target = [item[1] for item in batch]
-    return data, target
+    if len(batch[0]) == 2:
+        target = [item[1] for item in batch]
+        return data, target
+    else:
+        target = torch.stack([item[1] for item in batch])
+        annotations = [item[2] for item in batch]
+        return data, target, annotations
+

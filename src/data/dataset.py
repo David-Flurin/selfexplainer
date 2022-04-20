@@ -47,9 +47,11 @@ class COCODataset(Dataset):
 
 
 class ToyDataset(Dataset):
-    def __init__(self, epoch_length, transform_fn=None):
+    def __init__(self, epoch_length, transform_fn=None, segmentation=False, target='texture'):
         self.ids = range(0, epoch_length)
         self.transform = transform_fn
+        self.segmentation = segmentation
+        self.target = target
         base = '/'.join(generator.__file__.split('/')[0:-1])
         self.generator = generator.Generator(pathlib.Path(base, 'foreground.txt'), pathlib.Path(base, 'background.txt'))
         self.shapes = {}
@@ -59,11 +61,6 @@ class ToyDataset(Dataset):
             self.foreground_textures[t] = 0
         for t in self.generator.b_texture_names:
             self.background_textures[t] = 0
-
-        
-
-        
-
         
 
     def __getitem__(self, index):
@@ -73,8 +70,14 @@ class ToyDataset(Dataset):
             img = self.transform(Image.fromarray(sample['image']))
 
         filename = f'{randint(0, 9999):05d}'
-
-        return img, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
+        if self.segmentation:
+            if self.target == 'texture':
+                seg = torch.from_numpy(sample['seg_tex'])
+            else:
+                seg = torch.from_numpy(sample['seg_shape'])
+            return img, seg, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
+        else:
+            return img, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
 
     def __len__(self):
         return len(self.ids)

@@ -1,6 +1,7 @@
 import os.path as osp
 
 from torch.optim import Adam
+from pathlib import Path
 
 
 import torch.nn as nn
@@ -9,9 +10,10 @@ import numpy as np
 
 import pytorch_lightning as pl
 
-from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
+from utils.helper import get_filename_from_annotations, get_targets_from_annotations, get_targets_from_segmentations, extract_masks, Distribution
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss
-from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
+from utils.image_display import save_all_class_masks, save_mask, save_masked_image
+from utils.segmentationmetric import MultiLabelSegmentationMetrics
 from utils.weighting import softmax_weighting
 
 from copy import deepcopy
@@ -65,7 +67,7 @@ class FCN16(pl.LightningModule):
             self.shapes_dist = Distribution()
 
         self.setup_losses(dataset=dataset)
-        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
+        self.setup_metrics()
 
         self.i = 0.
 
@@ -132,7 +134,7 @@ class FCN16(pl.LightningModule):
         self.upscore16 = nn.ConvTranspose2d(
             self.num_classes, self.num_classes, 32, stride=16, bias=False)
 
-        self._initialize_weights()
+        #self._initialize_weights()
 
     def _initialize_weights(self):
         for m in self.modules():
@@ -152,30 +154,37 @@ class FCN16(pl.LightningModule):
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
-    def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset == "CUB":
-            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
-        else:
-            self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-            self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-            self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+    def setup_metrics(self):
+        self.train_metrics = MultiLabelSegmentationMetrics()
+        self.valid_metrics = MultiLabelSegmentationMetrics()
+        self.test_metrics = MultiLabelSegmentationMetrics()
 
     def model_forward(self, x):
+        # from matplotlib import pyplot as plt
+        # plt.imshow(x[0].transpose(0,2))
+        # plt.show()
         h = x
         h = self.relu1_1(self.conv1_1(h))
         h = self.relu1_2(self.conv1_2(h))
         h = self.pool1(h)
 
+        # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
+        # plt.show()
+
         h = self.relu2_1(self.conv2_1(h))
         h = self.relu2_2(self.conv2_2(h))
         h = self.pool2(h)
+
+        # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
+        # plt.show()
 
         h = self.relu3_1(self.conv3_1(h))
         h = self.relu3_2(self.conv3_2(h))
         h = self.relu3_3(self.conv3_3(h))
         h = self.pool3(h)
+
+        # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
+        # plt.show()
 
         h = self.relu4_1(self.conv4_1(h))
         h = self.relu4_2(self.conv4_2(h))
@@ -183,10 +192,16 @@ class FCN16(pl.LightningModule):
         h = self.pool4(h)
         pool4 = h  # 1/16
 
+        # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
+        # plt.show()
+
         h = self.relu5_1(self.conv5_1(h))
         h = self.relu5_2(self.conv5_2(h))
         h = self.relu5_3(self.conv5_3(h))
         h = self.pool5(h)
+
+        # plt.imshow(torch.max(h[0].detach(), dim=0)[0])
+        # plt.show()
 
         h = self.relu6(self.fc6(h))
         h = self.drop6(h)
@@ -236,11 +251,14 @@ class FCN16(pl.LightningModule):
         logits = weighted_segmentations.sum(dim=(2,3))
         #logits_mean = segmentations.mean((2,3))
 
+
+
         return segmentations, target_mask, non_target_mask, logits
 
     def training_step(self, batch, batch_idx):
-        image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        image, seg, annotations = batch
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
         if self.dataset == 'TOY':
             for a in annotations:
@@ -254,14 +272,13 @@ class FCN16(pl.LightningModule):
             for _,p in self.frozen.named_parameters():
                 p.requires_grad_(False)
         
-        output = self(image, targets)
+        output = self(image, target_vector)
 
-        classification_loss_initial = self.classification_loss_fn(output['image'][3], targets)
+        seg_loss = self.classification_loss_fn(output['image'][0], targets)
         #classification_loss_object = self.classification_loss_fn(o_logits, targets)
         #classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        classification_loss = classification_loss_initial
-        self.log('classification_loss', classification_loss)
+        self.log('segmentation_loss', seg_loss)
 
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
@@ -290,11 +307,11 @@ class FCN16(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_entropy_loss:
             if self.use_weighted_loss:
-                loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
+                loss = weighted_loss(seg_loss, obj_back_loss, 2, 0.2)
             else:
-                loss = classification_loss + obj_back_loss
+                loss = seg_loss + obj_back_loss
         else:
-            loss = classification_loss
+            loss = seg_loss
 
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
@@ -316,9 +333,69 @@ class FCN16(pl.LightningModule):
 
         self.log('loss', float(loss))
        
-        self.train_metrics(output['image'][3], targets)
+        self.train_metrics(output['image'][0], targets)
         return loss
 
+    def training_epoch_end(self, outs):
+        self.log('train_metrics', self.train_metrics.compute(), prog_bar=(self.dataset=='TOY'))
+        self.train_metrics.reset()
+
+    def test_step(self, batch, batch_idx):
+        image, seg, annotations = batch
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+
+        output = self(image, targets)
+
+        if self.save_masked_images and image.size()[0] == 1:
+            filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_masked_image(image, output['image'][1], filename)
+
+        if self.save_masks and image.size()[0] == 1:
+            filename = get_filename_from_annotations(annotations, dataset=self.dataset)
+
+            save_mask(output['image'][1], Path(self.save_path) / "masks" / filename)
+
+        if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
+            filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_all_class_masks(image, t_seg, filename)
+
+
+        seg_loss = self.classification_loss_fn(output['image'][0], targets)
+
+        loss = seg_loss
+        if self.use_similarity_loss:
+            similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
+            loss += similarity_loss
+
+        if self.use_entropy_loss:
+            background_entropy_loss = entropy_loss(output['background'][3])
+            #self.log('background entropy loss', background_entropy_loss)
+            loss += background_entropy_loss
+
+        '''
+        if self.use_mask_variation_loss:
+            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
+            loss += mask_variation_loss
+
+        if self.use_mask_area_loss:
+            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(t_seg, targets) + self.class_mask_area_loss_fn(s_seg, targets))
+            mask_area_loss += self.mask_total_area_regularizer * (t_mask.mean() + s_mask.mean())
+            mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+            loss += mask_area_loss
+
+        if self.use_mask_coherency_loss:
+            mask_coherency_loss = (t_mask - s_mask).abs().mean()
+            loss += mask_coherency_loss
+        '''
+
+        self.log('test_loss', loss)
+
+        self.test_metrics(output['image'][0], targets)
+
+    def test_epoch_end(self, outs):
+        self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
+        self.test_metrics.reset()
 
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=self.learning_rate)
@@ -327,3 +404,29 @@ class FCN16(pl.LightningModule):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('frozen'):
                 del checkpoint['state_dict'][k]
+
+
+def cross_entropy2d(input, target, weight=None, size_average=True):
+    # input: (n, c, h, w), target: (n, h, w)
+    if target.dim() > 3:
+        b, h, w, c = target.size()
+        n_target = torch.zeros(b, h, w)
+        n_target[target.sum(3) > 0.] = 1.
+        target = n_target
+
+    if len(input.size()) < 4:
+        input = input.unsqueeze(1)
+    n, c, h, w = input.size()
+    # log_p: (n, c, h, w)
+    log_p = torch.nn.functional.log_softmax(input, dim=1)
+    # log_p: (n*h*w, c)
+    log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous()
+    log_p = log_p[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0]
+    log_p = log_p.view(-1, c)
+    # target: (n*h*w,)
+    mask = target >= 0
+    target = target[mask]
+    loss = torch.nn.functional.nll_loss(log_p, target, weight=weight, reduction='sum')
+    if size_average:
+        loss /= mask.data.sum()
+    return loss

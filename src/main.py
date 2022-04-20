@@ -63,10 +63,10 @@ elif args.dataset == "CUB":
     num_classes = 200
 elif args.dataset == "TOY":
     data_module = ToyDataModule(
-        epoch_length=args.epoch_length, test_samples=args.test_samples, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
-        test_batch_size=args.test_batch_size
+        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.model_to_train=='fcn'), 
+        train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
-    num_classes = 8
+    num_classes = 9 if args.model_to_train == 'fcn' else 8
 else:
     raise Exception("Unknown dataset " + args.dataset)
 

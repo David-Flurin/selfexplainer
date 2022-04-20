@@ -47,6 +47,20 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
 
     return target_vectors
 
+def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, toy_target='texture'):
+    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
+
+    b,h,w,_ = segmentation.size()
+    targets = torch.zeros((b, num_classes, h, w), device=device)
+
+    if dataset == "TOY":
+        for i in range(b):
+            for c,color in enumerate(get_toy_class_colors(include_background_class=include_background_class, toy_target=toy_target)):
+                targets[i, c] = torch.where(torch.all((segmentation[i] == torch.Tensor(color)), dim=-1), 1., 0.)
+
+    return targets
+
+
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
@@ -93,6 +107,19 @@ def get_toy_target_dictionary(include_background_class, toy_target):
         target_dict['background'] = len(target_dict.values())
         
     return target_dict
+
+def get_toy_class_colors(include_background_class, toy_target):
+    if toy_target == 'texture':
+        class_colors = [[238, 30, 218], [11, 174, 227], [91, 187, 25], [104, 30, 191], [171, 88, 222], [253, 114, 104], [133, 10, 11], [230, 132, 230]]
+    elif toy_target == 'shape':
+        class_colors = [[208, 70, 121], [137, 218, 162], [115, 10, 147], [32, 201, 254], [215, 0, 57], [227, 161, 150], [135, 239, 205], [18, 222, 136], [111, 21, 62]]
+    else:
+        raise ValueError('Target type must be texture or shape')
+
+    if include_background_class:
+        class_colors.append([0,0,0])
+        
+    return class_colors
 
 def extract_masks(segmentations, target_vectors, gpu=0):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
