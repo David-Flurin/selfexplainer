@@ -9,7 +9,7 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
     def __init__(self):
         super().__init__()
 
-        self.seg_metric = SegmentationMetrics()
+        self.seg_metric = SegmentationMetrics(activation='sigmoid')
         self.add_state("pixel_acc", torch.tensor(0.0))
         self.add_state("dice", torch.tensor(0.0))
         self.add_state("precision", torch.tensor(0.0))
@@ -108,8 +108,21 @@ class SegmentationMetrics(object):
         for i in range(class_num):
             # pred shape: (N, H, W)
             class_pred = pred[:, i, :, :]
+            
             # gt shape: (N, H, W), binary array where 0 denotes negative and 1 denotes positive
             class_gt = gt_onehot[:, i, :, :]
+
+            # from matplotlib import pyplot as plt
+            # fig = plt.figure(figsize=(8, 8))
+            # fig.add_subplot(2,2,1)
+            # plt.imshow(class_pred[0], vmin=0, vmax=1)
+            # fig.add_subplot(2,2,2)
+            # plt.imshow(class_gt[0], vmin=0, vmax=1)
+            # fig.add_subplot(2,2,3)
+            # plt.imshow(class_pred[1], vmin=0, vmax=1)
+            # fig.add_subplot(2,2,4)
+            # plt.imshow(class_gt[1], vmin=0, vmax=1)
+            # plt.show()
 
             pred_flat = class_pred.contiguous().view(-1, )  # shape: (N * H * W, )
             gt_flat = class_gt.contiguous().view(-1, )  # shape: (N * H * W, )
@@ -161,8 +174,6 @@ class SegmentationMetrics(object):
             activated_pred = self._one_hot(pred_argmax, y_pred, class_num)
         else:
             raise NotImplementedError("Not a supported activation!")
-
-
 
         gt_onehot = self._one_hot(y_true, y_pred, class_num)
         pixel_acc, dice, precision, recall = self._calculate_multi_metrics(gt_onehot, activated_pred, class_num)

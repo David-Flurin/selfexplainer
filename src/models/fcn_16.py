@@ -280,12 +280,12 @@ class FCN16(pl.LightningModule):
 
         # from matplotlib import pyplot as plt
         # t = torch.max(output['image'][0][0].detach(), dim=0)[0]
-        # plt.imshow(output['image'][1][0].detach())
-        # plt.show()
-        # for i in range(9):
+        # # plt.imshow(output['image'][1][0].detach())
+        # # plt.show()
+        # for i in range(8):
         #     plt.imshow(output['image'][0][0][i].detach())
         #     plt.show()
-        # for i in range(9):
+        # for i in range(8):
         #     plt.imshow(targets[0][i])
         #     plt.show()
 
