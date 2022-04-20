@@ -43,7 +43,7 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
 
     def compute(self):
         self.pixel_acc = (self.tp + self.tn + self.eps) / (self.tp + self.tn + self.fp + self.fn + self.eps)
-        self.iou = (self.tp + self.eps) / (self.fn + self.fp + + self.tp +  self.eps)
+        self.iou = (self.tp + self.eps) / (self.fn + self.fp + self.tp +  self.eps)
         self.precision = (self.tp + self.eps) / (self.tp + self.fp + self.eps)
         self.recall = (self.tp + self.eps) / (self.tp + self.fn + self.eps)
         return {'Accuracy': self.pixel_acc.item(), 'IoU': self.iou.item(), 'Precision': self.precision.item(), 'Recall': self.recall.item()}
