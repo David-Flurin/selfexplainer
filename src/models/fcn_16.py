@@ -51,7 +51,7 @@ class FCN16(pl.LightningModule):
         self.dataset = dataset
         self.num_classes = num_classes
 
-        self.model = models.segmentation.fcn_resnet50(num_classes=num_classes)
+        self.model = models.segmentation.fcn_resnet50(pretrained=False, num_classes=num_classes, progress=True)
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
