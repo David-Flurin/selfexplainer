@@ -330,6 +330,8 @@ class FCN16(pl.LightningModule):
     def training_epoch_end(self, outs):
         for g in self.trainer.optimizers[0].param_groups:
             self.log('lr', g['lr'], prog_bar=True)
+        
+        torch.set_printoptions(precision=4)
 
         self.log('train_metrics', self.train_metrics.compute(), prog_bar=(self.dataset=='TOY'))
         self.train_metrics.reset()
