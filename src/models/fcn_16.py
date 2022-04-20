@@ -355,6 +355,9 @@ class FCN16(pl.LightningModule):
         return loss
 
     def training_epoch_end(self, outs):
+        for g in self.trainer.optimizers[0].param_groups:
+            self.log('lr', (g['lr'], prog_bar=True))
+
         self.log('train_metrics', self.train_metrics.compute(), prog_bar=(self.dataset=='TOY'))
         self.train_metrics.reset()
 
