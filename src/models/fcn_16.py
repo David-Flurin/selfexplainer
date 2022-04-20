@@ -274,6 +274,17 @@ class FCN16(pl.LightningModule):
         
         output = self(image, target_vector)
 
+        # from matplotlib import pyplot as plt
+        # t = torch.max(output['image'][0][0].detach(), dim=0)[0]
+        # for i in range(9):
+        #     plt.imshow(output['image'][0][0][i].detach())
+        #     plt.show()
+        # for i in range(9):
+        #     plt.imshow(targets[0][i])
+        #     plt.show()
+        # plt.imshow(torch.max(targets[0], dim=0)[0])
+        # plt.show()
+
         seg_loss = self.classification_loss_fn(output['image'][0], targets)
         #classification_loss_object = self.classification_loss_fn(o_logits, targets)
         #classification_loss_background = self.classification_loss_fn(b_logits, targets)

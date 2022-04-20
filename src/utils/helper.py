@@ -117,7 +117,7 @@ def get_toy_class_colors(include_background_class, toy_target):
         raise ValueError('Target type must be texture or shape')
 
     if include_background_class:
-        class_colors.append([0,0,0])
+        class_colors = [[0,0,0]] + class_colors
         
     return class_colors
 
