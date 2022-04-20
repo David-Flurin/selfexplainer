@@ -52,7 +52,6 @@ class FCN16(pl.LightningModule):
         self.num_classes = num_classes
 
         self.model = models.segmentation.fcn_resnet50(pretrained=False, num_classes=num_classes, progress=True)
-        print(self.model)
 
         self.use_similarity_loss = use_similarity_loss
         self.use_entropy_loss = use_entropy_loss
@@ -219,7 +218,7 @@ class FCN16(pl.LightningModule):
         if frozen:
             segmentations = self.frozen(image)
         else:
-            segmentations = self.model_forward(image)['out'] # [batch_size, num_classes, height, width]
+            segmentations = self.model(image)['out'] # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
         
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
