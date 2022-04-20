@@ -28,13 +28,19 @@ class MultiLabelSegmentationMetrics(torchmetrics.Metric):
             pred_activ = torch.sigmoid(pred)
             pred_max = torch.max(pred_activ, dim=1)[0]
 
-            pred_flat = pred_max.contiguous().view(-1, )  # shape: (N * H * W, )
-            gt_flat = mask_true.contiguous().view(-1, )  # shape: (N * H * W, )
+            prediction = torch.clamp(torch.round(pred_max), 0, 1)
+            mask_true = torch.clamp(torch.round(mask_true), 0, 1)
 
-            tp = torch.sum(gt_flat * pred_flat)
-            tn = torch.sum((1 - gt_flat) * (1 - pred_flat))
-            fp = torch.sum(pred_flat) - tp
-            fn = torch.sum(gt_flat) - tp
+            # from matplotlib import pyplot as plt
+            # plt.imshow(prediction[0])
+            # plt.show()
+            # plt.imshow(mask_true[0])
+            # plt.show()
+
+            fp = torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 0)).item()
+            fn = torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 1)).item()
+            tp = torch.sum(torch.eq(prediction, 1) & torch.eq(mask_true, 1)).item()
+            tn = torch.sum(torch.eq(prediction, 0) & torch.eq(mask_true, 0)).item()
                           
             
             #pixel_acc, dice, precision, recall = self.seg_metric(mask_true, pred)
