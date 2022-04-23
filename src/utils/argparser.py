@@ -65,6 +65,7 @@ def get_parser():
     parser.add_argument('--mask_area_constraint_regularizer', default=1.0, type=float, help='loss weighting term for overall mask area constraint (currently not used!)')
     parser.add_argument('--mask_total_area_regularizer', default=0.1, type=float, help='loss weighting term for the total area loss')
     # parser.add_argument('--ncmask_total_area_regularizer', default=0.3, type=float, help='loss weighting term for the area constraints for the individual class segmentation masks')
+    parser.add_argument('--toy_segmentations', default=True, type=str2bool, help='Whether the toy dataset loader should provide segmentation masks.')
 
     # parser.add_argument('--target_mask_min_area', default=0.05, type=float, help='minimum area for the overall mask area constraint (currently not used!)')
     # parser.add_argument('--target_mask_max_area', default=0.5, type=float, help='maximum area for the overall mask area constraint (currently not used!)')
