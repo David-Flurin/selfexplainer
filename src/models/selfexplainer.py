@@ -8,7 +8,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from models.DeepLabv3 import Deeplabv3Resnet50Model
-from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
+from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
@@ -71,11 +71,15 @@ class SelfExplainer(pl.LightningModule):
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
-    def forward(self, image, targets):
+    def forward(self, image, targets, perfect_mask = None):
         output = {}
         output['image'] = self._forward(image, targets)
         
+
         i_mask = output['image'][1]
+        if perfect_mask != None:
+            i_mask = perfect_mask
+
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=True)
@@ -108,8 +112,9 @@ class SelfExplainer(pl.LightningModule):
         return logits
         
     def training_step(self, batch, batch_idx):
-        image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        image, seg, annotations = batch
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
         if self.dataset == 'TOY':
             for a in annotations:
@@ -123,15 +128,15 @@ class SelfExplainer(pl.LightningModule):
             for _,p in self.frozen.named_parameters():
                 p.requires_grad_(False)
         
-        output = self(image, targets)
+        output = self(image, target_vector, torch.max(targets, dim=1)[0])
 
         if self.dataset == "CUB":
-            labels = targets.argmax(dim=1)
+            labels = target_vector.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(output['image'][3], labels)
             #classification_loss_object = self.classification_loss_fn(o_logits, labels)
             #classification_loss_background = self.classification_loss_fn(b_logits, labels)
         else:
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], targets)
+            classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
             #classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
@@ -191,7 +196,7 @@ class SelfExplainer(pl.LightningModule):
 
         self.log('loss', float(loss))
        
-        self.train_metrics(output['image'][3], targets)
+        self.train_metrics(output['image'][3], target_vector)
         return loss
 
     def training_epoch_end(self, outs):
