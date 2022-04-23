@@ -209,9 +209,8 @@ class FCN16(pl.LightningModule):
         output = {}
         output['image'] = self._forward(image, targets)
         
-        #i_mask = output['image'][1]
-        i_mask = target_mask
-        if self.use_similarity_loss:
+        i_mask = output['image'][1]
+        if self.use_similarity_loss or self.use_mask_area_loss:
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=True)
 
@@ -296,11 +295,11 @@ class FCN16(pl.LightningModule):
         # plt.show()
 
         
-
+        obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
             self.log('similarity_loss', similarity_loss)
-            obj_back_loss = similarity_loss
+            obj_back_loss += similarity_loss
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
