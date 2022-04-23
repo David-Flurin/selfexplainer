@@ -1,5 +1,6 @@
 import torch
 import torchmetrics
+import numpy as np
 
 class SingleLabelMetrics(torchmetrics.Metric):
     def __init__(self, num_classes):
@@ -76,6 +77,7 @@ class MultiLabelMetrics(torchmetrics.Metric):
         f.write("Recall: " + str(self.recall.item()) + "\n")
         f.write("F-Score: " + str(self.f_score.item()))
         f.close()
+
 
 ### BELOW ARE JUST UTILITY FUNCTIONS, NOT THE ONES USED FOR THE RESULTS IN THE PAPER/THESIS ###
 

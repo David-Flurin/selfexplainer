@@ -46,7 +46,7 @@ def get_parser():
     parser.add_argument('--use_imagenet_pretraining', default=False, type=str2bool, help='If True, classifiers use a pretrained backbone from ImageNet pretraining')
     # parser.add_argument('--fix_classifier_backbone', default=True, type=str2bool, help='Whether to fix the wait for the classifiers backbone')
     # parser.add_argument('--fix_classifier', default=True, type=str2bool, help='If True, classifier  is frozen. Strongly recommended for Explainer training.')
-    parser.add_argument('--model_to_train', choices=['explainer', 'classifier', 'selfexplainer'], default='explainer', type=str, help='which model architecture should be used for training or testing')
+    parser.add_argument('--model_to_train', default='selfexplainer', type=str, help='which model architecture should be used for training or testing')
     # parser.add_argument('--classifier_type', choices=['vgg16', 'resnet50'], default='vgg16', type=str, help='type of classifier architecture to use')
     # parser.add_argument('--explainer_classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained explainer. Also contains the weights for the associated classifier.')
     # parser.add_argument('--classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained classifier.')

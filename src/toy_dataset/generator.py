@@ -13,9 +13,21 @@ from tqdm import tqdm
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
+import hashlib
+
 
 def get_i(idx, list):
     return [list[i] for i in idx]
+
+def string_to_rgb(s):
+    h = int(hashlib.sha1(s.encode("utf-8")).hexdigest(), 16) % 10 ** 12
+    h_str = str(h)
+    r = int(h_str[0:4]) % 256
+    g = int(h_str[4:8]) % 256
+    b = int(h_str[8:12]) % 256
+    return np.array([r,g,b])
+
+
 
 class Generator:
 
@@ -172,13 +184,13 @@ class Generator:
             center_y += i*y_part
             s = shape(radius, (center_x, center_y), self.img_size, rotation)
             shape_obj.append((s, f_tex_idx))
-        img, seg = self.__assemble(shape_obj, self.b_textures[b_tex_idx])
+        img, seg_tex, seg_shape = self.__assemble(shape_obj, self.b_textures[b_tex_idx])
 
         objects = []
         for shape in shape_obj:
             shape_name = (str(shape[0].__class__).split('.')[-1]).split('\'')[0].lower()
             objects.append((shape_name, self.f_texture_names[f_tex_idx]))
-        return {'image': img, 'segmentation': seg, 'objects': objects, 'background': self.b_texture_names[b_tex_idx]}
+        return {'image': img, 'seg_tex': seg_tex, 'seg_shape': seg_shape, 'objects': objects, 'background': self.b_texture_names[b_tex_idx]}
 
 
     def __save(self, sample, filename):
@@ -234,12 +246,15 @@ class Generator:
     def __assemble(self, shapes, b_tex):
         b_tex = self.__crop_texture(b_tex, (224, 224))
         img = b_tex.copy()
-        seg = np.zeros((self.img_size[0], self.img_size[1], 3))
+        seg_shape = np.zeros((self.img_size[0], self.img_size[1], 3))
+        seg_tex = np.zeros((self.img_size[0], self.img_size[1], 3))
         for s, f_tex_idx in shapes:
             f_tex = self.__crop_texture(self.f_textures[f_tex_idx], (224, 224))
             img[np.where(s.mask)] = f_tex[np.where(s.mask)]
-            seg[np.where(s.mask)] = s.seg_color
-        return img, seg*255
+            seg_tex[np.where(s.mask)] = string_to_rgb(self.f_texture_names[f_tex_idx])
+            seg_shape[np.where(s.mask)] = string_to_rgb(str(s.__class__).split('.')[-1].split('\'')[0].lower())
+        
+        return img, seg_tex, seg_shape
 
 
 
