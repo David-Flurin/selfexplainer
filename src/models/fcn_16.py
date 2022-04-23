@@ -223,7 +223,7 @@ class FCN16(pl.LightningModule):
 
     def _forward(self, image, targets, frozen=False):
         if frozen:
-            segmentations = self.frozen(image)
+            segmentations = self.frozen(image)['out']
         else:
             segmentations = self.model(image)['out'] # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
@@ -269,11 +269,14 @@ class FCN16(pl.LightningModule):
         # plt.imshow(torch.max(targets[0], dim=0)[0])
         # plt.show()
 
-        seg_loss = self.classification_loss_fn(output['image'][0], targets)
+        #loss = self.classification_loss_fn(output['image'][0], targets)
+        loss = self.classification_loss_fn(output['image'][3], target_vector)
+
+
         #classification_loss_object = self.classification_loss_fn(o_logits, targets)
         #classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        self.log('segmentation_loss', seg_loss)
+        self.log('classification_loss', loss)
 
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
@@ -302,22 +305,22 @@ class FCN16(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_entropy_loss:
             if self.use_weighted_loss:
-                loss = weighted_loss(seg_loss, obj_back_loss, 2, 0.2)
+                loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
             else:
-                loss = seg_loss + obj_back_loss
+                loss = loss + obj_back_loss
         else:
-            loss = seg_loss
+            loss = loss
 
         # if self.use_mask_variation_loss:
         #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
         #     loss += mask_variation_loss
 
-        # if self.use_mask_area_loss:
-        #     #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
-        #     mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
-        #     #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
-        #     self.log('mask_area_loss', mask_area_loss)
-        #     loss += mask_area_loss
+        if self.use_mask_area_loss:
+            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
+            #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+            self.log('mask_area_loss', mask_area_loss)
+            loss += mask_area_loss
 
         # if self.use_mask_coherency_loss:
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
