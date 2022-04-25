@@ -18,7 +18,8 @@ from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
-    use_mask_area_loss=True, mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+    use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, 
+    mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
@@ -39,6 +40,9 @@ class SelfExplainer(pl.LightningModule):
         self.mask_area_constraint_regularizer = mask_area_constraint_regularizer
         self.use_mask_area_loss = use_mask_area_loss
         self.mask_total_area_regularizer = mask_total_area_regularizer
+        self.ncmask_total_area_regularizer = ncmask_total_area_regularizer
+        self.use_mask_variation_loss = use_mask_variation_loss
+        self.mask_variation_regularizer = mask_variation_regularizer
 
         self.save_path = save_path
         self.save_masked_images = save_masked_images
@@ -53,13 +57,17 @@ class SelfExplainer(pl.LightningModule):
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
+        #DEBUG
         self.i = 0.
+        self.use_perfect_mask = use_perfect_mask
 
     def setup_losses(self, dataset):
         if dataset == "CUB":
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
+
+        self.total_variation_conv = TotalVariationConv()
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset == "CUB":
@@ -79,6 +87,8 @@ class SelfExplainer(pl.LightningModule):
         i_mask = output['image'][1]
         if perfect_mask != None:
             i_mask = perfect_mask
+
+
 
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
@@ -128,7 +138,10 @@ class SelfExplainer(pl.LightningModule):
             for _,p in self.frozen.named_parameters():
                 p.requires_grad_(False)
         
-        output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        if self.use_perfect_mask:
+            output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        else:
+            output = self(image, target_vector)
 
         if self.dataset == "CUB":
             labels = target_vector.argmax(dim=1)
@@ -176,14 +189,14 @@ class SelfExplainer(pl.LightningModule):
         else:
             loss = classification_loss
 
-        # if self.use_mask_variation_loss:
-        #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
-        #     loss += mask_variation_loss
+        if self.use_mask_variation_loss:
+            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
+            loss += mask_variation_loss
 
         if self.use_mask_area_loss:
             #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
             mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
-            #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+            mask_area_loss += self.ncmask_total_area_regularizer * (output['object'][2].mean() + output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)
             loss += mask_area_loss
 

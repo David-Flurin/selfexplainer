@@ -256,8 +256,9 @@ class FCN16(pl.LightningModule):
             for _,p in self.frozen.named_parameters():
                 p.requires_grad_(False)
         
-        output = self(image, target_vector, torch.max(targets, dim=1)[0])
-        #output = self(image, target_vector)
+        output = self(image, target_vector)
+        #output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        
         # t = torch.zeros(image.size())
         # output = self(t, target_vector)
 

@@ -1,5 +1,6 @@
 import torch
 import os
+import sys
 import shutil
 import datetime
 import pytorch_lightning as pl
@@ -84,6 +85,8 @@ if args.save_path:
             new_version = max(versions) + 1
     args.save_path += f'/version_{new_version}'
     os.makedirs(args.save_path)
+    if len(sys.argv) > 1:
+        shutil.copy(sys.argv[2], args.save_path)
 
 
 # Set up model
