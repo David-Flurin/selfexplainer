@@ -1,5 +1,6 @@
 import torch
 import pytorch_lightning as pl
+import os
 
 from torch import nn, softmax
 from torch.optim import Adam
@@ -19,7 +20,7 @@ from matplotlib import pyplot as plt
 class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, 
-    mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+    mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
@@ -60,6 +61,8 @@ class SelfExplainer(pl.LightningModule):
         #DEBUG
         self.i = 0.
         self.use_perfect_mask = use_perfect_mask
+        self.logits = {}
+        self.count_logits = count_logits
 
     def setup_losses(self, dataset):
         if dataset == "CUB":
@@ -107,6 +110,7 @@ class SelfExplainer(pl.LightningModule):
         else:
             segmentations = self.model(image) # [batch_size, num_classes, height, width]
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
+
         
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
         logits = weighted_segmentations.sum(dim=(2,3))
@@ -123,6 +127,7 @@ class SelfExplainer(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         image, seg, annotations = batch
+
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
@@ -204,12 +209,32 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        # self.i += 1.
-        # self.log('iterations', self.i)
+        self.i += 1.
+        self.log('iterations', self.i)
 
         self.log('loss', float(loss))
        
         self.train_metrics(output['image'][3], target_vector)
+
+        #DEBUG
+
+        #Save min and max logits
+        if self.count_logits:
+            for k in output.keys():
+                b, l = output[k][3].size()
+                if k not in self.logits.keys():
+                    self.logits[k] = {}
+                    for i in range(l):
+                        self.logits[k][i] = {'min': 1000, 'max':-1000}
+                
+                for b in range(b):
+                    for i in range(l):
+                        if self.logits[k][i]['min'] > output[k][3][b, i]:
+                            self.logits[k][i]['min'] = output[k][3][b, i].item()
+                        if self.logits[k][i]['max'] < output[k][3][b, i]:
+                            self.logits[k][i]['max'] = output[k][3][b, i].item()
+
+                
         return loss
 
     def training_epoch_end(self, outs):
@@ -327,12 +352,44 @@ class SelfExplainer(pl.LightningModule):
 
         self.log('test_loss', loss)
 
+        
+
+
 
         self.test_metrics(output['image'][3], targets)
 
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
         self.test_metrics.reset()
+
+        #DEBUG
+        if self.count_logits and self.save_path:
+            from matplotlib import pyplot as plt
+            dir = self.save_path + '/logit_stats'
+            os.makedirs(dir)
+            for k,v in self.logits.items():
+                x = list(v.keys())
+                labels = [str(x)]
+                mins = [v[i]['min'] for i in v]
+                maxs = [v[i]['max'] for i in v]
+                width = 0.35
+
+                fig, ax = plt.subplots()
+                rects1 = ax.bar(x , mins, width, label='Max logit')
+                rects2 = ax.bar(x, maxs, width, label='Min logit')
+
+                # Add some text for labels, title and custom x-axis tick labels, etc.
+                ax.set_ylabel('Logits value')
+                ax.set_title('Min/Max logit for all classes')
+                ax.set_xticks(x)
+                ax.legend()
+
+                # ax.bar_label(rects1, padding=3)
+                # ax.bar_label(rects2, padding=3)
+
+                fig.tight_layout()
+
+                plt.savefig(dir + f'/{k}.png')
 
     def configure_optimizers(self):
         return Adam(self.parameters(), lr=self.learning_rate)
