@@ -375,8 +375,8 @@ class SelfExplainer(pl.LightningModule):
                 width = 0.35
 
                 fig, ax = plt.subplots()
-                rects1 = ax.bar(x , mins, width, label='Max logit')
-                rects2 = ax.bar(x, maxs, width, label='Min logit')
+                rects1 = ax.bar(x , mins, width, label='Min logit')
+                rects2 = ax.bar(x, maxs, width, label='Max logit')
 
                 # Add some text for labels, title and custom x-axis tick labels, etc.
                 ax.set_ylabel('Logits value')
