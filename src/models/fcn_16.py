@@ -205,11 +205,14 @@ class FCN16(pl.LightningModule):
 
         return {'out': h}
 
-    def forward(self, image, targets, target_mask = None):
+    def forward(self, image, targets, perfect_mask = None):
         output = {}
         output['image'] = self._forward(image, targets)
         
         i_mask = output['image'][1]
+        if perfect_mask != None:
+            i_mask = perfect_mask
+        
         if self.use_similarity_loss or self.use_mask_area_loss:
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=True)
@@ -254,6 +257,7 @@ class FCN16(pl.LightningModule):
                 p.requires_grad_(False)
         
         output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        #output = self(image, target_vector)
         # t = torch.zeros(image.size())
         # output = self(t, target_vector)
 

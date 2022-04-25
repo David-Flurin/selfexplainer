@@ -266,7 +266,7 @@ class SelfExplainer(pl.LightningModule):
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
-        image, annotations = batch
+        image, seg, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         output = self(image, targets)
 
