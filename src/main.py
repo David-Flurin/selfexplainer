@@ -94,13 +94,8 @@ if args.save_path:
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
-<<<<<<< HEAD
-        use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits
-=======
         use_similarity_loss=args.use_similarity_loss, use_entropy_loss = args.use_entropy_loss, use_mask_area_loss=args.use_mask_area_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler
->>>>>>> cfbe4663ad0e1442d0bec58b7795dc0599cb4be5
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
