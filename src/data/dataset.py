@@ -69,7 +69,10 @@ class ToyDataset(Dataset):
         if self.transform is not None:
             img = self.transform(Image.fromarray(sample['image']))
 
-        filename = f'{randint(0, 9999):05d}'
+        filename = ''
+        for object in sample['objects']:
+            filename += f'{object[1]}_'
+        filename += f'{randint(0, 999):03d}'
         if self.segmentation:
             if self.target == 'texture':
                 seg = torch.from_numpy(sample['seg_tex'])
