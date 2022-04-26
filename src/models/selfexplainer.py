@@ -15,6 +15,7 @@ from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
+import GPUtil
 from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
@@ -64,7 +65,7 @@ class SelfExplainer(pl.LightningModule):
         self.setup_losses(dataset=dataset, class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
-        
+        GPUtil.showUtilization()
 
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         if dataset == "CUB":
@@ -139,6 +140,7 @@ class SelfExplainer(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         image, seg, annotations = batch
 
+        GPUtil.showUtilization()
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
@@ -159,6 +161,7 @@ class SelfExplainer(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
+        GPUtil.showUtilization()
         if self.dataset == "CUB":
             labels = target_vector.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(output['image'][3], labels)

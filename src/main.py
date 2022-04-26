@@ -149,7 +149,7 @@ trainer = pl.Trainer(
     log_every_n_steps = 5,
     enable_checkpointing = args.checkpoint_callback,
     amp_backend='apex',
-    amp_level='01'
+    amp_level='02'
     #profiler=profiler
 )
 
