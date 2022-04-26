@@ -13,7 +13,7 @@ import numpy as np
 
 import pytorch_lightning as pl
 
-from utils.helper import get_filename_from_annotations, get_targets_from_annotations, get_targets_from_segmentations, extract_masks, Distribution
+from utils.helper import get_filename_from_annotations, get_targets_from_annotations, get_targets_from_segmentations, extract_masks, Distribution, LogitStats, get_class_dictionary
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image
 from utils.segmentationmetric import MultiLabelSegmentationMetrics
@@ -66,6 +66,11 @@ class FCN16(pl.LightningModule):
         self.save_masks = save_masks
         self.save_all_class_masks = save_all_class_masks
 
+         #DEBUG
+        self.i = 0.
+        self.use_perfect_mask = use_perfect_mask
+        self.count_logits = count_logits
+
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
             self.b_text_dist = Distribution()
@@ -74,11 +79,7 @@ class FCN16(pl.LightningModule):
         self.setup_losses(dataset=dataset)
         self.setup_metrics()
 
-        #DEBUG
-        self.i = 0.
-        self.use_perfect_mask = use_perfect_mask
-        self.logits = {}
-        self.count_logits = count_logits
+       
 
         self._init_model()
 
@@ -152,6 +153,13 @@ class FCN16(pl.LightningModule):
         self.train_metrics = MultiLabelSegmentationMetrics()
         self.valid_metrics = MultiLabelSegmentationMetrics()
         self.test_metrics = MultiLabelSegmentationMetrics()
+
+        if self.count_logits:
+            self.logit_stats = {'image': LogitStats(self.num_classes)}
+            if self.use_similarity_loss:
+                self.logit_stats['object'] = LogitStats(self.num_classes)
+            if self.use_entropy_loss:
+                self.logit_stats['background'] = LogitStats(self.num_classes)
 
     def model_forward(self, x):
         # from matplotlib import pyplot as plt
@@ -351,20 +359,9 @@ class FCN16(pl.LightningModule):
 
         #Save min and max logits
         if self.count_logits:
-            for k in output.keys():
-                b, l = output[k][3].size()
-                if k not in self.logits.keys():
-                    self.logits[k] = {}
-                    for i in range(l):
-                        self.logits[k][i] = {'min': 1000, 'max':-1000}
-                
-                for b in range(b):
-                    for i in range(l):
-                        if self.logits[k][i]['min'] > output[k][3][b, i]:
-                            self.logits[k][i]['min'] = output[k][3][b, i].item()
-                        if self.logits[k][i]['max'] < output[k][3][b, i]:
-                            self.logits[k][i]['max'] = output[k][3][b, i].item()
-                            
+            for k, v in output.items():
+                self.logit_stats[k].update(v[3])
+
         return loss
 
     def training_epoch_end(self, outs):
@@ -435,32 +432,11 @@ class FCN16(pl.LightningModule):
 
         #DEBUG
         if self.count_logits and self.save_path:
-            from matplotlib import pyplot as plt
             dir = self.save_path + '/logit_stats'
             os.makedirs(dir)
-            for k,v in self.logits.items():
-                x = list(v.keys())
-                labels = [str(x)]
-                mins = [v[i]['min'] for i in v]
-                maxs = [v[i]['max'] for i in v]
-                width = 0.35
-
-                fig, ax = plt.subplots()
-                rects1 = ax.bar(x , mins, width, label='Min logit')
-                rects2 = ax.bar(x, maxs, width, label='Max logit')
-
-                # Add some text for labels, title and custom x-axis tick labels, etc.
-                ax.set_ylabel('Logits value')
-                ax.set_title('Min/Max logit for all classes')
-                ax.set_xticks(x)
-                ax.legend()
-
-                # ax.bar_label(rects1, padding=3)
-                # ax.bar_label(rects2, padding=3)
-
-                fig.tight_layout()
-
-                plt.savefig(dir + f'/{k}.png')
+            class_dict = get_class_dictionary(self.dataset)
+            for k,v in self.logit_stats.items():
+                v.plot(dir + f'/{k}.png', list(class_dict.keys()))
 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)

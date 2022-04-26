@@ -1,4 +1,5 @@
 import torch
+import os
 
 def get_targets_from_annotations(annotations, dataset, num_classes, include_background_class=False, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
@@ -108,6 +109,14 @@ def get_toy_target_dictionary(include_background_class, toy_target):
         
     return target_dict
 
+def get_class_dictionary(dataset, include_background_class=False, toy_target='texture'):
+    if dataset == 'VOC':
+        return get_target_dictionary(include_background_class=include_background_class)
+    elif dataset == 'TOY':
+        return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
+    else:
+        raise ValueError('Dataset not known.')
+
 def get_toy_class_colors(include_background_class, toy_target):
     if toy_target == 'texture':
         class_colors = [[238, 30, 218], [11, 174, 227], [91, 187, 25], [104, 30, 191], [171, 88, 222], [253, 114, 104], [133, 10, 11], [230, 132, 230]]
@@ -156,3 +165,42 @@ class Distribution():
             string += f'{name}: {i/total:.2f}, '
         print(string)
 
+
+class LogitStats():
+    def __init__(self, classes):
+        self.logits = [{'min': 1000, 'max':-1000} for i in range(classes)]
+
+    def update(self, logits):
+        max = torch.max(logits, dim=0)[0]
+        min = torch.min(logits, dim=0)[0]
+        for i,_ in enumerate(max):
+            if self.logits[i]['min'] > min[i]:
+                self.logits[i]['min'] = min[i].item()
+            if self.logits[i]['max'] < max[i]:
+                self.logits[i]['max'] = max[i].item()
+
+    def plot(self, save_path, labels):
+        from matplotlib import pyplot as plt
+        
+        x = range(len(self.logits))
+        mins = [v['min'] for v in self.logits]
+        maxs = [v['max'] for v in self.logits]
+        width = 0.35
+
+        fig, ax = plt.subplots()
+        rects1 = ax.bar(x , mins, width, label='Min logit')
+        rects2 = ax.bar(x, maxs, width, label='Max logit')
+
+        # Add some text for labels, title and custom x-axis tick labels, etc.
+        ax.set_ylabel('Logits value')
+        ax.set_title('Min/Max logit for all classes')
+        ax.set_xticks(x)
+        ax.set_xticklabels(labels)
+        ax.legend()
+
+        # ax.bar_label(rects1, padding=3)
+        # ax.bar_label(rects2, padding=3)
+
+        fig.tight_layout()
+
+        plt.savefig(save_path)
