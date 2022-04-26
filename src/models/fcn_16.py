@@ -1,4 +1,5 @@
 import os.path as osp
+import os
 
 from torch.optim import Adam
 from pathlib import Path
@@ -38,7 +39,7 @@ def get_upsampling_weight(in_channels, out_channels, kernel_size):
 class FCN16(pl.LightningModule):
 
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
-    use_mask_area_loss=True, mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+    use_mask_area_loss=True, mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, use_perfect_mask=False, count_logits=False, save_masked_images=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
         super(FCN16, self).__init__()
 
         self.gpu = gpu
@@ -73,7 +74,11 @@ class FCN16(pl.LightningModule):
         self.setup_losses(dataset=dataset)
         self.setup_metrics()
 
+        #DEBUG
         self.i = 0.
+        self.use_perfect_mask = use_perfect_mask
+        self.logits = {}
+        self.count_logits = count_logits
 
         self._init_model()
 
@@ -256,8 +261,10 @@ class FCN16(pl.LightningModule):
             for _,p in self.frozen.named_parameters():
                 p.requires_grad_(False)
         
-        output = self(image, target_vector)
-        #output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        if self.use_perfect_mask:
+            output = self(image, target_vector, torch.max(targets, dim=1)[0])
+        else:
+            output = self(image, target_vector)
         
         # t = torch.zeros(image.size())
         # output = self(t, target_vector)
@@ -339,6 +346,25 @@ class FCN16(pl.LightningModule):
         self.log('loss', float(loss))
        
         self.train_metrics(output['image'][0], targets)
+
+        #DEBUG
+
+        #Save min and max logits
+        if self.count_logits:
+            for k in output.keys():
+                b, l = output[k][3].size()
+                if k not in self.logits.keys():
+                    self.logits[k] = {}
+                    for i in range(l):
+                        self.logits[k][i] = {'min': 1000, 'max':-1000}
+                
+                for b in range(b):
+                    for i in range(l):
+                        if self.logits[k][i]['min'] > output[k][3][b, i]:
+                            self.logits[k][i]['min'] = output[k][3][b, i].item()
+                        if self.logits[k][i]['max'] < output[k][3][b, i]:
+                            self.logits[k][i]['max'] = output[k][3][b, i].item()
+                            
         return loss
 
     def training_epoch_end(self, outs):
@@ -406,6 +432,35 @@ class FCN16(pl.LightningModule):
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
         self.test_metrics.reset()
+
+        #DEBUG
+        if self.count_logits and self.save_path:
+            from matplotlib import pyplot as plt
+            dir = self.save_path + '/logit_stats'
+            os.makedirs(dir)
+            for k,v in self.logits.items():
+                x = list(v.keys())
+                labels = [str(x)]
+                mins = [v[i]['min'] for i in v]
+                maxs = [v[i]['max'] for i in v]
+                width = 0.35
+
+                fig, ax = plt.subplots()
+                rects1 = ax.bar(x , mins, width, label='Min logit')
+                rects2 = ax.bar(x, maxs, width, label='Max logit')
+
+                # Add some text for labels, title and custom x-axis tick labels, etc.
+                ax.set_ylabel('Logits value')
+                ax.set_title('Min/Max logit for all classes')
+                ax.set_xticks(x)
+                ax.legend()
+
+                # ax.bar_label(rects1, padding=3)
+                # ax.bar_label(rects2, padding=3)
+
+                fig.tight_layout()
+
+                plt.savefig(dir + f'/{k}.png')
 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
