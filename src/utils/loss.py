@@ -121,6 +121,7 @@ def mask_similarity_loss(imask, omask):
 
     batch_size, h, w = imask.size()
     batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
+    #batch_losses = ((imask - omask))
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):

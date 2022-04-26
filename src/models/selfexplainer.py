@@ -19,8 +19,9 @@ from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
-    use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, 
-    mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+    use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
+                 class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
+                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
 
         super().__init__()
 
@@ -60,18 +61,20 @@ class SelfExplainer(pl.LightningModule):
             self.b_text_dist = Distribution()
             self.shapes_dist = Distribution()
 
-        self.setup_losses(dataset=dataset)
+        self.setup_losses(dataset=dataset, class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
         
 
-    def setup_losses(self, dataset):
+    def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         if dataset == "CUB":
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
         self.total_variation_conv = TotalVariationConv()
+        self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
+
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset == "CUB":
@@ -207,7 +210,7 @@ class SelfExplainer(pl.LightningModule):
             loss += mask_variation_loss
 
         if self.use_mask_area_loss:
-            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
+            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
             mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
             mask_area_loss += self.ncmask_total_area_regularizer * (output['object'][2].mean() + output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)

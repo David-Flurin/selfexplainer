@@ -35,8 +35,8 @@ class Generator:
 
     base = 'dataset'
     img_size = (224,224)
-    min_radius = 20
-    max_radius = 20
+    min_radius = 30
+    max_radius = 60
 
 
     def __init__(self, f_textures, b_textures):
