@@ -125,7 +125,10 @@ def mask_similarity_loss(imask, omask):
     #new version
     abs_diff = (imask - omask).abs()
     count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
-    batch_losses = torch.div(abs_diff.sum(1).sum(1), count + 1)
+    abs_diff_sum = abs_diff.sum(1).sum(1)
+    batch_losses = torch.div(abs_diff_sum, count + 1)
+    print(abs_diff_sum)
+    print(batch_losses)
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):
