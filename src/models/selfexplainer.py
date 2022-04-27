@@ -185,6 +185,8 @@ class SelfExplainer(pl.LightningModule):
         #     axes[2][0].imshow(image[b].T)
         # plt.show()
 
+        loss = self.classification_loss_fn(output['image'][3], target_vector)
+
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
@@ -203,8 +205,6 @@ class SelfExplainer(pl.LightningModule):
                 loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
             else:
                 loss = classification_loss + obj_back_loss
-        else:
-            loss = classification_loss
 
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
