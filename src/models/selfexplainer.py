@@ -19,7 +19,7 @@ import GPUtil
 from matplotlib import pyplot as plt
 
 class SelfExplainer(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, use_entropy_loss=False, use_weighted_loss=False,
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
                  gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
@@ -38,6 +38,7 @@ class SelfExplainer(pl.LightningModule):
         self.num_classes = num_classes
 
         self.use_similarity_loss = use_similarity_loss
+        self.similarity_regularizer = similarity_regularizer
         self.use_entropy_loss = use_entropy_loss
         self.use_weighted_loss = use_weighted_loss
         self.mask_area_constraint_regularizer = mask_area_constraint_regularizer
@@ -190,7 +191,7 @@ class SelfExplainer(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
+            similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['image'][1], output['object'][1])
             self.log('similarity_loss', similarity_loss)
             obj_back_loss += similarity_loss
 
