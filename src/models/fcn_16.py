@@ -235,7 +235,7 @@ class FCN16(pl.LightningModule):
         if perfect_mask != None:
             i_mask = perfect_mask
         
-        if self.use_similarity_loss or self.use_mask_area_loss:
+        if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=True)
 
