@@ -139,8 +139,6 @@ class SelfExplainer(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         image, seg, annotations = batch
-        print('First')
-        GPUtil.showUtilization()
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
@@ -161,8 +159,6 @@ class SelfExplainer(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
-        print('second')
-        GPUtil.showUtilization()
         if self.dataset == "CUB":
             labels = target_vector.argmax(dim=1)
             classification_loss_initial = self.classification_loss_fn(output['image'][3], labels)
@@ -224,8 +220,6 @@ class SelfExplainer(pl.LightningModule):
         #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
         #     loss += mask_coherency_loss
 
-        print('third')
-        GPUtil.showUtilization()
         self.i += 1.
         self.log('iterations', self.i)
 
