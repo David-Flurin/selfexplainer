@@ -147,9 +147,9 @@ trainer = pl.Trainer(
     gpus = [args.gpu] if torch.cuda.is_available() else 0,
     #detect_anomaly = True,
     log_every_n_steps = 5,
-    enable_checkpointing = args.checkpoint_callback,
-    amp_backend='apex',
-    amp_level='01'
+    enable_checkpointing = args.checkpoint_callback
+    #amp_backend='apex',
+    #amp_level='02'
     #profiler=profiler
 )
 
