@@ -123,14 +123,16 @@ def mask_similarity_loss(imask, omask):
     #batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
     
     #new version
-    abs_diff = (imask - omask).abs()
-    count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
-    abs_diff_sum = abs_diff.sum(1).sum(1)
-    batch_losses = torch.div(abs_diff_sum, count + 1)
-    i = torch.max(batch_losses, dim=0)[1]
-    print(abs_diff_sum[i])
-    print(count[i])
-    print(batch_losses[i])
+    # abs_diff = (imask - omask).abs()
+    # count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
+    # abs_diff = torch.where(abs_diff >= 0.1, 0, abs_diff)
+    # abs_diff_sum = abs_diff.sum(1).sum(1)
+    # batch_losses = torch.div(abs_diff_sum, count + 1)
+
+    #newer version
+    max_mask = torch.where(imask > omask, imask, omask)
+    batch_losses = ((imask - omask).abs() * max_mask).sum((1,2)) / max_mask.sum((1,2))
+
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):
@@ -138,12 +140,12 @@ def weighted_loss(l_1, l_2, steepness, offset):
     return l_1 + min(1., math.exp(-steepness * (loss1 - offset))) * l_2
 
 
-# t = torch.zeros((2, 224, 224))
-# t[0, 0:50, 0:50] += torch.ones((50, 50))
-# t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
-# z = torch.zeros((2, 224, 224))
-# m = mask_similarity_loss(t, z)
-# print(m)
+t = torch.zeros((2, 224, 224))
+t[0, 0:50, 0:50] += torch.ones((50, 50))
+t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
+z = torch.zeros((2, 224, 224))
+m = mask_similarity_loss(t, z)
+print(m)
 
 
 
