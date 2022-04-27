@@ -191,7 +191,6 @@ class SelfExplainer(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
-            print('Similarity loss', similarity_loss)
             self.log('similarity_loss', similarity_loss)
             obj_back_loss += similarity_loss
 
