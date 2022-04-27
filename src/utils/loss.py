@@ -119,14 +119,26 @@ def entropy_loss(logits):
 def mask_similarity_loss(imask, omask):
     '''Compute L1 loss over pixel distances between initial mask and object mask.'''
 
-    batch_size, h, w = imask.size()
-    batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
-    #batch_losses = ((imask - omask))
+    #older version
+    #batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
+    
+    #new version
+    abs_diff = (imask - omask).abs()
+    count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
+    batch_losses = torch.div(abs_diff.sum(1).sum(1), count + 1e-6)
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):
     loss1 = l_1.item()
     return l_1 + min(1., math.exp(-steepness * (loss1 - offset))) * l_2
+
+
+# t = torch.zeros((2, 224, 224))
+# t[0, 0:50, 0:50] += torch.ones((50, 50))
+# t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
+# z = torch.zeros((2, 224, 224))
+# m = mask_similarity_loss(t, z)
+# print(m)
 
 
 
