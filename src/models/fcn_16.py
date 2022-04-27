@@ -152,8 +152,10 @@ class FCN16(pl.LightningModule):
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
-        self.total_variation_conv = TotalVariationConv()
-        self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
+        if self.use_mask_variation_loss:
+            self.total_variation_conv = TotalVariationConv()
+        if self.use_mask_area_loss:
+            self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
 
 
     def setup_metrics(self):
