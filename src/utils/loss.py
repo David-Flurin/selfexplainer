@@ -140,12 +140,12 @@ def weighted_loss(l_1, l_2, steepness, offset):
     return l_1 + min(1., math.exp(-steepness * (loss1 - offset))) * l_2
 
 
-t = torch.zeros((2, 224, 224))
-t[0, 0:50, 0:50] += torch.ones((50, 50))
-t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
-z = torch.zeros((2, 224, 224))
-m = mask_similarity_loss(t, z)
-print(m)
+# t = torch.zeros((2, 224, 224))
+# t[0, 0:50, 0:50] += torch.ones((50, 50))
+# t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
+# z = torch.zeros((2, 224, 224))
+# m = mask_similarity_loss(t, z)
+# print(m)
 
 
 

@@ -330,17 +330,15 @@ class FCN16(pl.LightningModule):
                 loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
             else:
                 loss = loss + obj_back_loss
-        else:
-            loss = loss
 
-        # if self.use_mask_variation_loss:
-        #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
-        #     loss += mask_variation_loss
+        if self.use_mask_variation_loss:
+            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
+            loss += mask_variation_loss
 
         if self.use_mask_area_loss:
-            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
-            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
-            #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
+            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
+            mask_area_loss += self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+            mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)
             loss += mask_area_loss
 
