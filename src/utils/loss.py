@@ -127,7 +127,7 @@ def mask_similarity_loss(imask, omask):
     count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
     abs_diff_sum = abs_diff.sum(1).sum(1)
     batch_losses = torch.div(abs_diff_sum, count + 1)
-    i = torch.max(batch_losses)[1]
+    i = torch.max(batch_losses, dim=0)[1]
     print(abs_diff_sum[i])
     print(count[i])
     print(batch_losses[i])
