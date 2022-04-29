@@ -150,6 +150,9 @@ else:
     raise Exception("Unknown model type: " + args.model_to_train)
 
 
+print('Use variation loss:', model.use_mask_variation_loss)
+print('Use area loss:', model.use_mask_area_loss)
+
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     monitor="loss",
