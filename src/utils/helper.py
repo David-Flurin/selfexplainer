@@ -46,18 +46,42 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 
+    elif dataset == 'COLOR':
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            target_vectors[i] = torch.Tensor(annotations[i]['logits'])
+
+
     return target_vectors
 
 def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
 
-    b,h,w,_ = segmentation.size()
+    if segmentation.dim() == 3:
+        b,h,w = segmentation.size()
+    else:
+        b,h,w,_ = segmentation.size()
     targets = torch.zeros((b, num_classes, h, w), device=device)
 
     if dataset == "TOY":
         for i in range(b):
             for c,color in enumerate(get_toy_class_colors(include_background_class=include_background_class, toy_target=toy_target)):
                 targets[i, c] = torch.where(torch.all((segmentation[i] == torch.tensor(color, device=device)), dim=-1), 1., 0.)
+
+    if dataset == "COLOR":
+        rgb = segmentation.dim() == 4
+        seg = torch.zeros((b, 2, h, w), device=device)
+        
+        for i in range(b):
+            if not rgb:
+                seg[i, 0] = torch.where(segmentation[i] == 170., 1., 0.)
+                seg[i, 1] = torch.where(segmentation[i] == 255., 1., 0.)
+        if include_background_class:
+            targets[:, 0] = torch.where(torch.all((segmentation == torch.tensor(0., device=device)), dim=-1), 1., 0.)
+            targets[:, 1:2] = seg
+        else:
+            targets = seg
 
     return targets
 
@@ -76,6 +100,10 @@ def get_filename_from_annotations(annotations, dataset):
 
     elif dataset == "TOY":
         filename = annotations[0]['filename']
+
+    elif dataset == "COLOR":
+        filename = annotations[0]['filename']
+
 
     else:
         raise Exception("Unknown dataset: " + dataset)
@@ -109,13 +137,24 @@ def get_toy_target_dictionary(include_background_class, toy_target):
         
     return target_dict
 
+def get_color_dictionary(include_background_class):
+    if include_background_class:
+        target =  {'background': 0, 'gray': 1, 'white':2}
+    else:
+        target =  {'gray': 1, 'white':2}
+    return target
+
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture'):
     if dataset == 'VOC':
         return get_target_dictionary(include_background_class=include_background_class)
     elif dataset == 'TOY':
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
+    elif dataset == 'COLOR':
+        return get_color_dictionary(include_background_class=include_background_class)
     else:
         raise ValueError('Dataset not known.')
+
+
 
 def get_toy_class_colors(include_background_class, toy_target):
     if toy_target == 'texture':

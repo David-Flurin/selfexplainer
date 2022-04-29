@@ -9,6 +9,7 @@ from pycocotools.coco import COCO
 from random import randint
 
 from toy_dataset import generator
+from color_dataset import generator as color_generator
 
 class COCODataset(Dataset):
     def __init__(self, root, annotation, transform_fn=None):
@@ -81,6 +82,39 @@ class ToyDataset(Dataset):
             return img, seg, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
         else:
             return img, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
+
+    def __len__(self):
+        return len(self.ids)
+
+
+class ColorDataset(Dataset):
+    def __init__(self, epoch_length, rgb, transform_fn=None, segmentation=False):
+        self.ids = range(0, epoch_length)
+        self.transform = transform_fn
+        self.segmentation = segmentation
+        self.generator = color_generator.Generator(rgb)
+
+        if rgb:
+            pass
+        else:
+            self.colors = [170., 255., 85]
+
+    def __getitem__(self, index):
+        current_color = randint(0,1)
+        sample = self.generator.generate_sample(self.colors[-1], self.colors[current_color])
+
+        if self.transform is not None:
+            img = self.transform(Image.fromarray(sample))
+        else:
+            img = torch.from_numpy(sample)
+
+        filename = ''
+        filename += f'{randint(0, 9999):05d}'
+        logits = [1 - current_color, current_color]
+        if self.segmentation:
+            return img, img, {'logits': logits, 'filename': filename}
+        else:
+            return img, {'logits': logits, 'filename': filename}
 
     def __len__(self):
         return len(self.ids)

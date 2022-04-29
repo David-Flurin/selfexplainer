@@ -147,6 +147,14 @@ def weighted_loss(l_1, l_2, steepness, offset):
 # m = mask_similarity_loss(t, z)
 # print(m)
 
+def bg_loss(segmentations):
+    batch_mean = segmentations.mean(dim=(1,2,3), keepdim=True)
+    batch_loss = (segmentations - batch_mean).square().sum((1,2,3)).sqrt()
+    return batch_loss.mean()
+
+
+
+
 
 
 

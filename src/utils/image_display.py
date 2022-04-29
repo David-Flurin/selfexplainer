@@ -29,14 +29,19 @@ def save_mask(mask, filename):
     plt.imsave(path_file + ".png", img, cmap='gray',format="png")
     np.savez_compressed(path_file + ".npz", img)
 
-def save_masked_image(image, mask, filename):
+def save_masked_image(image, mask, filename, dataset):
+        
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     path_file = os.path.splitext(filename)[0]
 
-    nat_image = get_unnormalized_image(image)
-    masked_nat_im = get_masked_image(nat_image, mask)
+    if dataset != 'COLOR':
+        image = get_unnormalized_image(image)
+    masked_nat_im = get_masked_image(image, mask)
 
-    plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+    if dataset != 'COLOR':
+        plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+    else:
+        plt.imsave(path_file + ".png", masked_nat_im.detach().cpu().squeeze(), format="png")
 
 def show_image_and_masked_image(image, mask):
     nat_image = get_unnormalized_image(image)
