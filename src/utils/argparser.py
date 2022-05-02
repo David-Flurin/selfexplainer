@@ -70,6 +70,7 @@ def get_parser():
     parser.add_argument('--use_perfect_mask', default=False, type=str2bool, help='DEBUG: Whether the groundtruth mask is provided for the second and third pass')
     parser.add_argument('--count_logits', default=False, type=str2bool, help='DEBUG: Whether to generate statistics for logits.')
     parser.add_argument('--objective', default='classification', type=str, help='Classification or segmentation loss')
+    parser.add_argument('--class_loss', default='bce', type=str, help='Which classification loss to use [bce, ce]')
 
 
     # parser.add_argument('--target_mask_min_area', default=0.05, type=float, help='minimum area for the overall mask area constraint (currently not used!)')

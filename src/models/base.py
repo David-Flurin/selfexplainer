@@ -21,7 +21,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification'):
+                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce'):
 
         super().__init__()
 
@@ -54,6 +54,7 @@ class BaseModel(pl.LightningModule):
         self.objective = objective
 
         self.test_background_logits = []
+        self.class_loss = class_loss
 
         #DEBUG
         self.i = 0.
@@ -65,16 +66,19 @@ class BaseModel(pl.LightningModule):
             self.b_text_dist = Distribution()
             self.shapes_dist = Distribution()
 
-        self.setup_losses(dataset=dataset, class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
+        self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
         GPUtil.showUtilization()
 
-    def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
-        if dataset == "CUB":
+    def setup_losses(self, class_mask_min_area, class_mask_max_area):
+        if self.class_loss == 'ce':
             self.classification_loss_fn = nn.CrossEntropyLoss()
-        else:
+        elif self.class_loss == 'bce':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
+        else:
+            raise ValueError(f'Classification loss argument {self.class_loss} not known')
+        
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
@@ -126,6 +130,7 @@ class BaseModel(pl.LightningModule):
             segmentations = self.frozen(image)
         else:
             segmentations = self.model(image) # [batch_size, num_classes, height, width]
+        
 
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
