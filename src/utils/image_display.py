@@ -162,6 +162,8 @@ def get_target_labels(include_background_class):
 
 
 def save_background_logits(logits, path_file):
+    plt.figure()
     x = np.arange(len(logits))
     plt.plot(x, logits)
+    plt.title('Background pass logits')
     plt.savefig(path_file)
