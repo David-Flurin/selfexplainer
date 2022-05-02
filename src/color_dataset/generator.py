@@ -16,7 +16,7 @@ def get_i(idx, list):
 class Generator:
 
     base = 'dataset'
-    img_size = (100,100)
+    img_size = (10,10)
     bg_to_class_ratio = 0.7
 
     def __init__(self, rgb):

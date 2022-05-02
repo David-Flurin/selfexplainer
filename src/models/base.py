@@ -9,7 +9,7 @@ from pathlib import Path
 from copy import deepcopy
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
-from utils.image_display import save_all_class_masks, save_mask, save_masked_image
+from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
@@ -52,6 +52,8 @@ class BaseModel(pl.LightningModule):
         self.save_all_class_masks = save_all_class_masks
 
         self.objective = objective
+
+        self.test_background_logits = []
 
         #DEBUG
         self.i = 0.
@@ -172,6 +174,9 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
+
+        self.test_background_logits.append(output['background'][3].sum().item())
+
 
        
         if self.objective == 'classification':
@@ -358,11 +363,12 @@ class BaseModel(pl.LightningModule):
         if self.save_masks and image.size()[0] == 1:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
-            save_mask(output['image'][1], Path(self.save_path) / "masks" / filename)
+            save_mask(output['image'][1], Path(self.save_path) / "masks" / filename, self.dataset)
 
         if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
             filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_all_class_masks(image, t_seg, filename)
+
 
 
         classification_loss = self.classification_loss_fn(output['image'][3], targets)
@@ -404,6 +410,8 @@ class BaseModel(pl.LightningModule):
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
         self.test_metrics.reset()
+        save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
+
 
         #DEBUG
         if self.count_logits and self.save_path:
