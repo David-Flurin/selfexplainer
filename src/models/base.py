@@ -180,7 +180,8 @@ class BaseModel(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
-        self.test_background_logits.append(output['background'][3].sum().item())
+        if self.use_entropy_loss:
+            self.test_background_logits.append(output['background'][3].sum().item())
 
 
        

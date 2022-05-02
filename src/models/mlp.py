@@ -22,7 +22,7 @@ class _MLP(nn.Module):
 
         self.first = nn.Conv2d(3 if rgb else 1, 64, 1, dtype=float64)
         inter = []
-        for i in range(5):
+        for i in range(10):
             inter.append(nn.Conv2d(64, 64, 1, dtype=float64))
             inter.append(nn.ReLU())
         self.intermediate = nn.Sequential(*inter)
