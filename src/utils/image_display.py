@@ -27,11 +27,11 @@ def save_mask(mask, filename, dataset):
     path_file = os.path.splitext(filename)[0]
 
     if dataset == 'COLOR':
-        t = torch.zeros((200,200))
+        t = torch.zeros((200,200), device=mask.device)
         b, h, w = mask.size()
         for i in range(h):
             for j in range(w):
-                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20)) * mask[0, i,j]
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=mask.device) * mask[0, i,j]
         mask = t
 
     img = mask.detach().cpu().numpy().squeeze()
@@ -54,11 +54,11 @@ def save_masked_image(image, mask, filename, dataset):
     if dataset != 'COLOR':
         plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
     else:
-        t = torch.zeros((200,200))
+        t = torch.zeros((200,200), device=masked_nat_im.device)
         b,c, h, w = masked_nat_im.size()
         for i in range(h):
             for j in range(w):
-                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20)) * masked_nat_im[0,0, i,j]
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=masked_nat_im.device) * masked_nat_im[0,0, i,j]
         plt.imsave(path_file + ".png", t.detach().cpu().squeeze(), format="png")
 
 def show_image_and_masked_image(image, mask):
