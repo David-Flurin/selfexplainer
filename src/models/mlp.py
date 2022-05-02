@@ -1,13 +1,15 @@
 from models.base import BaseModel
 from torch import nn, float64, sigmoid
+import copy
 
 
 class MLP(BaseModel):
 
     def __init__(self, **kwargs):
                  
-        del kwargs['rgb']
-        super().__init__(**kwargs)
+        parent_args = copy.deepcopy(kwargs)
+        del parent_args['rgb']
+        super().__init__(**parent_args)
 
         self.model = _MLP(kwargs['rgb'], kwargs['num_classes'])
 
