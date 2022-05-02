@@ -2,6 +2,7 @@ import numpy as np
 import io
 import os
 import torchvision.transforms as T
+import torch
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -21,11 +22,20 @@ def show_max_activation(image, segmentations, class_id):
 
     plt.show()
 
-def save_mask(mask, filename):
+def save_mask(mask, filename, dataset):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     path_file = os.path.splitext(filename)[0]
 
+    if dataset == 'COLOR':
+        t = torch.zeros((200,200))
+        b, h, w = mask.size()
+        for i in range(h):
+            for j in range(w):
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20)) * mask[0, i,j]
+        mask = t
+
     img = mask.detach().cpu().numpy().squeeze()
+
     plt.imsave(path_file + ".png", img, cmap='gray',format="png")
     np.savez_compressed(path_file + ".npz", img)
 
@@ -38,10 +48,18 @@ def save_masked_image(image, mask, filename, dataset):
         image = get_unnormalized_image(image)
     masked_nat_im = get_masked_image(image, mask)
 
+
+    
+
     if dataset != 'COLOR':
         plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
     else:
-        plt.imsave(path_file + ".png", masked_nat_im.detach().cpu().squeeze(), format="png")
+        t = torch.zeros((200,200))
+        b,c, h, w = masked_nat_im.size()
+        for i in range(h):
+            for j in range(w):
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20)) * masked_nat_im[0,0, i,j]
+        plt.imsave(path_file + ".png", t.detach().cpu().squeeze(), format="png")
 
 def show_image_and_masked_image(image, mask):
     nat_image = get_unnormalized_image(image)
@@ -141,3 +159,9 @@ def get_target_labels(include_background_class):
                 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 
     return targets
+
+
+def save_background_logits(logits, path_file):
+    x = np.arange(len(logits))
+    plt.plot(x, logits)
+    plt.savefig(path_file)
