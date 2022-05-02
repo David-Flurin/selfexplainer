@@ -1,3 +1,5 @@
+from evaluation.plot import plot_losses
+
 import torch
 import os
 import sys
@@ -13,16 +15,11 @@ from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
 from models.fcn_16 import FCN16
+
 from models.mlp import MLP
 from utils.image_display import save_masked_image
-from evaluation.plot import plot_losses
-# import git 
-
-# #g = git.cmd.Git('.')
-# #g.pull()
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
-
 
 parser = get_parser()
 args = parser.parse_args()
