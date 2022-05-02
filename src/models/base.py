@@ -237,7 +237,10 @@ class BaseModel(pl.LightningModule):
             if self.bg_loss == 'entropy':
                 background_entropy_loss = entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
-                background_entropy_loss = bg_loss(output['background'][0])
+                if self.class_loss == 'ce':
+                    background_entropy_loss = bg_loss(output['background'][0], use_softmax=True)
+                else:
+                    background_entropy_loss = bg_loss(output['background'][0])
             self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
