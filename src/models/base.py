@@ -74,7 +74,7 @@ class BaseModel(pl.LightningModule):
         if dataset == "CUB":
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
-            self.classification_loss_fn = nn.BCELoss()
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)

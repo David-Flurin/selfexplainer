@@ -41,4 +41,4 @@ class _MLP(nn.Module):
         x = nn.functional.relu(x)
         x = self.intermediate(x)
         x = self.out(x)
-        return sigmoid(x)
+        return x
