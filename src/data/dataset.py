@@ -95,24 +95,27 @@ class ColorDataset(Dataset):
         self.generator = color_generator.Generator(rgb)
 
         if rgb:
-            pass
+            self.colors = [[255., 0., 0.], [0., 0., 255.], [0., 255., 0.]]
         else:
             self.colors = [170., 255., 85]
 
     def __getitem__(self, index):
         current_color = randint(0,1)
         sample = self.generator.generate_sample(self.colors[-1], self.colors[current_color])
+        seg = torch.from_numpy(sample)
 
         if self.transform is not None:
             img = self.transform(Image.fromarray(sample))
         else:
             img = torch.from_numpy(sample)
+            if img.dim() == 3:
+                img = img.transpose(0,2)
 
         filename = ''
         filename += f'{randint(0, 9999):05d}'
         logits = [1 - current_color, current_color]
         if self.segmentation:
-            return img, img, {'logits': logits, 'filename': filename}
+            return img, seg, {'logits': logits, 'filename': filename}
         else:
             return img, {'logits': logits, 'filename': filename}
 

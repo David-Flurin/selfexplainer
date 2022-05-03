@@ -54,12 +54,27 @@ def save_masked_image(image, mask, filename, dataset):
     if dataset != 'COLOR':
         plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
     else:
-        t = torch.zeros((200,200), device=masked_nat_im.device)
         b,c, h, w = masked_nat_im.size()
+                
+
+        if c == 1:
+            t = torch.zeros((200,200), device=masked_nat_im.device)
+            dims = (20, 20)
+            kwargs = {
+                'cmap':'gray',
+                'vmin': 0,
+                'vmax': 1
+            }
+        else:
+            t = torch.zeros((200,200, 3), device=masked_nat_im.device)
+            dims = (20, 20, 3)
+            kwargs = {}
+
         for i in range(h):
             for j in range(w):
-                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=masked_nat_im.device) * masked_nat_im[0,0, i,j]
-        plt.imsave(path_file + ".png", t.detach().cpu().squeeze(), cmap='gray', vmin=0, vmax=255, format="png")
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones(dims, device=masked_nat_im.device) * masked_nat_im[0,0 if c == 1 else 0:3, i,j]
+
+        plt.imsave(path_file + ".png", t.detach().cpu().squeeze().numpy() / 255., format="png", **kwargs)
 
 def show_image_and_masked_image(image, mask):
     nat_image = get_unnormalized_image(image)

@@ -74,7 +74,10 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
         seg = torch.zeros((b, 2, h, w), device=device)
         
         for i in range(b):
-            if not rgb:
+            if rgb:
+                seg[i, 0] = (segmentation[i] == torch.Tensor([255., 0., 0.], device=segmentation.device)).all(dim=2).float()
+                seg[i, 1] = (segmentation[i] == torch.Tensor([0., 0., 255.], device=segmentation.device)).all(dim=2).float()
+            else:
                 seg[i, 0] = torch.where(segmentation[i] == 170., 1., 0.)
                 seg[i, 1] = torch.where(segmentation[i] == 255., 1., 0.)
         if include_background_class:

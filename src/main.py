@@ -69,7 +69,7 @@ elif args.dataset == "TOY":
 elif args.dataset == "COLOR":
     data_module = ColorDataModule(
         epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), 
-        train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
+        train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size, rgb=args.rgb
     )
     num_classes = 2
 else:
@@ -125,14 +125,14 @@ elif args.model_to_train == "mlp":
     model = MLP(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_entropy_loss = args.use_entropy_loss, use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss = args.class_loss, rgb=False
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss = args.class_loss, rgb=args.rgb
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
             args.checkpoint,
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_entropy_loss = args.use_entropy_loss, use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss=args.class_loss, rgb=False
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss=args.class_loss, rgb=args.rgb
         )
 elif args.model_to_train == "classifier":
     model = Classifier(
@@ -152,12 +152,12 @@ print('Use area loss:', model.use_mask_area_loss)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="loss",
+    monitor="iterations",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=0.
+    mode="max",
+    stopping_threshold=0.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
