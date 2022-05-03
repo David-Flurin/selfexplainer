@@ -69,7 +69,6 @@ class BaseModel(pl.LightningModule):
         self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
-        GPUtil.showUtilization()
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area):
         if self.class_loss == 'ce':
@@ -115,7 +114,7 @@ class BaseModel(pl.LightningModule):
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=False)
-
+        
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
             if image.dim() > 3:
@@ -133,7 +132,6 @@ class BaseModel(pl.LightningModule):
             # plt.show()
             output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
             
-
         return output
 
     def _forward(self, image, targets, frozen=False):
@@ -160,11 +158,11 @@ class BaseModel(pl.LightningModule):
         return logits
         
     def training_step(self, batch, batch_idx):
+        #GPUtil.showUtilization()
         image, seg, annotations = batch
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        print('new iteration')
         # from matplotlib import pyplot as plt
         # fig = plt.figure(figsize=(10, 5))
         # fig.add_subplot(1,3,1)
@@ -181,10 +179,10 @@ class BaseModel(pl.LightningModule):
                     self.f_tex_dist.update(obj[1])
             self.b_text_dist.update(a['background'])
         
-        if self.use_similarity_loss or self.use_entropy_loss:
-            self.frozen = deepcopy(self.model)
-            for _,p in self.frozen.named_parameters():
-                p.requires_grad_(False)
+        #if self.use_similarity_loss or self.use_entropy_loss:
+        #    self.frozen = deepcopy(self.model)
+        #    for _,p in self.frozen.named_parameters():
+        #        p.requires_grad_(False)
         
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
@@ -194,7 +192,7 @@ class BaseModel(pl.LightningModule):
         if self.use_entropy_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
 
-        GPUtil.showUtilization()
+        #GPUtil.showUtilization()
         # perfect_mask = torch.max(targets, dim=1)[0].unsqueeze(1)
         # masked_img = image*perfect_mask
         # inv_masked_img = image*(torch.ones_like(perfect_mask) - perfect_mask)
@@ -248,7 +246,6 @@ class BaseModel(pl.LightningModule):
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
-        GPUtil.showUtilization()
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
         # for b in range(2):
@@ -290,7 +287,6 @@ class BaseModel(pl.LightningModule):
                 loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
             else:
                 loss = loss + obj_back_loss
-        GPUtil.showUtilization()
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
             loss += mask_variation_loss
@@ -316,6 +312,7 @@ class BaseModel(pl.LightningModule):
         #     for k, v in output.items():
         #         self.logit_stats[k].update(v[3])
                 
+        #GPUtil.showUtilization()        
         return loss
 
     def training_epoch_end(self, outs):
@@ -326,7 +323,7 @@ class BaseModel(pl.LightningModule):
         self.b_text_dist.print_distribution()
         self.shapes_dist.print_distribution()
         '''
-
+        
         for g in self.trainer.optimizers[0].param_groups:
             self.log('lr', g['lr'], prog_bar=True)
 
