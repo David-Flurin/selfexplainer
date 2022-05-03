@@ -109,7 +109,7 @@ class ColorDataset(Dataset):
         else:
             img = torch.from_numpy(sample)
             if img.dim() == 3:
-                img = img.transpose(0,2)
+                img = img.permute(2,0,1)
 
         filename = ''
         filename += f'{randint(0, 9999):05d}'

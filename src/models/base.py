@@ -85,7 +85,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset == "CUB":
+        if self.dataset == "COLOR":
             self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
             self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
             self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
@@ -114,26 +114,24 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=True)
+            output['object'] = self._forward(masked_image, targets, frozen=False)
 
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
-            '''
-            from matplotlib import pyplot as plt
-            fig = plt.figure(figsize=(10,10))
-            for b in range(image.size()[0]):
-                fig.add_subplot(b+1,3,b*3+1)
-                plt.imshow(image[b].detach().transpose(0,2))
-                fig.add_subplot(b+1,3,b*3+2)
-                plt.imshow(i_mask[b].detach())
-                fig.add_subplot(b+1,3,b*3+3)
-                plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
-            plt.show()
-            '''
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
+            # from matplotlib import pyplot as plt
+            # fig = plt.figure(figsize=(10,10))
+            # for b in range(image.size()[0]):
+            #     fig.add_subplot(b+1,3,b*3+1)
+            #     plt.imshow(image[b].detach().transpose(0,2))
+            #     fig.add_subplot(b+1,3,b*3+2)
+            #     plt.imshow(i_mask[b].detach().transpose(0,1))
+            #     fig.add_subplot(b+1,3,b*3+3)
+            #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
+            # plt.show()
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
             
 
         return output
@@ -148,9 +146,9 @@ class BaseModel(pl.LightningModule):
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
         
-        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        logits = weighted_segmentations.sum(dim=(2,3))
-        #logits_mean = segmentations.mean((2,3))
+        # weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        # logits = weighted_segmentations.sum(dim=(2,3))
+        logits = segmentations.mean((2,3))
         
 
         return segmentations, target_mask, non_target_mask, logits
@@ -197,6 +195,33 @@ class BaseModel(pl.LightningModule):
             self.test_background_logits.append(output['background'][3].sum().item())
 
 
+        # perfect_mask = torch.max(targets, dim=1)[0].unsqueeze(1)
+        # masked_img = image*perfect_mask
+        # inv_masked_img = image*(torch.ones_like(perfect_mask) - perfect_mask)
+        # output1 = self(masked_img, target_vector)
+        # output2 = self(inv_masked_img, target_vector)
+        # # from matplotlib import pyplot as plt
+        # # fig = plt.figure()
+        # # bb = image.size()[0]
+        # # for b in range(image.size()[0]):
+        # #     fig.add_subplot(bb, 5, (b*5)+1)
+        # #     plt.imshow(image[b].permute(1,2,0))
+        # #     fig.add_subplot(bb, 5, (b*5)+2)
+        # #     plt.imshow(perfect_mask[b].permute(1,2,0))
+        # #     fig.add_subplot(bb, 5, (b*5)+3)
+        # #     plt.imshow((torch.ones_like(perfect_mask) - perfect_mask)[b].permute(1,2,0))
+        # #     fig.add_subplot(bb, 5, (b*5)+4)
+        # #     plt.imshow(output1['image'][1][b].detach(), vmin=0, vmax=1)
+        # #     fig.add_subplot(bb, 5, (b*5)+5)
+        # #     plt.imshow(output2['image'][1][b].detach(), vmin=0, vmax=1)
+        # # plt.show()
+        # mask_loss = self.classification_loss_fn(output1['image'][3], target_vector)
+        # inv_mask_loss = bg_loss(output2['image'][0], use_softmax=True)
+        # self.log('mask_loss', mask_loss.item())
+        # self.log('inv_mask_loss', inv_mask_loss.item())
+        # loss =  mask_loss + inv_mask_loss 
+
+
        
         if self.objective == 'classification':
             classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
@@ -238,12 +263,15 @@ class BaseModel(pl.LightningModule):
         # plt.show()
 
         loss = classification_loss
+        #loss = torch.zeros(1, device=image.device, requires_grad=True)
 
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['image'][1], output['object'][1])
+            #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['image'][1], output['object'][1])
+            similarity_loss = self.classification_loss_fn(output['object'][3], target_vector)
             self.log('similarity_loss', similarity_loss)
+
             obj_back_loss += similarity_loss
 
         if self.use_entropy_loss:
@@ -259,9 +287,9 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_entropy_loss:
             if self.use_weighted_loss:
-                loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
+                loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
             else:
-                loss = classification_loss + obj_back_loss
+                loss = loss + obj_back_loss
 
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
@@ -274,23 +302,19 @@ class BaseModel(pl.LightningModule):
             self.log('mask_area_loss', mask_area_loss)
             loss += mask_area_loss
 
-        # if self.use_mask_coherency_loss:
-        #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
-        #     loss += mask_coherency_loss
-
         self.i += 1.
         self.log('iterations', self.i)
 
         self.log('loss', float(loss))
        
-        self.train_metrics(output['image'][3], target_vector)
+        #self.train_metrics(output['image'][3], target_vector)
 
         #DEBUG
 
         #Save min and max logits
-        if self.count_logits:
-            for k, v in output.items():
-                self.logit_stats[k].update(v[3])
+        # if self.count_logits:
+        #     for k, v in output.items():
+        #         self.logit_stats[k].update(v[3])
                 
         return loss
 
@@ -331,7 +355,7 @@ class BaseModel(pl.LightningModule):
         loss = classification_loss
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
-            loss += similarity_loss
+            loss += similarity_loss 
 
         if self.use_entropy_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
