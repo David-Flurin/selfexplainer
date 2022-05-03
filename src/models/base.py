@@ -121,6 +121,7 @@ class BaseModel(pl.LightningModule):
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
+            '''
             from matplotlib import pyplot as plt
             fig = plt.figure(figsize=(10,10))
             for b in range(image.size()[0]):
@@ -131,8 +132,10 @@ class BaseModel(pl.LightningModule):
                 fig.add_subplot(b+1,3,b*3+3)
                 plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             plt.show()
+            '''
             output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
             
+
         return output
 
     def _forward(self, image, targets, frozen=False):
