@@ -133,6 +133,7 @@ class BaseModel(pl.LightningModule):
             # plt.show()
             output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
             
+
         return output
 
     def _forward(self, image, targets, frozen=False):
