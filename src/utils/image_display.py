@@ -59,7 +59,7 @@ def save_masked_image(image, mask, filename, dataset):
         for i in range(h):
             for j in range(w):
                 t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=masked_nat_im.device) * masked_nat_im[0,0, i,j]
-        plt.imsave(path_file + ".png", t.detach().cpu().squeeze(), cmap='gray', vmin=0, vmax=1, format="png")
+        plt.imsave(path_file + ".png", t.detach().cpu().squeeze(), cmap='gray', vmin=0, vmax=255, format="png")
 
 def show_image_and_masked_image(image, mask):
     nat_image = get_unnormalized_image(image)
