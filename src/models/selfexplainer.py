@@ -170,8 +170,8 @@ class SelfExplainer(pl.LightningModule):
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
             #classification_loss_background = self.classification_loss_fn(b_logits, targets)
 
-        classification_loss = classification_loss_initial
-        self.log('classification_loss', classification_loss)
+        #classification_loss = classification_loss_initial
+        #self.log('classification_loss', classification_loss)
 
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
@@ -187,7 +187,7 @@ class SelfExplainer(pl.LightningModule):
         # plt.show()
 
         loss = self.classification_loss_fn(output['image'][3], target_vector)
-
+        loss = torch.zeros((1), device='cuda')
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
@@ -204,7 +204,7 @@ class SelfExplainer(pl.LightningModule):
             if self.use_weighted_loss:
                 loss = weighted_loss(classification_loss, obj_back_loss, 2, 0.2)
             else:
-                loss = classification_loss + obj_back_loss
+                loss = loss + obj_back_loss
 
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
