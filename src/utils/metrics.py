@@ -18,13 +18,14 @@ class SingleLabelMetrics(torchmetrics.Metric):
             for i, batch_sample_logits in enumerate(logits):
                 self.true_negatives += 1.0
                 top_class_prediction = batch_sample_logits.argmax(-1)
-                if labels[i] == top_class_prediction:
-                    self.true_positives[labels] += 1.0
-                    self.true_negatives[labels] -= 1.0
+                label_idx = (labels[i] == 1).nonzero()
+                if label_idx == top_class_prediction:
+                    self.true_positives[label_idx] += 1.0
+                    self.true_negatives[label_idx] -= 1.0
                 else:
-                    self.false_negatives[labels] += 1.0
+                    self.false_negatives[label_idx] += 1.0
                     self.false_positives[top_class_prediction] += 1.0
-                    self.true_negatives[labels] -= 1.0
+                    self.true_negatives[label_idx] -= 1.0
                     self.true_negatives[top_class_prediction] -= 1.0
 
     def compute(self):

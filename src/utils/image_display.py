@@ -2,6 +2,7 @@ import numpy as np
 import io
 import os
 import torchvision.transforms as T
+import torch
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -21,22 +22,59 @@ def show_max_activation(image, segmentations, class_id):
 
     plt.show()
 
-def save_mask(mask, filename):
+def save_mask(mask, filename, dataset):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     path_file = os.path.splitext(filename)[0]
+
+    if dataset == 'COLOR':
+        t = torch.zeros((200,200), device=mask.device)
+        b, h, w = mask.size()
+        for i in range(h):
+            for j in range(w):
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=mask.device) * mask[0, i,j]
+        mask = t
 
     img = mask.detach().cpu().numpy().squeeze()
-    plt.imsave(path_file + ".png", img, cmap='gray',format="png")
+
+    plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
     np.savez_compressed(path_file + ".npz", img)
 
-def save_masked_image(image, mask, filename):
+def save_masked_image(image, mask, filename, dataset):
+        
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     path_file = os.path.splitext(filename)[0]
 
-    nat_image = get_unnormalized_image(image)
-    masked_nat_im = get_masked_image(nat_image, mask)
+    if dataset != 'COLOR':
+        image = get_unnormalized_image(image)
+    masked_nat_im = get_masked_image(image, mask)
 
-    plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+
+    
+
+    if dataset != 'COLOR':
+        plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+    else:
+        b,c, h, w = masked_nat_im.size()
+                
+
+        if c == 1:
+            t = torch.zeros((200,200), device=masked_nat_im.device)
+            dims = (20, 20)
+            kwargs = {
+                'cmap':'gray',
+                'vmin': 0,
+                'vmax': 1
+            }
+        else:
+            t = torch.zeros((200,200, 3), device=masked_nat_im.device)
+            dims = (20, 20, 3)
+            kwargs = {}
+
+        for i in range(h):
+            for j in range(w):
+                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones(dims, device=masked_nat_im.device) * masked_nat_im[0,0 if c == 1 else 0:3, i,j]
+
+        plt.imsave(path_file + ".png", t.detach().cpu().squeeze().numpy() / 255., format="png", **kwargs)
 
 def show_image_and_masked_image(image, mask):
     nat_image = get_unnormalized_image(image)
@@ -136,3 +174,11 @@ def get_target_labels(include_background_class):
                 'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
 
     return targets
+
+
+def save_background_logits(logits, path_file):
+    plt.figure()
+    x = np.arange(len(logits))
+    plt.plot(x, logits)
+    plt.title('Background pass logits')
+    plt.savefig(path_file)

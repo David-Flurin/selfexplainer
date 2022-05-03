@@ -147,6 +147,23 @@ def weighted_loss(l_1, l_2, steepness, offset):
 # m = mask_similarity_loss(t, z)
 # print(m)
 
+def bg_loss(segmentations, use_softmax=False):
+    b, c, h, w = segmentations.size()
+    # batch_mean = segmentations.mean(dim=(1,2,3), keepdim=True)
+    # batch_loss = (segmentations - batch_mean).square().sum((1,2,3)).sqrt()
+    batch_mean = segmentations.mean(dim=(2,3))
+    #batch_mean = batch_mean / batch_mean.sum()
+    if use_softmax:
+       batch_mean = torch.nn.functional.softmax(batch_mean, dim=1)
+    batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
+    #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
+    return batch_loss.mean()
+
+
+
+
+
+
 
 
 
