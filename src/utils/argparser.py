@@ -53,6 +53,9 @@ def get_parser():
     # parser.add_argument('--explainer_classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained explainer. Also contains the weights for the associated classifier.')
     # parser.add_argument('--classifier_checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained classifier.')
     parser.add_argument('--checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained self-explainer.')
+    parser.add_argument('--frozen', default=False, type=str2bool, help='If the object and background pass of selfexplainer models has frozen weights')
+    parser.add_argument('--freeze_every', default=20, type=int, help='Every n iterations, the model is frozen for the object and background pass.')
+
 
     # Model-specific parameters
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='learning rate used by the Adam optimizer')

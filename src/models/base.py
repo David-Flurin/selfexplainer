@@ -23,7 +23,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce'):
+                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20):
 
         super().__init__()
 
@@ -58,10 +58,17 @@ class BaseModel(pl.LightningModule):
         self.test_background_logits = []
         self.class_loss = class_loss
 
+        #self.automatic_optimization = False
+        self.frozen = frozen
+        self.freeze_every = freeze_every
+
         #DEBUG
         self.i = 0.
         self.use_perfect_mask = use_perfect_mask
         self.count_logits = count_logits
+
+        self.global_image_mask = None
+        self.global_object_mask = None
 
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
@@ -112,7 +119,7 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=False)
+            output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
         
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -129,7 +136,7 @@ class BaseModel(pl.LightningModule):
             #     fig.add_subplot(b+1,3,b*3+3)
             #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             # plt.show()
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
         return output
 
@@ -171,14 +178,14 @@ class BaseModel(pl.LightningModule):
         # fig.add_subplot(1,3,3)
         # plt.imshow(targets[0][1])
         # plt.show()
-        if self.dataset == 'TOY':
-            for a in annotations:
-                for obj in a['objects']:
-                    self.shapes_dist.update(obj[0])
-                    self.f_tex_dist.update(obj[1])
-            self.b_text_dist.update(a['background'])
+        # if self.dataset == 'TOY':
+        #     for a in annotations:
+        #         for obj in a['objects']:
+        #             self.shapes_dist.update(obj[0])
+        #             self.f_tex_dist.update(obj[1])
+        #     self.b_text_dist.update(a['background'])
         
-        if self.use_similarity_loss or self.use_entropy_loss:
+        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_entropy_loss):
            self.frozen = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
@@ -313,10 +320,19 @@ class BaseModel(pl.LightningModule):
         if self.count_logits:
             for k, v in output.items():
                 self.logit_stats[k].update(v[3])
+
+        # self.global_image_mask = output['image'][1]
+        # self.global_object_mask = output['object'][1]
                 
         #GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
-        #d.render('backward_graph_unfrozen', format='png')     
+        #d.render('backward_graph_unfrozen', format='png')  
+        output['image'][1].retain_grad()
+        output['object'][1].retain_grad()
+
+        # o = self.optimizers()
+        # self.manual_backward(loss)
+        # o.step()
         return loss
 
     def training_epoch_end(self, outs):
@@ -480,7 +496,7 @@ class BaseModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=1, threshold=0.001, min_lr=1e-6)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=2, threshold=0.001, min_lr=1e-6)
         lr_scheduler_config = {
         "scheduler": lr_scheduler,
         "interval": "epoch",
