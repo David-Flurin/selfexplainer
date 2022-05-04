@@ -195,6 +195,10 @@ class BaseModel(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
+        
+        print(output['image'][3])
+        print(target_vector)
+
         if self.use_entropy_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
 
@@ -247,7 +251,8 @@ class BaseModel(pl.LightningModule):
             classification_loss_initial = self.classification_loss_fn(output['image'][0], targets)
         else:
             raise ValueError('Unknown objective')
-
+        
+        print(classification_loss_initial)
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
@@ -408,7 +413,7 @@ class BaseModel(pl.LightningModule):
         image, seg, annotations = batch
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        output = self(image, targets)
+        output = self(image, target_vector)
 
         # from matplotlib import pyplot as plt
         # fig = plt.figure(figsize=(10, 5))
@@ -441,7 +446,8 @@ class BaseModel(pl.LightningModule):
 
 
         classification_loss = self.classification_loss_fn(output['image'][3], target_vector)
-
+        print(output['image'][3])
+        print(target_vector)
         loss = classification_loss
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
