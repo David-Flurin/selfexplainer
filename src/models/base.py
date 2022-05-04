@@ -517,7 +517,7 @@ class BaseModel(pl.LightningModule):
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
         self.test_metrics.reset()
-        save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
+        #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 
         print("Checking for same images")
         for k,v in self.same_images.items():
