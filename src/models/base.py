@@ -406,7 +406,8 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, seg, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         output = self(image, targets)
 
         # from matplotlib import pyplot as plt
@@ -439,7 +440,7 @@ class BaseModel(pl.LightningModule):
 
 
 
-        classification_loss = self.classification_loss_fn(output['image'][3], targets)
+        classification_loss = self.classification_loss_fn(output['image'][3], target_vector)
 
         loss = classification_loss
         if self.use_similarity_loss:
@@ -486,7 +487,7 @@ class BaseModel(pl.LightningModule):
 
 
 
-        self.test_metrics(output['image'][3], targets)
+        self.test_metrics(output['image'][3], target_vector)
 
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
