@@ -429,9 +429,8 @@ class BaseModel(pl.LightningModule):
         if self.save_masks and image.size()[0] == 1:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
-            save_mask(output['image'][1], Path(self.save_path) / "masks" / filename, self.dataset)
-            save_mask(output['object'][1], Path(self.save_path) / "masks_object_pass" / filename, self.dataset)
-            save_mask(output['background'][1], Path(self.save_path) / "background_pass" / filename, self.dataset)
+            for k, v in output.items():
+                save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
         if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
@@ -448,9 +447,22 @@ class BaseModel(pl.LightningModule):
             loss += similarity_loss
 
         if self.use_entropy_loss:
-            background_entropy_loss = entropy_loss(output['background'][3])
-            #self.log('background entropy loss', background_entropy_loss)
+            if self.bg_loss == 'entropy':
+                background_entropy_loss = entropy_loss(output['background'][3])
+            elif self.bg_loss == 'distance':
+                if self.class_loss == 'ce':
+                    background_entropy_loss = bg_loss(output['background'][0], use_softmax=True)
+                else:
+                    background_entropy_loss = bg_loss(output['background'][0])
             loss += background_entropy_loss
+
+        os.makedirs(os.path.dirname(Path(self.save_path) / "test_losses" / filename), exist_ok=True)
+        with open(Path(self.save_path) / "test_losses" / filename, 'w') as f:
+            f.write(f'classification loss: {classification_loss}\n')
+            if self.use_similarity_loss:
+                f.write(f'similarity loss: {similarity_loss}\n')
+            if self.use_entropy_loss:
+                f.write(f'background loss: {background_entropy_loss}\n')
 
         '''
         if self.use_mask_variation_loss:
