@@ -8,7 +8,7 @@ from pathlib import Path
 
 from copy import deepcopy
 
-from torchviz import make_dot
+#from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
@@ -318,8 +318,8 @@ class BaseModel(pl.LightningModule):
                 self.logit_stats[k].update(v[3])
                 
         #GPUtil.showUtilization()  
-        d = make_dot(loss, params=dict(self.model.named_parameters())) 
-        d.render('backward_graph_unfrozen', format='png')     
+        #d = make_dot(loss, params=dict(self.model.named_parameters())) 
+        #d.render('backward_graph_unfrozen', format='png')     
         return loss
 
     def training_epoch_end(self, outs):

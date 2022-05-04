@@ -35,7 +35,7 @@ class Generator:
 
     base = 'dataset'
     img_size = (224,224)
-    min_radius = 60
+    min_radius = 30
     max_radius = 80
 
 
