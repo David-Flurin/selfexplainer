@@ -115,7 +115,7 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=True)
+            output['object'] = self._forward(masked_image, targets, frozen=False)
         
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -132,7 +132,7 @@ class BaseModel(pl.LightningModule):
             #     fig.add_subplot(b+1,3,b*3+3)
             #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             # plt.show()
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
             
         return output
 
