@@ -121,8 +121,8 @@ class ToyDataModule(pl.LightningDataModule):
         self.test_samples = test_samples
         self.segmentation = segmentation
 
-        self.train_transformer = get_training_image_transformer(use_data_augmentation)
-        self.test_transformer = get_testing_image_transformer()
+        self.train_transformer = get_training_image_transformer()
+        self.test_transformer = get_training_image_transformer()
 
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size

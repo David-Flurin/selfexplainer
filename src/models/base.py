@@ -8,6 +8,8 @@ from pathlib import Path
 
 from copy import deepcopy
 
+import pickle
+
 #from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
@@ -69,6 +71,8 @@ class BaseModel(pl.LightningModule):
 
         self.global_image_mask = None
         self.global_object_mask = None
+        self.first_of_epoch = True
+        self.same_images = {}
 
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
@@ -169,6 +173,22 @@ class BaseModel(pl.LightningModule):
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+        for b in range(image.size()[0]):
+            s = image[b].sum().item()
+            if s in self.same_images.keys():
+                self.same_images[s] += 1
+            else:
+                self.same_images[s] = 1
+
+        # if self.first_of_epoch:
+        #     from matplotlib import pyplot as plt
+        #     fig = plt.figure()
+        #     batch_size = image.size()[0]
+        #     for b in range(batch_size):
+        #         fig.add_subplot(1, batch_size, b+1)
+        #         plt.imshow(image[b].permute(1,2,0))
+        #     plt.show()
+        #     self.first_of_epoch = False
         # from matplotlib import pyplot as plt
         # fig = plt.figure(figsize=(10, 5))
         # fig.add_subplot(1,3,1)
@@ -347,6 +367,8 @@ class BaseModel(pl.LightningModule):
         for g in self.trainer.optimizers[0].param_groups:
             self.log('lr', g['lr'], prog_bar=True)
 
+        self.first_of_epoch = True
+
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
@@ -409,6 +431,9 @@ class BaseModel(pl.LightningModule):
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         output = self(image, targets)
+
+
+        
 
         # from matplotlib import pyplot as plt
         # fig = plt.figure(figsize=(10, 5))
@@ -494,6 +519,10 @@ class BaseModel(pl.LightningModule):
         self.test_metrics.reset()
         save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 
+        print("Checking for same images")
+        for k,v in self.same_images.items():
+            if v > 1:
+                print(k, v)
 
         #DEBUG
         if self.count_logits and self.save_path:
@@ -524,3 +553,5 @@ class BaseModel(pl.LightningModule):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('frozen'):
                 del checkpoint['state_dict'][k]
+
+

@@ -9,6 +9,8 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.profiler import AdvancedProfiler
 from pathlib import Path
+import pickle
+import hashlib
 
 from data.dataloader import ColorDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule
 from utils.argparser import get_parser, write_config_file
@@ -18,6 +20,7 @@ from models.fcn_16 import FCN16
 
 from models.mlp import MLP
 from utils.image_display import save_masked_image
+
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -152,12 +155,12 @@ print('Use area loss:', model.use_mask_area_loss)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="iterations",
+    monitor="loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="max",
-    stopping_threshold=0.
+    mode="min",
+    #stopping_threshold=0.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
@@ -182,3 +185,5 @@ if args.train_model:
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)
+
+
