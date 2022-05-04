@@ -8,7 +8,7 @@ from pathlib import Path
 
 from copy import deepcopy
 
-from torchviz import make_dot
+#from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
@@ -222,7 +222,6 @@ class BaseModel(pl.LightningModule):
         # loss =  mask_loss + inv_mask_loss 
 
 
-        print(self.objective)       
         if self.objective == 'classification':
             classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
@@ -284,22 +283,26 @@ class BaseModel(pl.LightningModule):
             self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
-        if self.use_similarity_loss or self.use_entropy_loss:
-            if self.use_weighted_loss:
-                loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
-            else:
-                loss = loss + obj_back_loss
+        mask_loss = torch.zeros((1), device=loss.device)
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
-            loss += mask_variation_loss
+            mask_loss += mask_variation_loss
 
         if self.use_mask_area_loss:
             mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
             mask_area_loss += self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
             mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)
-            loss += mask_area_loss
+            mask_loss += mask_area_loss
 
+
+        if self.use_similarity_loss or self.use_entropy_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
+            if self.use_weighted_loss:
+                loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
+            else:
+                loss = loss + obj_back_loss + mask_loss
+        
+        
         self.i += 1.
         self.log('iterations', self.i)
 
@@ -315,8 +318,8 @@ class BaseModel(pl.LightningModule):
         #         self.logit_stats[k].update(v[3])
                 
         #GPUtil.showUtilization()  
-        d = make_dot(loss, params=dict(self.model.named_parameters())) 
-        d.render('torchviz', format='png')     
+        # d = make_dot(loss, params=dict(self.model.named_parameters())) 
+        # d.render('torchviz', format='png')     
         return loss
 
     def training_epoch_end(self, outs):
