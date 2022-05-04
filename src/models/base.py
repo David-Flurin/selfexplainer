@@ -8,6 +8,8 @@ from pathlib import Path
 
 from copy import deepcopy
 
+from torchviz import make_dot
+
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss
@@ -113,7 +115,7 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=False)
+            output['object'] = self._forward(masked_image, targets, frozen=True)
         
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -130,7 +132,7 @@ class BaseModel(pl.LightningModule):
             #     fig.add_subplot(b+1,3,b*3+3)
             #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             # plt.show()
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
             
         return output
 
@@ -179,10 +181,10 @@ class BaseModel(pl.LightningModule):
                     self.f_tex_dist.update(obj[1])
             self.b_text_dist.update(a['background'])
         
-        #if self.use_similarity_loss or self.use_entropy_loss:
-        #    self.frozen = deepcopy(self.model)
-        #    for _,p in self.frozen.named_parameters():
-        #        p.requires_grad_(False)
+        if self.use_similarity_loss or self.use_entropy_loss:
+           self.frozen = deepcopy(self.model)
+           for _,p in self.frozen.named_parameters():
+               p.requires_grad_(False)
         
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
@@ -312,7 +314,9 @@ class BaseModel(pl.LightningModule):
         #     for k, v in output.items():
         #         self.logit_stats[k].update(v[3])
                 
-        #GPUtil.showUtilization()        
+        #GPUtil.showUtilization()  
+        d = make_dot(loss, params=dict(self.model.named_parameters())) 
+        d.render('torchviz', format='png')     
         return loss
 
     def training_epoch_end(self, outs):
