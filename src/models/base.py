@@ -80,7 +80,7 @@ class BaseModel(pl.LightningModule):
         
 
         self.total_variation_conv = TotalVariationConv()
-        self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
+        self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
@@ -220,7 +220,7 @@ class BaseModel(pl.LightningModule):
         # loss =  mask_loss + inv_mask_loss 
 
 
-       
+        print(self.objective)       
         if self.objective == 'classification':
             classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
@@ -265,8 +265,8 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['image'][1], output['object'][1])
-            similarity_loss = self.classification_loss_fn(output['object'][3], target_vector)
+            similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['image'][1], output['object'][1])
+            #similarity_loss = self.classification_loss_fn(output['object'][3], target_vector)
             self.log('similarity_loss', similarity_loss)
 
             obj_back_loss += similarity_loss

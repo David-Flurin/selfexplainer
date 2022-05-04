@@ -39,8 +39,8 @@ class TotalVariationConv(pl.LightningModule):
         return total_variance
 
 class MaskAreaLoss():
-    def __init__(self, image_size=224, min_area=0.0, max_area=1.0):
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    def __init__(self, image_size=224, min_area=0.0, max_area=1.0, gpu=0):
+        self.device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
 
         self.image_size = image_size
         self.min_area = min_area
