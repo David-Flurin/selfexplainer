@@ -8,7 +8,7 @@ from pathlib import Path
 
 from copy import deepcopy
 
-from torchviz import make_dot
+#from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
@@ -115,7 +115,7 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=True)
+            output['object'] = self._forward(masked_image, targets, frozen=False)
         
         if self.use_entropy_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -132,7 +132,7 @@ class BaseModel(pl.LightningModule):
             #     fig.add_subplot(b+1,3,b*3+3)
             #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             # plt.show()
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=False)
             
         return output
 
@@ -318,8 +318,8 @@ class BaseModel(pl.LightningModule):
                 self.logit_stats[k].update(v[3])
                 
         #GPUtil.showUtilization()  
-        d = make_dot(loss, params=dict(self.model.named_parameters())) 
-        d.render('backward_graph_unfrozen', format='png')     
+        #d = make_dot(loss, params=dict(self.model.named_parameters())) 
+        #d.render('backward_graph_unfrozen', format='png')     
         return loss
 
     def training_epoch_end(self, outs):
