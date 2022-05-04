@@ -12,6 +12,7 @@ from random import randint, sample
 from tqdm import tqdm
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import pickle
 
 import hashlib
 
