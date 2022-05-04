@@ -105,13 +105,10 @@ class BaseModel(pl.LightningModule):
     def forward(self, image, targets, perfect_mask = None):
         output = {}
         output['image'] = self._forward(image, targets)
-        
 
         i_mask = output['image'][1]
         if perfect_mask != None:
             i_mask = perfect_mask
-
-
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
@@ -417,6 +414,9 @@ class BaseModel(pl.LightningModule):
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
             save_mask(output['image'][1], Path(self.save_path) / "masks" / filename, self.dataset)
+            save_mask(output['object'][1], Path(self.save_path) / "masks_object_pass" / filename, self.dataset)
+            save_mask(output['background'][1], Path(self.save_path) / "background_pass" / filename, self.dataset)
+
 
         if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
             filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
