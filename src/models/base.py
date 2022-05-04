@@ -475,8 +475,21 @@ class BaseModel(pl.LightningModule):
                 v.plot(dir + f'/{k}.png', list(class_dict.keys()))
 
 
+    # def configure_optimizers(self):
+    #     return Adam(self.parameters(), lr=self.learning_rate)
+
     def configure_optimizers(self):
-        return Adam(self.parameters(), lr=self.learning_rate)
+        optim = Adam(self.parameters(), lr=self.learning_rate)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=1, threshold=0.001, min_lr=1e-6)
+        lr_scheduler_config = {
+        "scheduler": lr_scheduler,
+        "interval": "epoch",
+        "frequency": 1,
+        "monitor": "loss",
+        "strict": True,
+        "name": None,
+        }
+        return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
 
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
