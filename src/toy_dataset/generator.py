@@ -228,8 +228,8 @@ class Generator:
         f_tex_idx = randint(0, self.num_f_tex -1)
         b_tex_idx = randint(0, self.num_b_tex -1)
         
-        #return radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx
-        return 41, 159, 108, 15, 1, 1
+        return radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx
+        #return 41, 159, 108, 15, 1, 1
 
 
     def __directories(self):
