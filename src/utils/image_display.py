@@ -29,9 +29,10 @@ def save_mask(mask, filename, dataset):
     if dataset == 'COLOR':
         t = torch.zeros((200,200), device=mask.device)
         b, h, w = mask.size()
+        s = 200 // h
         for i in range(h):
             for j in range(w):
-                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones((20, 20), device=mask.device) * mask[0, i,j]
+                t[s*i:i*s+s, s*j:j*s+s] = torch.ones((s, s), device=mask.device) * mask[0, i,j]
         mask = t
 
     img = mask.detach().cpu().numpy().squeeze()
@@ -66,13 +67,48 @@ def save_masked_image(image, mask, filename, dataset):
                 'vmax': 1
             }
         else:
+            s = 200 // h
             t = torch.zeros((200,200, 3), device=masked_nat_im.device)
-            dims = (20, 20, 3)
+            dims = (s, s, 3)
             kwargs = {}
 
         for i in range(h):
             for j in range(w):
-                t[20*i:i*20+20, 20*j:j*20+20] = torch.ones(dims, device=masked_nat_im.device) * masked_nat_im[0,0 if c == 1 else 0:3, i,j]
+                t[s*i:i*s+s, s*j:j*s+s] = torch.ones(dims, device=masked_nat_im.device) * masked_nat_im[0,0 if c == 1 else 0:3, i,j]
+
+        plt.imsave(path_file + ".png", t.detach().cpu().squeeze().numpy() / 255., format="png", **kwargs)
+
+def save_image(image, filename, dataset):
+        
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    path_file = os.path.splitext(filename)[0]
+
+    if dataset != 'COLOR':
+        image = get_unnormalized_image(image)
+    
+
+    if dataset != 'COLOR':
+        plt.imsave(path_file + ".png", np.stack(image.cpu().squeeze(), axis=2), format="png")
+    else:
+        b,c, h, w = image.size()
+
+        if c == 1:
+            t = torch.zeros((200,200), device=image.device)
+            dims = (20, 20)
+            kwargs = {
+                'cmap':'gray',
+                'vmin': 0,
+                'vmax': 1
+            }
+        else:
+            s = 200 // h
+            t = torch.zeros((200,200, 3), device=image.device)
+            dims = (s, s, 3)
+            kwargs = {}
+
+        for i in range(h):
+            for j in range(w):
+                t[s*i:i*s+s, s*j:j*s+s] = torch.ones(dims, device=image.device) * image[0,0 if c == 1 else 0:3, i,j]
 
         plt.imsave(path_file + ".png", t.detach().cpu().squeeze().numpy() / 255., format="png", **kwargs)
 

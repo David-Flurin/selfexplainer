@@ -13,8 +13,8 @@ import pickle
 #from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
-from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss
+from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits, save_image
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
@@ -25,7 +25,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20):
+                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False):
 
         super().__init__()
 
@@ -49,6 +49,8 @@ class BaseModel(pl.LightningModule):
         self.ncmask_total_area_regularizer = ncmask_total_area_regularizer
         self.use_mask_variation_loss = use_mask_variation_loss
         self.mask_variation_regularizer = mask_variation_regularizer
+
+        self.use_background_activation_loss = background_activation_loss
 
         self.save_path = save_path
         self.save_masked_images = save_masked_images
@@ -154,9 +156,9 @@ class BaseModel(pl.LightningModule):
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
         
-        # weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        # logits = weighted_segmentations.sum(dim=(2,3))
-        logits = segmentations.mean((2,3))
+        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        logits = weighted_segmentations.sum(dim=(2,3))
+        #logits = segmentations.mean((2,3))
         
 
         return segmentations, target_mask, non_target_mask, logits
@@ -173,12 +175,22 @@ class BaseModel(pl.LightningModule):
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+        # bb = image.size()[0]
+        # from matplotlib import pyplot as plt
+        # fig = plt.figure()
+        # for b in range(bb):
+        #     fig.add_subplot(1, bb, b+1)
+        #     plt.imshow(image[b].permute(1,2,0))
+        # plt.show()
+
+        '''
         for b in range(image.size()[0]):
             s = image[b].sum().item()
             if s in self.same_images.keys():
                 self.same_images[s] += 1
             else:
                 self.same_images[s] = 1
+        '''
 
         # if self.first_of_epoch:
         #     from matplotlib import pyplot as plt
@@ -214,6 +226,10 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
+
+        
+        #print(output['image'][3])
+        #print(target_vector)
 
         if self.use_entropy_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
@@ -267,7 +283,8 @@ class BaseModel(pl.LightningModule):
             classification_loss_initial = self.classification_loss_fn(output['image'][0], targets)
         else:
             raise ValueError('Unknown objective')
-
+        
+        #print(classification_loss_initial)
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
@@ -285,6 +302,7 @@ class BaseModel(pl.LightningModule):
         # plt.show()
 
         loss = classification_loss
+        
         #loss = torch.zeros(1, device=image.device, requires_grad=True)
 
         
@@ -301,11 +319,14 @@ class BaseModel(pl.LightningModule):
                 background_entropy_loss = entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
                 if self.class_loss == 'ce':
-                    background_entropy_loss = bg_loss(output['background'][0], use_softmax=True)
+                    background_entropy_loss = bg_loss(output['background'][0])
                 else:
                     background_entropy_loss = bg_loss(output['background'][0])
             self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
+
+
+        
 
         mask_loss = torch.zeros((1), device=loss.device)
         if self.use_mask_variation_loss:
@@ -313,9 +334,9 @@ class BaseModel(pl.LightningModule):
             mask_loss += mask_variation_loss
 
         if self.use_mask_area_loss:
-            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
-            mask_area_loss += self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
-            mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
+            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+            #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)
             mask_loss += mask_area_loss
 
@@ -325,6 +346,11 @@ class BaseModel(pl.LightningModule):
                 loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
             else:
                 loss = loss + obj_back_loss + mask_loss
+
+        if self.use_background_activation_loss:
+            bg_logits_loss = background_activation_loss(output['image'][1])
+            self.log('bg_logits_loss', bg_logits_loss)
+            loss += weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
         self.i += 1.
@@ -368,6 +394,12 @@ class BaseModel(pl.LightningModule):
             self.log('lr', g['lr'], prog_bar=True)
 
         self.first_of_epoch = True
+
+        #print("Checking for same images")
+        #print("Size of dict", len(self.same_images))
+        #for k,v in self.same_images.items():
+        #    if v > 1:
+        #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
@@ -430,11 +462,13 @@ class BaseModel(pl.LightningModule):
         image, seg, annotations = batch
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        output = self(image, targets)
+        output = self(image, target_vector)
 
-        from matplotlib import pyplot as plt
-        plt.imshow(image[0].permute(1,2,0))
-        plt.show()
+        
+
+        # from matplotlib import pyplot as plt
+        # plt.imshow(image[0].permute(1,2,0))
+        # plt.show()
         
 
         # from matplotlib import pyplot as plt
@@ -454,6 +488,9 @@ class BaseModel(pl.LightningModule):
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
 
+            filename = Path(self.save_path) / "images" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_image(image, filename, self.dataset)
+
         if self.save_masks and image.size()[0] == 1:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
@@ -461,14 +498,16 @@ class BaseModel(pl.LightningModule):
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
-            filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(image, t_seg, filename)
+        # if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
+        #     filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
+        #     save_all_class_masks(image, t_seg, filename)
 
 
 
         classification_loss = self.classification_loss_fn(output['image'][3], target_vector)
-
+        # print(classification_loss)
+        # print(output['image'][3])
+        # print(target_vector)
         loss = classification_loss
         if self.use_similarity_loss:
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
@@ -479,7 +518,7 @@ class BaseModel(pl.LightningModule):
                 background_entropy_loss = entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
                 if self.class_loss == 'ce':
-                    background_entropy_loss = bg_loss(output['background'][0], use_softmax=True)
+                    background_entropy_loss = bg_loss(output['background'][0])
                 else:
                     background_entropy_loss = bg_loss(output['background'][0])
             loss += background_entropy_loss
@@ -521,10 +560,6 @@ class BaseModel(pl.LightningModule):
         self.test_metrics.reset()
         #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 
-        print("Checking for same images")
-        for k,v in self.same_images.items():
-            if v > 1:
-                print(k, v)
 
         #DEBUG
         if self.count_logits and self.save_path:
@@ -540,7 +575,7 @@ class BaseModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=2, threshold=0.001, min_lr=1e-6)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=50, threshold=0.001, min_lr=1e-6)
         lr_scheduler_config = {
         "scheduler": lr_scheduler,
         "interval": "epoch",

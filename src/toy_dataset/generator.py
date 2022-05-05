@@ -222,13 +222,14 @@ class Generator:
 
     def __randomize(self, size):
         radius =  randint(self.min_radius, min((min(size)-30)/2, self.max_radius))
-        print(radius)
         center_x = randint(20 + radius, size[0] - 20 - radius)
         center_y = randint(20 + radius, size[1] - 20 - radius)
         rotation = randint(0, 360)
         f_tex_idx = randint(0, self.num_f_tex -1)
         b_tex_idx = randint(0, self.num_b_tex -1)
-        return radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx
+        
+        #return radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx
+        return 41, 159, 108, 15, 1, 1
 
 
     def __directories(self):

@@ -17,8 +17,8 @@ def get_i(idx, list):
 class Generator:
 
     base = 'dataset'
-    img_size = (10,10)
-    bg_to_class_ratio = 0.7
+    img_size = (3,3)
+    class_to_bg_ratio = 1/3
 
     def __init__(self, rgb):
 
@@ -34,14 +34,18 @@ class Generator:
 
     def __generate(self, bg_value, fg_value):
         
+        total = self.img_size[0] * self.img_size[1]
         if self.rgb:
-            sample_arr = np.reshape(np.random.choice([0, 1], self.img_size[0]*self.img_size[1], p=[self.bg_to_class_ratio, 1 - self.bg_to_class_ratio]), self.img_size)
-            values_arr = np.ones((*self.img_size, 3))
+            sample_arr = np.random.choice(total, round(total*self.class_to_bg_ratio), replace=False)
+            values_arr = np.ones((total, 3))
             values_arr *= bg_value
-            values_arr[sample_arr == 1] = fg_value
-            return values_arr
+            values_arr[sample_arr] = fg_value
+            return np.reshape(values_arr, (*self.img_size, 3))
         else:
-            sample_arr = np.random.choice([bg_value, fg_value], self.img_size[0]*self.img_size[1], p=[self.bg_to_class_ratio, 1 - self.bg_to_class_ratio])
-            return np.reshape(sample_arr, self.img_size)
+            sample_arr = np.random.choice(total, round(total*self.class_to_bg_ratio), replace=False)
+            values_arr = np.ones(total)
+            values_arr *= bg_value
+            values_arr[sample_arr] = fg_value
+            return np.reshape(values_arr, self.img_size)
 
 
