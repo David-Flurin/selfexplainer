@@ -173,12 +173,14 @@ class BaseModel(pl.LightningModule):
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+        '''
         for b in range(image.size()[0]):
             s = image[b].sum().item()
             if s in self.same_images.keys():
                 self.same_images[s] += 1
             else:
                 self.same_images[s] = 1
+        '''
 
         # if self.first_of_epoch:
         #     from matplotlib import pyplot as plt
@@ -216,8 +218,8 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector)
 
         
-        print(output['image'][3])
-        print(target_vector)
+        #print(output['image'][3])
+        #print(target_vector)
 
         if self.use_entropy_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
@@ -272,7 +274,7 @@ class BaseModel(pl.LightningModule):
         else:
             raise ValueError('Unknown objective')
         
-        print(classification_loss_initial)
+        #print(classification_loss_initial)
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
@@ -352,8 +354,8 @@ class BaseModel(pl.LightningModule):
         #GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
         #d.render('backward_graph_unfrozen', format='png')  
-        output['image'][1].retain_grad()
-        output['object'][1].retain_grad()
+        #output['image'][1].retain_grad()
+        #output['object'][1].retain_grad()
 
         # o = self.optimizers()
         # self.manual_backward(loss)
@@ -373,6 +375,12 @@ class BaseModel(pl.LightningModule):
             self.log('lr', g['lr'], prog_bar=True)
 
         self.first_of_epoch = True
+
+        #print("Checking for same images")
+        #print("Size of dict", len(self.same_images))
+        #for k,v in self.same_images.items():
+        #    if v > 1:
+        #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
         image, annotations = batch
@@ -471,6 +479,7 @@ class BaseModel(pl.LightningModule):
 
 
         classification_loss = self.classification_loss_fn(output['image'][3], target_vector)
+        print(classification_loss)
         print(output['image'][3])
         print(target_vector)
         loss = classification_loss
@@ -525,10 +534,6 @@ class BaseModel(pl.LightningModule):
         self.test_metrics.reset()
         #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 
-        print("Checking for same images")
-        for k,v in self.same_images.items():
-            if v > 1:
-                print(k, v)
 
         #DEBUG
         if self.count_logits and self.save_path:
