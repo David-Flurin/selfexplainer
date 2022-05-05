@@ -30,7 +30,7 @@ print(args)
 if args.arg_log:
     write_config_file(args)
 
-pl.seed_everything(args.seed)
+#pl.seed_everything(args.seed)
 profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
 
@@ -159,11 +159,7 @@ early_stop_callback = EarlyStopping(
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-<<<<<<< HEAD
     mode="min",
-=======
-    mode="max",
->>>>>>> 93006c2758c845d578b2005ce5f6490458894a61
     #stopping_threshold=0.
 )
 

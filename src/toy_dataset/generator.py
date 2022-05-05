@@ -222,6 +222,7 @@ class Generator:
 
     def __randomize(self, size):
         radius =  randint(self.min_radius, min((min(size)-30)/2, self.max_radius))
+        print(radius)
         center_x = randint(20 + radius, size[0] - 20 - radius)
         center_y = randint(20 + radius, size[1] - 20 - radius)
         rotation = randint(0, 360)

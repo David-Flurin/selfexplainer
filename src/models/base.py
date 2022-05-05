@@ -347,8 +347,8 @@ class BaseModel(pl.LightningModule):
         #GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
         #d.render('backward_graph_unfrozen', format='png')  
-        output['image'][1].retain_grad()
-        output['object'][1].retain_grad()
+        # output['image'][1].retain_grad()
+        # output['object'][1].retain_grad()
 
         # o = self.optimizers()
         # self.manual_backward(loss)
@@ -432,7 +432,9 @@ class BaseModel(pl.LightningModule):
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
         output = self(image, targets)
 
-
+        from matplotlib import pyplot as plt
+        plt.imshow(image[0].permute(1,2,0))
+        plt.show()
         
 
         # from matplotlib import pyplot as plt
