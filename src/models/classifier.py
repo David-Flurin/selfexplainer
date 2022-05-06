@@ -9,7 +9,7 @@ from copy import deepcopy
 
 from torchvision import models
 from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
-from utils.image_display import save_all_class_masks, save_mask, save_masked_image
+from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting

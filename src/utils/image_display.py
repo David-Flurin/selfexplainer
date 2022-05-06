@@ -125,7 +125,32 @@ def show_image_and_masked_image(image, mask):
 
     plt.show()
 
-def save_all_class_masks(image, segmentations, filename):
+
+def save_all_class_masks(segmentations, filename):
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    filename = os.path.splitext(filename)[0]
+
+    all_class_masks = segmentations.transpose(0, 1).sigmoid()
+
+    fig = get_fullscreen_figure_canvas("All class masks")
+    for i in range(all_class_masks.size()[0]): #loop over all classes
+        add_subplot_with_class_mask(fig, i)
+        plt.imshow((all_class_masks[i].detach().cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
+
+    # img_buf = io.BytesIO()
+    plt.savefig(filename, format='png')
+
+    # im = Image.open(img_buf)
+    # im.save(filename, format='png')
+
+    #img = mask.detach().cpu().numpy().squeeze()
+
+    #plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
+    #np.savez_compressed(path_file + ".npz", img)
+
+    #img_buf.close()
+
+def save_all_class_masked_images(image, segmentations, filename):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     filename = os.path.splitext(filename)[0]
 

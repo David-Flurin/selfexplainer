@@ -13,7 +13,7 @@ import pickle
 #from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
-from utils.image_display import save_all_class_masks, save_mask, save_masked_image, save_background_logits, save_image
+from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
@@ -503,9 +503,9 @@ class BaseModel(pl.LightningModule):
 
         if self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(image, output['image'][0], filename)
+            save_all_class_masks(output['image'][0], filename)
             filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(image, output['background'][0], filename)
+            save_all_class_masks(output['background'][0], filename)
 
 
 

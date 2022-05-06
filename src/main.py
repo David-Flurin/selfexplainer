@@ -19,7 +19,7 @@ from models.classifier import Classifier
 from models.fcn_16 import FCN16
 
 from models.mlp import MLP
-from utils.image_display import save_all_class_masks, save_masked_image
+from utils.image_display import save_all_class_masked_images, save_masked_image
 
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
