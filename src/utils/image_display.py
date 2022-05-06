@@ -136,7 +136,6 @@ def save_all_class_masks(image, segmentations, filename):
     for i in range(all_class_masks.size()[0]): #loop over all classes
         masked_nat_im = get_masked_image(nat_image, all_class_masks[i])
         add_subplot_with_class_mask(fig, i)
-        show_image(masked_nat_im)
 
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='png')
