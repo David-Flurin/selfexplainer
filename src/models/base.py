@@ -501,9 +501,11 @@ class BaseModel(pl.LightningModule):
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        # if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
-        #     filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-        #     save_all_class_masks(image, t_seg, filename)
+        if self.save_all_class_masks and image.size()[0] == 1:
+            filename = self.save_path / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_all_class_masks(image, output['image'][0], filename)
+            filename = self.save_path / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_all_class_masks(image, output['background'][0], filename)
 
 
 
