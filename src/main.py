@@ -19,7 +19,7 @@ from models.classifier import Classifier
 from models.fcn_16 import FCN16
 
 from models.mlp import MLP
-from utils.image_display import save_masked_image
+from utils.image_display import save_all_class_masks, save_masked_image
 
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -102,14 +102,14 @@ if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_entropy_loss = args.use_entropy_loss, use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
             args.checkpoint,
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_entropy_loss = args.use_entropy_loss, use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss
+         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks
         )
 
 elif args.model_to_train == "fcn":
