@@ -99,14 +99,15 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset == "COLOR":
-            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
+        self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
+        self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
+        self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
+        '''
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        '''
 
         if self.count_logits:
             self.logit_stats = {'image': LogitStats(self.num_classes)}
@@ -288,6 +289,8 @@ class BaseModel(pl.LightningModule):
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)
+        
+
         #if classification_loss.item() > 0.5 and self.i > 20 and self.i % 2 == 0:
         # b_s,_,_,_ = image.size()
         # for b in range(2):
@@ -575,7 +578,7 @@ class BaseModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=50, threshold=0.001, min_lr=1e-6)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
         lr_scheduler_config = {
         "scheduler": lr_scheduler,
         "interval": "epoch",
