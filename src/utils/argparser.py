@@ -90,7 +90,7 @@ def get_parser():
     # parser.add_argument('--show_max_activation_for_class_id', default=None, type=int, help='If true, highlights point of maximum activation for given class id. Requires testing batch size to be 1.')
     parser.add_argument('--save_masks', default=False, type=str2bool, help='If true, masks are saved to location specified by save_path (see below)')
     parser.add_argument('--save_masked_images', default=False, type=str2bool, help='If true, masked images are saved to location specified by save_path (see below)')
-    # parser.add_argument('--save_all_class_masks', default=False, type=str2bool, help='Unused.')
+    parser.add_argument('--save_all_class_masks', default=False, type=str2bool, help='Unused.')
     parser.add_argument('--save_path', default='./results/', type=str, help='Path to where masks and/or masked images are saved if corresponding options are set to true.')
 
     # Metrics parameters
