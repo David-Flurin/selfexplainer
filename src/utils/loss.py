@@ -147,8 +147,12 @@ def weighted_loss(l_1, l_2, steepness, offset):
 # m = mask_similarity_loss(t, z)
 # print(m)
 
+#def bg_loss(segmentations, target_vector):
 def bg_loss(segmentations):
     b, c, h, w = segmentations.size()
+
+    #target_idx = (target_vector == 1).nonzero()
+    
 
     batch_softmax = torch.zeros_like(segmentations)
     for i in range(b):
@@ -157,6 +161,7 @@ def bg_loss(segmentations):
     batch_mean = batch_softmax.sum(dim=(2,3))
     #batch_mean = batch_mean / batch_mean.sum()
     
+    #batch_loss = (batch_mean[target_idx] -1/c)
     batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
     #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
     return batch_loss.mean()
