@@ -137,18 +137,18 @@ def save_all_class_masks(segmentations, filename):
         add_subplot_with_class_mask(fig, i)
         plt.imshow((all_class_masks[i].detach().cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
 
-    # img_buf = io.BytesIO()
-    plt.savefig(filename, format='png')
+    img_buf = io.BytesIO()
+    plt.savefig(img_buf, format='png')
 
-    # im = Image.open(img_buf)
-    # im.save(filename, format='png')
+    im = Image.open(img_buf)
+    im.save(filename, format='png')
 
     #img = mask.detach().cpu().numpy().squeeze()
 
     #plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
     #np.savez_compressed(path_file + ".npz", img)
 
-    #img_buf.close()
+    img_buf.close()
 
 def save_all_class_masked_images(image, segmentations, filename):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
