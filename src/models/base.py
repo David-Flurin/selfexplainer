@@ -66,7 +66,6 @@ class BaseModel(pl.LightningModule):
         self.test_background_logits = []
         self.class_loss = class_loss
 
-        #self.automatic_optimization = False
         self.frozen = frozen
         self.freeze_every = freeze_every
 
@@ -78,7 +77,7 @@ class BaseModel(pl.LightningModule):
         #     self.attention_layer = nn.Conv2d
 
 
-        #DEBUG
+        # ---------------- DEBUG -------------------
         self.i = 0.
         self.use_perfect_mask = use_perfect_mask
         self.count_logits = count_logits
@@ -87,6 +86,10 @@ class BaseModel(pl.LightningModule):
         self.global_object_mask = None
         self.first_of_epoch = True
         self.same_images = {}
+
+        #self.automatic_optimization = False
+        # -------------------------------------------
+
 
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
@@ -106,6 +109,9 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         else:
             raise ValueError(f'Classification loss argument {self.class_loss} not known')
+
+        if self.objective == 'segmentation':
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
 
         self.total_variation_conv = TotalVariationConv()
@@ -336,7 +342,7 @@ class BaseModel(pl.LightningModule):
             if self.bg_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
-                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0])
+                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector)
 
             self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
@@ -536,7 +542,7 @@ class BaseModel(pl.LightningModule):
                 background_entropy_loss = entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
                 if self.class_loss == 'ce':
-                    background_entropy_loss = bg_loss(output['background'][0])
+                    background_entropy_loss = bg_loss(output['background'][0], target_vector)
                 else:
                     background_entropy_loss = bg_loss(output['background'][0])
             loss += background_entropy_loss

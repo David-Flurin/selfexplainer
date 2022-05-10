@@ -147,24 +147,30 @@ def weighted_loss(l_1, l_2, steepness, offset):
 # m = mask_similarity_loss(t, z)
 # print(m)
 
-#def bg_loss(segmentations, target_vector):
-def bg_loss(segmentations):
+def bg_loss(segmentations, target_vector):
+#def bg_loss(segmentations):
     b, c, h, w = segmentations.size()
 
-    #target_idx = (target_vector == 1).nonzero()
     
 
-    batch_softmax = torch.zeros_like(segmentations)
-    for i in range(b):
-        exp_sum = segmentations[i].exp().sum()
-        batch_softmax[i] = segmentations[i].exp() / exp_sum
-    batch_mean = batch_softmax.sum(dim=(2,3))
-    #batch_mean = batch_mean / batch_mean.sum()
+    # batch_softmax = torch.zeros_like(segmentations)
+    # for i in range(b):
+    #     exp_sum = segmentations[i].exp().sum()
+    #     batch_softmax[i] = segmentations[i].exp() / exp_sum
+    # batch_mean = batch_softmax.sum(dim=(2,3))
+    # #batch_mean = batch_mean / batch_mean.sum()
     
-    #batch_loss = (batch_mean[target_idx] -1/c)
-    batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
-    #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
-    return batch_loss.mean()
+    # batch_loss = (batch_mean[target_idx] -1/c).abs()
+    # #batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
+    # #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
+    
+    batch_losses = torch.zeros(b, device=segmentations.device)
+    for i in range(b):
+        target_idx = target_vector[i].eq(1.0)
+        target_mean = segmentations[i][target_idx].mean(0)
+        non_target_mean = segmentations[i][~target_idx].mean(0).detach()
+        batch_losses[i] = (target_mean - non_target_mean).abs().mean((0,1))
+    return batch_losses.mean()
 
 
 def relu_classification(logits, targets, t_threshold, nt_threshold):
