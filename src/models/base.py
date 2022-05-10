@@ -23,7 +23,7 @@ import GPUtil
 from matplotlib import pyplot as plt
 
 class BaseModel(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
                  gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3):
@@ -42,7 +42,8 @@ class BaseModel(pl.LightningModule):
 
         self.use_similarity_loss = use_similarity_loss
         self.similarity_regularizer = similarity_regularizer
-        self.use_entropy_loss = use_entropy_loss
+        self.use_background_loss = use_background_loss
+        self.bg_loss_regularizer = bg_loss_regularizer
         self.use_weighted_loss = use_weighted_loss
         self.mask_area_constraint_regularizer = mask_area_constraint_regularizer
         self.use_mask_area_loss = use_mask_area_loss
@@ -127,7 +128,7 @@ class BaseModel(pl.LightningModule):
             self.logit_stats = {'image': LogitStats(self.num_classes)}
             if self.use_similarity_loss:
                 self.logit_stats['object'] = LogitStats(self.num_classes)
-            if self.use_entropy_loss:
+            if self.use_background_loss:
                 self.logit_stats['background'] = LogitStats(self.num_classes)
 
     def forward(self, image, targets, perfect_mask = None):
@@ -142,7 +143,7 @@ class BaseModel(pl.LightningModule):
             masked_image = i_mask.unsqueeze(1) * image
             output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
         
-        if self.use_entropy_loss:   
+        if self.use_background_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
@@ -232,7 +233,7 @@ class BaseModel(pl.LightningModule):
         #             self.f_tex_dist.update(obj[1])
         #     self.b_text_dist.update(a['background'])
         
-        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_entropy_loss):
+        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.frozen = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
@@ -246,7 +247,7 @@ class BaseModel(pl.LightningModule):
         #print(output['image'][3])
         #print(target_vector)
 
-        if self.use_entropy_loss:
+        if self.use_background_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
 
         #GPUtil.showUtilization()
@@ -331,14 +332,12 @@ class BaseModel(pl.LightningModule):
 
             obj_back_loss += similarity_loss
 
-        if self.use_entropy_loss:
+        if self.use_background_loss:
             if self.bg_loss == 'entropy':
-                background_entropy_loss = entropy_loss(output['background'][3])
+                background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
-                if self.class_loss == 'ce':
-                    background_entropy_loss = bg_loss(output['background'][0])
-                else:
-                    background_entropy_loss = bg_loss(output['background'][0])
+                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0])
+
             self.log('background_entropy_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
@@ -358,7 +357,7 @@ class BaseModel(pl.LightningModule):
             mask_loss += mask_area_loss
 
 
-        if self.use_similarity_loss or self.use_entropy_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
+        if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
             if self.use_weighted_loss:
                 loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
             else:
@@ -445,7 +444,7 @@ class BaseModel(pl.LightningModule):
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
             loss += similarity_loss 
 
-        if self.use_entropy_loss:
+        if self.use_background_loss:
             background_entropy_loss = entropy_loss(output['background'][3])
             self.log('background_entropy_loss', background_entropy_loss)
             loss += background_entropy_loss
@@ -532,7 +531,7 @@ class BaseModel(pl.LightningModule):
             similarity_loss = mask_similarity_loss(output['image'][1], output['object'][1])
             loss += similarity_loss
 
-        if self.use_entropy_loss:
+        if self.use_background_loss:
             if self.bg_loss == 'entropy':
                 background_entropy_loss = entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
@@ -547,7 +546,7 @@ class BaseModel(pl.LightningModule):
             f.write(f'classification loss: {classification_loss}\n')
             if self.use_similarity_loss:
                 f.write(f'similarity loss: {similarity_loss}\n')
-            if self.use_entropy_loss:
+            if self.use_background_loss:
                 f.write(f'background loss: {background_entropy_loss}\n')
 
         '''
