@@ -109,6 +109,9 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         else:
             raise ValueError(f'Classification loss argument {self.class_loss} not known')
+
+        if self.objective == 'segmentation':
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
 
         self.total_variation_conv = TotalVariationConv()
