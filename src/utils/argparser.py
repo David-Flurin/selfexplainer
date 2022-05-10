@@ -77,6 +77,8 @@ def get_parser():
     parser.add_argument('--count_logits', default=False, type=str2bool, help='DEBUG: Whether to generate statistics for logits.')
     parser.add_argument('--objective', default='classification', type=str, help='Classification or segmentation loss')
     parser.add_argument('--class_loss', default='bce', type=str, help='Which classification loss to use [bce, ce]')
+    parser.add_argument('--target_threshold', default='0.7', type=float, help='Threshold to define probability as correct classification.')
+    parser.add_argument('--non_target_threshold', default='0.2', type=float, help='Threshold to define probability as correct classification.')
 
 
     # parser.add_argument('--target_mask_min_area', default=0.05, type=float, help='minimum area for the overall mask area constraint (currently not used!)')

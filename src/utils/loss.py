@@ -162,12 +162,33 @@ def bg_loss(segmentations):
     return batch_loss.mean()
 
 
+def relu_classification(logits, targets, t_threshold, nt_threshold):
+    batch_size = logits.size()[0]
+    probs = F.softmax(logits, dim=-1)
+    losses = torch.zeros(batch_size, device=logits.device)
+
+    for b in range(batch_size):
+        target_idx = targets[b].eq(1.0)
+        non_target_idx = targets[b].eq(0.0)
+        target_probs = probs[b][target_idx]
+        non_target_probs = probs[b][non_target_idx]
+        for p in target_probs:
+            losses[b] += F.relu(t_threshold - p)
+        for p in non_target_probs:
+            losses[b] += F.relu(p - nt_threshold)
+    
+    return losses.mean()
+
+
+
 def background_activation_loss(mask):
     t = mask[mask < 0.7]
     return t.mean()
 
 
-
+# t = torch.tensor([[1., 3.08, 1.], [1., 3.08, 1.,]])
+# tt = torch.tensor([[1., 0., 0.], [0., 1., 0.]])
+# print(relu_classification(t, tt, 0.8, 0.3))
 
 
 

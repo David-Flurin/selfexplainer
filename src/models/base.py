@@ -1,3 +1,4 @@
+from cv2 import threshold
 import torch
 import pytorch_lightning as pl
 import os
@@ -14,7 +15,7 @@ import pickle
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 from utils.weighting import softmax_weighting
 
@@ -25,7 +26,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_entropy_loss=False, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False):
+                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3):
 
         super().__init__()
 
@@ -50,7 +51,9 @@ class BaseModel(pl.LightningModule):
         self.use_mask_variation_loss = use_mask_variation_loss
         self.mask_variation_regularizer = mask_variation_regularizer
 
+
         self.use_background_activation_loss = background_activation_loss
+        self.bg_activation_regularizer = bg_activation_regularizer
 
         self.save_path = save_path
         self.save_masked_images = save_masked_images
@@ -65,6 +68,14 @@ class BaseModel(pl.LightningModule):
         #self.automatic_optimization = False
         self.frozen = frozen
         self.freeze_every = freeze_every
+
+        # self.attention_layer = None
+        # if use_attention_layer:
+        #     l = [
+        #         nn.Conv2d(num_classes, )
+        #     ]
+        #     self.attention_layer = nn.Conv2d
+
 
         #DEBUG
         self.i = 0.
@@ -81,21 +92,24 @@ class BaseModel(pl.LightningModule):
             self.b_text_dist = Distribution()
             self.shapes_dist = Distribution()
 
-        self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
+        self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area, target_threshold=target_threshold, non_target_threshold=non_target_threshold)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
 
-    def setup_losses(self, class_mask_min_area, class_mask_max_area):
+    def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
         if self.class_loss == 'ce':
             self.classification_loss_fn = nn.CrossEntropyLoss()
         elif self.class_loss == 'bce':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
+        elif self.class_loss == 'threshold':
+            self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         else:
             raise ValueError(f'Classification loss argument {self.class_loss} not known')
         
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
+
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
@@ -351,7 +365,7 @@ class BaseModel(pl.LightningModule):
                 loss = loss + obj_back_loss + mask_loss
 
         if self.use_background_activation_loss:
-            bg_logits_loss = background_activation_loss(output['image'][1])
+            bg_logits_loss = self.bg_activation_regularizer * background_activation_loss(output['image'][1])
             self.log('bg_logits_loss', bg_logits_loss)
             loss += weighted_loss(loss, bg_logits_loss, 2, 0.1)
         

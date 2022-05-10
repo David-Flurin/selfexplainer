@@ -137,8 +137,9 @@ def save_all_class_masks(segmentations, filename):
         add_subplot_with_class_mask(fig, i)
         plt.imshow((all_class_masks[i].detach().cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
 
-    # img_buf = io.BytesIO()
+    #img_buf = io.BytesIO()
     plt.savefig(filename, format='png')
+    plt.close()
 
     # im = Image.open(img_buf)
     # im.save(filename, format='png')
