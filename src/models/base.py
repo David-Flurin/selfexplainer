@@ -522,9 +522,9 @@ class BaseModel(pl.LightningModule):
 
         if self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(output['image'][0], filename)
+            save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
             filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(output['background'][0], filename)
+            save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
 
 
 
