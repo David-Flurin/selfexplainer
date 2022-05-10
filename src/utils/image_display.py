@@ -147,7 +147,7 @@ def save_all_class_masks(segmentations, filename, dataset):
 
     im = Image.open(img_buf)
     print('Buffer size:', len(img_buf.read()))
-    im.save(filename, format='png')
+    im.save(filename + '.png', format='png')
 
     #img = mask.detach().cpu().numpy().squeeze()
 
