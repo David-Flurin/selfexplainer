@@ -588,9 +588,9 @@ class BaseModel(pl.LightningModule):
                 v.plot(dir + f'/{k}.png', list(class_dict.keys()))
 
 
-    # def configure_optimizers(self):
-    #     return Adam(self.parameters(), lr=self.learning_rate)
-
+    def configure_optimizers(self):
+        return Adam(self.parameters(), lr=self.learning_rate)
+    '''
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
@@ -603,7 +603,7 @@ class BaseModel(pl.LightningModule):
         "name": None,
         }
         return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
-
+    '''
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('frozen'):
