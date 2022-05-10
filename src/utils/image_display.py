@@ -9,6 +9,8 @@ import matplotlib as mpl
 
 from PIL import Image
 
+from .helper import get_toy_target_dictionary
+
 def show_max_activation(image, segmentations, class_id):
     nat_image = get_unnormalized_image(image)
 
@@ -126,21 +128,25 @@ def show_image_and_masked_image(image, mask):
     plt.show()
 
 
-def save_all_class_masks(segmentations, filename):
+def save_all_class_masks(segmentations, filename, dataset):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     filename = os.path.splitext(filename)[0]
 
     all_class_masks = segmentations.transpose(0, 1).sigmoid()
 
-    fig = get_fullscreen_figure_canvas("All class masks")
+    num_classes = len(get_target_labels(dataset, include_background_class=False))
+    mpl.rcParams["figure.figsize"] = (40,10*(num_classes // 5 + 1))
+    fig = plt.figure()
+    fig.suptitle('All class masks')
     for i in range(all_class_masks.size()[0]): #loop over all classes
-        add_subplot_with_class_mask(fig, i)
+        add_subplot_with_class_mask(fig, i, dataset)
         plt.imshow((all_class_masks[i].detach().cpu().numpy().squeeze()), cmap='gray', vmin=0, vmax=1)
 
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='png')
 
     im = Image.open(img_buf)
+    print('Buffer size:', len(img_buf.read()))
     im.save(filename, format='png')
 
     #img = mask.detach().cpu().numpy().squeeze()
@@ -213,10 +219,11 @@ def get_fullscreen_figure_canvas(title):
 
     return fig
 
-def add_subplot_with_class_mask(fig, class_id):
-    target_labels = get_target_labels(include_background_class=False)
+def add_subplot_with_class_mask(fig, class_id, dataset):
+    target_labels = get_target_labels(dataset, include_background_class=False)
+    rows = len(target_labels) // 5 + 1
 
-    axis = fig.add_subplot(4, 5, class_id+1)
+    axis = fig.add_subplot(rows, 5, class_id+1)
     axis.get_xaxis().set_visible(False)
     axis.get_yaxis().set_visible(False)
     axis.title.set_text(target_labels[class_id])
@@ -224,15 +231,18 @@ def add_subplot_with_class_mask(fig, class_id):
 def show_image(image):
     plt.imshow(np.stack(image.squeeze(), axis=2))
 
-def get_target_labels(include_background_class):
-    if include_background_class:
-        targets = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
-                'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
-                'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    else:
-        targets = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
-                'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
-                'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
+def get_target_labels(dataset, include_background_class):
+    if dataset == 'VOC':
+        if include_background_class:
+            targets = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
+                    'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
+                    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
+        else:
+            targets = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
+                    'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
+                    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
+    elif dataset == 'TOY':
+        targets = list(get_toy_target_dictionary(include_background_class, 'texture').keys())
 
     return targets
 

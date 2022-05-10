@@ -109,6 +109,9 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         else:
             raise ValueError(f'Classification loss argument {self.class_loss} not known')
+
+        if self.objective == 'segmentation':
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
 
         self.total_variation_conv = TotalVariationConv()
@@ -519,9 +522,9 @@ class BaseModel(pl.LightningModule):
 
         if self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(output['image'][0], filename)
+            save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
             filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(output['background'][0], filename)
+            save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
 
 
 
@@ -591,9 +594,9 @@ class BaseModel(pl.LightningModule):
                 v.plot(dir + f'/{k}.png', list(class_dict.keys()))
 
 
-    # def configure_optimizers(self):
-    #     return Adam(self.parameters(), lr=self.learning_rate)
-
+    def configure_optimizers(self):
+        return Adam(self.parameters(), lr=self.learning_rate)
+    '''
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
@@ -606,7 +609,7 @@ class BaseModel(pl.LightningModule):
         "name": None,
         }
         return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
-
+    '''
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('frozen'):
