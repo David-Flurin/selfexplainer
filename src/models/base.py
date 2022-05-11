@@ -76,6 +76,7 @@ class BaseModel(pl.LightningModule):
         #     ]
         #     self.attention_layer = nn.Conv2d
 
+        self.test_i = 0
 
         # ---------------- DEBUG -------------------
         self.i = 0.
@@ -481,6 +482,7 @@ class BaseModel(pl.LightningModule):
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
+        self.test_i += 1
         image, seg, annotations = batch
         targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
@@ -520,11 +522,12 @@ class BaseModel(pl.LightningModule):
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        if self.save_all_class_masks and image.size()[0] == 1:
+        if self.test_i < 21 and self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
-            filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
+            if self.use_background_loss:
+                filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
+                save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
 
 
 
