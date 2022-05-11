@@ -116,7 +116,7 @@ def entropy_loss(logits):
     return entropy_loss
 
 
-def mask_similarity_loss(imask, omask):
+def mask_similarity_loss(logits, targets, imask, omask):
     '''Compute L1 loss over pixel distances between initial mask and object mask.'''
 
     #older version
@@ -130,8 +130,10 @@ def mask_similarity_loss(imask, omask):
     # batch_losses = torch.div(abs_diff_sum, count + 1)
 
     #newer version
-    max_mask = torch.where(imask > omask, imask, omask)
-    batch_losses = ((imask - omask).abs() * max_mask).sum((1,2)) / max_mask.sum((1,2))
+    # max_mask = torch.where(imask > omask, imask, omask)
+    # batch_losses = ((imask - omask).abs() * max_mask).sum((1,2)) / max_mask.sum((1,2))
+
+    return nn.functional.cross_entropy(logits, targets)
 
     return batch_losses.mean()
 
@@ -147,29 +149,40 @@ def weighted_loss(l_1, l_2, steepness, offset):
 # m = mask_similarity_loss(t, z)
 # print(m)
 
-def bg_loss(segmentations, target_vector):
+def bg_loss(segmentations, target_vector, loss):
 #def bg_loss(segmentations):
     b, c, h, w = segmentations.size()
 
+    if loss == 'logits_ce': 
+        mean = segmentations.mean((2,3))
+        sm = nn.functional.softmax(mean, dim=-1)
+        batch_losses = -(sm + (c-1)/c).log()
     
+    elif loss == 'segmentations_ce':
+        batch_softmax = torch.zeros_like(segmentations)
+        for i in range(b):
+            exp_sum = segmentations[i].exp().sum()
+            batch_softmax[i] = segmentations[i].exp() / exp_sum
+        batch_mean = batch_softmax.sum(dim=(2,3))
+        #batch_mean = batch_mean / batch_mean.sum()
+        
+        batch_losses = (batch_mean[target_idx] -1/c).abs()
+        #batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
+        #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
+    
+    elif loss == 'segmentations_distance':
+        
+        batch_losses = torch.zeros(b, device=segmentations.device)
+        for i in range(b):
+            exp_sum = segmentations[i].exp().sum()
+            batch_softmax = segmentations[i].exp() / exp_sum
+            target_idx = target_vector[i].eq(1.0)
+            target_mean = batch_softmax[target_idx].mean(0)
+            non_target_mean = batch_softmax[~target_idx].mean(0).detach()
+            batch_losses[i] = (target_mean - non_target_mean).abs().mean((0,1))
 
-    # batch_softmax = torch.zeros_like(segmentations)
-    # for i in range(b):
-    #     exp_sum = segmentations[i].exp().sum()
-    #     batch_softmax[i] = segmentations[i].exp() / exp_sum
-    # batch_mean = batch_softmax.sum(dim=(2,3))
-    # #batch_mean = batch_mean / batch_mean.sum()
-    
-    # batch_loss = (batch_mean[target_idx] -1/c).abs()
-    # #batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
-    # #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
-    
-    batch_losses = torch.zeros(b, device=segmentations.device)
-    for i in range(b):
-        target_idx = target_vector[i].eq(1.0)
-        target_mean = segmentations[i][target_idx].mean(0)
-        non_target_mean = segmentations[i][~target_idx].mean(0).detach()
-        batch_losses[i] = (target_mean - non_target_mean).abs().mean((0,1))
+    else:
+        raise ValueError('Unknown background loss. Choose from [logits_ce, segmentations_ce, segmentations_distance')
     return batch_losses.mean()
 
 
@@ -193,7 +206,7 @@ def relu_classification(logits, targets, t_threshold, nt_threshold):
 
 
 def background_activation_loss(mask):
-    t = mask[mask < 0.7]
+    t = torch.cat((mask[mask < 0.7], torch.tensor([1e-16])))
     return t.mean()
 
 
