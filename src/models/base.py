@@ -425,57 +425,90 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        
-        self.frozen = deepcopy(self.model)
-        for _,p in self.frozen.named_parameters():
-            p.requires_grad_(False)
-        
-        output = self(image, targets)
+        image, seg, annotations = batch
+        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        if self.dataset == "CUB":
-            labels = targets.argmax(dim=1)
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], labels)
-            #classification_loss_object = self.classification_loss_fn(o_logits, labels)
-            #classification_loss_background = self.classification_loss_fn(b_logits, labels)
+        
+        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
+           self.frozen = deepcopy(self.model)
+           for _,p in self.frozen.named_parameters():
+               p.requires_grad_(False)
+        
+        if self.use_perfect_mask:
+            output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], targets)
-            #classification_loss_object = self.classification_loss_fn(o_logits, targets)
-            #classification_loss_background = self.classification_loss_fn(b_logits, targets)
-
-        classification_loss = classification_loss_initial #+ classification_loss_object + classification_loss_background
-
-        loss = classification_loss
-        if self.use_similarity_loss:
-            similarity_loss = mask_similarity_loss(output['image'][3], targets, output['image'][1], output['object'][1])
-            loss += similarity_loss 
+            output = self(image, target_vector)
 
         if self.use_background_loss:
-            background_entropy_loss = entropy_loss(output['background'][3])
-            self.log('background_entropy_loss', background_entropy_loss)
-            loss += background_entropy_loss
-        # if self.use_mask_variation_loss:
-        #     mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(t_mask) + self.total_variation_conv(s_mask))
-        #     loss += mask_variation_loss
+            self.test_background_logits.append(output['background'][3].sum().item())
+
+
+        if self.objective == 'classification':
+            classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            #classification_loss_object = self.classification_loss_fn(o_logits, targets)
+            #classification_loss_background = self.classification_loss_fn(b_logits, targets)
+        elif self.objective == 'segmentation':
+            targets = targets.to(torch.float64)
+            classification_loss_initial = self.classification_loss_fn(output['image'][0], targets)
+        else:
+            raise ValueError('Unknown objective')
+        
+        classification_loss = classification_loss_initial
+        self.log('val_classification_loss', classification_loss)        
+
+        loss = classification_loss
+        
+        obj_back_loss = torch.zeros((1), device=loss.device)
+        if self.use_similarity_loss:
+            similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
+            #similarity_loss = self.classification_loss_fn(output['object'][3], target_vector)
+            self.log('val_similarity_loss', similarity_loss)
+
+            obj_back_loss += similarity_loss
+
+        if self.use_background_loss:
+            if self.bg_loss == 'entropy':
+                background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
+            elif self.bg_loss == 'distance':
+                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
+
+            self.log('val_background_entropy_loss', background_entropy_loss)
+            obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
+
+
+        
+
+        mask_loss = torch.zeros((1), device=loss.device)
+        if self.use_mask_variation_loss:
+            mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
+            mask_loss += mask_variation_loss
 
         if self.use_mask_area_loss:
-            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], targets) + self.class_mask_area_loss_fn(output['object'][0], targets))
-            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean() + output['object'][1].mean())
-            #mask_area_loss += self.ncmask_total_area_regularizer * (t_ncmask.mean() + s_ncmask.mean())
-            self.log('mask_area_loss', mask_area_loss)
-            loss += mask_area_loss
+            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+            #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
+            self.log('val_mask_area_loss', mask_area_loss)
+            mask_loss += mask_area_loss
 
-        # if self.use_mask_coherency_loss:
-        #     mask_coherency_loss = (t_mask - s_mask).abs().mean()
-        #     loss += mask_coherency_loss
 
-        self.log('val_loss', loss)
-        if self.dataset == "CUB":
-            labels = targets.argmax(dim=1)
-            self.valid_metrics(output['object'][3], labels)
-        else:
-            self.valid_metrics(output['object'][3], targets) 
+        if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
+            if self.use_weighted_loss:
+                loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
+            else:
+                loss = loss + obj_back_loss + mask_loss
+
+        if self.use_background_activation_loss:
+            bg_logits_loss = self.bg_activation_regularizer * background_activation_loss(output['image'][1])
+            self.log('val_bg_logits_loss', bg_logits_loss)
+            loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
+        
+
+        self.log('val_loss', float(loss))
+       
+        self.train_metrics(output['image'][3], target_vector)
+
+        return loss
    
     def validation_epoch_end(self, outs):
         self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
