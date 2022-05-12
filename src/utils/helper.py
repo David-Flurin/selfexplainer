@@ -140,20 +140,24 @@ def get_toy_target_dictionary(include_background_class, toy_target):
         
     return target_dict
 
-def get_color_dictionary(include_background_class):
-    if include_background_class:
-        target =  {'background': 0, 'gray': 1, 'white':2}
+def get_color_dictionary(include_background_class, rgb=True):
+    if rgb:
+        target = {'red': 0, 'blue':1}
     else:
         target =  {'gray': 1, 'white':2}
+
+    if include_background_class:
+        target['background'] = len(target.values())
+    
     return target
 
-def get_class_dictionary(dataset, include_background_class=False, toy_target='texture'):
+def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
     if dataset == 'VOC':
         return get_target_dictionary(include_background_class=include_background_class)
     elif dataset == 'TOY':
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
-        return get_color_dictionary(include_background_class=include_background_class)
+        return get_color_dictionary(include_background_class=include_background_class, rgb=rgb)
     else:
         raise ValueError('Dataset not known.')
 

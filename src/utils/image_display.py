@@ -9,7 +9,7 @@ import matplotlib as mpl
 
 from PIL import Image
 
-from .helper import get_toy_target_dictionary
+from .helper import get_toy_target_dictionary, get_color_dictionary
 
 def show_max_activation(image, segmentations, class_id):
     nat_image = get_unnormalized_image(image)
@@ -243,6 +243,10 @@ def get_target_labels(dataset, include_background_class):
                     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
     elif dataset == 'TOY':
         targets = list(get_toy_target_dictionary(include_background_class, 'texture').keys())
+
+    elif dataset == 'COLOR':
+        targets = list(get_color_dictionary(include_background_class, rgb=True).keys())
+
 
     return targets
 
