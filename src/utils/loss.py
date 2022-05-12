@@ -156,7 +156,7 @@ def bg_loss(segmentations, target_vector, loss):
     if loss == 'logits_ce': 
         mean = segmentations.mean((2,3))
         sm = nn.functional.softmax(mean, dim=-1)
-        batch_losses = -(sm + (c-1)/c).log()
+        batch_losses = abs(-(sm + (c-1)/c).log()).sum(1)
     
     elif loss == 'segmentations_ce':
         batch_softmax = torch.zeros_like(segmentations)
