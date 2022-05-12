@@ -206,7 +206,7 @@ def relu_classification(logits, targets, t_threshold, nt_threshold):
 
 
 def background_activation_loss(mask):
-    t = torch.cat((mask[mask < 0.7], torch.tensor([1e-16])))
+    t = torch.cat((mask[mask < 0.7], torch.tensor([1e-16], device=mask.device)))
     return t.mean()
 
 
