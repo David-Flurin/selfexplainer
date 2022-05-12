@@ -198,7 +198,7 @@ class BaseModel(pl.LightningModule):
             image, annotations = batch
         else:
             image, seg, annotations = batch
-        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+            targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
         # bb = image.size()[0]
@@ -431,7 +431,7 @@ class BaseModel(pl.LightningModule):
             image, annotations = batch
         else:
             image, seg, annotations = batch
-        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+            targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
         
@@ -520,9 +520,13 @@ class BaseModel(pl.LightningModule):
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
-        image, seg, annotations = batch
-        targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+        if self.dataset == 'VOC':
+            image, annotations = batch
+        else:
+            image, seg, annotations = batch
+            targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+
         output = self(image, target_vector)
 
         
