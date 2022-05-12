@@ -121,15 +121,14 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
-        self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-        self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
-        '''
+        if self.dataset in ['COLOR, TOY']:
+            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
+            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
+            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-        '''
 
         if self.count_logits:
             self.logit_stats = {'image': LogitStats(self.num_classes)}
