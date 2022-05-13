@@ -194,7 +194,7 @@ class BaseModel(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -427,7 +427,7 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -511,16 +511,16 @@ class BaseModel(pl.LightningModule):
 
         self.log('val_loss', float(loss))
        
-        self.val_metrics(output['image'][3], target_vector)
+        self.valid_metrics(output['image'][3], target_vector)
 
         return loss
    
     def validation_epoch_end(self, outs):
-        self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
+        self.log('valid_metrics', self.valid_metrics.compute(), prog_bar=True)
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

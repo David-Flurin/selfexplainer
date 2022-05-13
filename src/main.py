@@ -49,6 +49,13 @@ if args.dataset == "VOC":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
     )
     num_classes = 20
+elif args.dataset == "SMALLVOC":
+    data_path = main_dir / args.data_base_path / 'VOC2007'
+    data_module = VOCDataModule(
+        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+    )
+    num_classes = 3
 elif args.dataset == "COCO":
     data_path = main_dir / args.data_base_path / 'COCO2014'
     data_module = COCODataModule(

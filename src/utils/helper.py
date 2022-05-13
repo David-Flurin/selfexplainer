@@ -17,6 +17,19 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 
+    if dataset == "SMALLVOC":
+        target_dict = get_target_dictionary(include_background_class)
+        objects = [item['annotation']['object'] for item in annotations]
+
+        batch_size = len(objects)
+        target_vectors = torch.full((batch_size, 20), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            object_names = [item['name'] for item in objects[i]]
+
+            for name in object_names:
+                index = target_dict[name]
+                target_vectors[i][index] = 1.0
+
     elif dataset == "COCO":
         batch_size = len(annotations)
         target_vectors = torch.full((batch_size, 91), fill_value=0.0, device=device)
@@ -92,7 +105,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
-    if dataset == "VOC":
+    if dataset in ["VOC", 'SMALLVOC']:
         filename = annotations[0]['annotation']['filename']
 
     elif dataset == "COCO":
@@ -125,6 +138,14 @@ def get_target_dictionary(include_background_class):
 
     return target_dict
 
+def get_small_target_dictionary(include_background_class):
+    if include_background_class:
+        target_dict = {'background' : 0, 'cat' : 8, 'dog' : 12, 'sheep' : 17}
+    else:
+        target_dict = {'cat' : 7, 'dog' : 11, 'sheep' : 16}
+
+    return target_dict
+
 def get_toy_target_dictionary(include_background_class, toy_target):
     if toy_target == 'texture':
         target_dict = {'bubblewrap' : 0, 'forest' : 1, 'fur' : 2, 'moss' : 3, 'paint' : 4, 'rock' : 5, 'wood' : 6, 'splatter': 7 
@@ -154,6 +175,8 @@ def get_color_dictionary(include_background_class, rgb=True):
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
     if dataset == 'VOC':
         return get_target_dictionary(include_background_class=include_background_class)
+    if dataset == 'SMALLVOC':
+        return get_small_target_dictionary(include_background_class=include_background_class)
     elif dataset == 'TOY':
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
