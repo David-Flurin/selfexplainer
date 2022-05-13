@@ -520,6 +520,7 @@ class BaseModel(pl.LightningModule):
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
+        self.test_i += 1
         if self.dataset == 'VOC':
             image, annotations = batch
         else:
