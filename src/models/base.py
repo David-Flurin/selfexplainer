@@ -194,7 +194,7 @@ class BaseModel(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -427,7 +427,7 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -511,17 +511,17 @@ class BaseModel(pl.LightningModule):
 
         self.log('val_loss', float(loss))
        
-        self.val_metrics(output['image'][3], target_vector)
+        self.valid_metrics(output['image'][3], target_vector)
 
         return loss
    
     def validation_epoch_end(self, outs):
-        self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
+        self.log('valid_metrics', self.valid_metrics.compute(), prog_bar=True)
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset == 'VOC':
+        if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -642,7 +642,7 @@ class BaseModel(pl.LightningModule):
     
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-4)
         lr_scheduler_config = {
         "scheduler": lr_scheduler,
         "interval": "epoch",
