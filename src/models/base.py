@@ -1,5 +1,6 @@
 from cv2 import threshold
 import torch
+from torchmetrics import Accuracy
 import pytorch_lightning as pl
 import os
 
@@ -16,7 +17,7 @@ import pickle
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
-from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
+from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
 
 import GPUtil
@@ -26,7 +27,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce'):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce'):
 
         super().__init__()
 
@@ -122,10 +123,10 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR, TOY']:
-            self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-            self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
+        if self.dataset in ['COLOR', 'TOY']:
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -383,7 +384,7 @@ class BaseModel(pl.LightningModule):
 
         self.log('loss', float(loss))
        
-        self.train_metrics(output['image'][3], target_vector)
+        self.train_metrics(output['image'][3], target_vector.int())
 
         #DEBUG
 
@@ -407,7 +408,10 @@ class BaseModel(pl.LightningModule):
         return loss
 
     def training_epoch_end(self, outs):
-        self.log('train_metrics', self.train_metrics.compute(), prog_bar=(self.dataset=='TOY'))
+        m = self.train_metrics.compute()
+        self.log('train_metric', m)
+        for k,v in m.items():
+            self.log(f'{k}', v, prog_bar=True, logger=False)
         self.train_metrics.reset()
         '''
         self.f_tex_dist.print_distribution()
@@ -516,7 +520,10 @@ class BaseModel(pl.LightningModule):
         return loss
    
     def validation_epoch_end(self, outs):
-        self.log('valid_metrics', self.valid_metrics.compute(), prog_bar=True)
+        m = self.valid_metrics.compute()
+        self.log('valid_metric', m)
+        for k,v in m.items():
+            self.log(f'{k}', v, prog_bar=True, logger=False)
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
@@ -623,7 +630,10 @@ class BaseModel(pl.LightningModule):
         self.test_metrics(output['image'][3], target_vector)
 
     def test_epoch_end(self, outs):
-        self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
+        m = self.test_metrics.compute()
+        self.log('test_metric', m)
+        for k,v in m.items():
+            self.log(f'{k}', v, prog_bar=True, logger=False)
         self.test_metrics.reset()
         #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 
