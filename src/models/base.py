@@ -122,7 +122,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR, TOY']:
+        if self.dataset in ['COLOR', 'TOY']:
             self.train_metrics = SingleLabelMetrics(num_classes=num_classes)
             self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
             self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
