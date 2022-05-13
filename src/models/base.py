@@ -511,7 +511,7 @@ class BaseModel(pl.LightningModule):
 
         self.log('val_loss', float(loss))
        
-        self.train_metrics(output['image'][3], target_vector)
+        self.val_metrics(output['image'][3], target_vector)
 
         return loss
    
