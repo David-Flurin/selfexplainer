@@ -16,25 +16,34 @@ class SingleLabelMetrics(torchmetrics.Metric):
     def update(self, logits, labels):
         with torch.no_grad():
             for i, batch_sample_logits in enumerate(logits):
-                self.true_negatives += 1.0
+                self.true_negatives += 1
                 top_class_prediction = batch_sample_logits.argmax(-1)
                 label_idx = (labels[i] == 1).nonzero()
                 if label_idx == top_class_prediction:
-                    self.true_positives[label_idx] += 1.0
-                    self.true_negatives[label_idx] -= 1.0
+                    self.true_positives[label_idx] += 1
+                    self.true_negatives[label_idx] -= 1
                 else:
-                    self.false_negatives[label_idx] += 1.0
-                    self.false_positives[top_class_prediction] += 1.0
-                    self.true_negatives[label_idx] -= 1.0
-                    self.true_negatives[top_class_prediction] -= 1.0
+                    self.false_negatives[label_idx] += 1
+                    self.false_positives[top_class_prediction] += 1
+                    self.true_negatives[label_idx] -= 1
+                    self.true_negatives[top_class_prediction] -= 1
+
+            self.true_positives = self.true_positives.long()
+            self.true_negatives = self.true_negatives.long()
+            self.false_negatives = self.false_negatives.long()
+            self.false_positives = self.false_positives.long()
 
     def compute(self):
-        accuracy = ((self.true_positives + self.true_negatives) / (self.true_positives + self.true_negatives + self.false_positives + self.false_negatives)).mean()
-        precision = (self.true_positives / (self.true_positives + self.false_positives)).mean()
-        recall = (self.true_positives / (self.true_positives + self.false_negatives)).mean()
-        f_score = ((2 * self.true_positives) / (2 * self.true_positives + self.false_positives + self.false_negatives)).mean()
+        self.accuracy = ((self.true_positives + self.true_negatives) / (self.true_positives + self.true_negatives + self.false_positives + self.false_negatives)).mean()
+        self.precision = (self.true_positives / (self.true_positives + self.false_positives)).mean()
+        self.recall = (self.true_positives / (self.true_positives + self.false_negatives)).mean()
+        self.f_score = ((2 * self.true_positives) / (2 * self.true_positives + self.false_positives + self.false_negatives)).mean()
 
-        return {'Accuracy': accuracy.item(), 'Precision': precision.item(), 'Recall': recall.item(), 'F-Score': f_score.item()}
+        print('Acc', self.accuracy.item())
+        r = torch.round(self.accuracy, decimals=2)
+        #i = r.item()
+        print(r)
+        return {'Accuracy': r, 'Precision': self.precision.item(), 'Recall': self.recall.item(), 'F-Score': self.f_score.item()}
 
 class MultiLabelMetrics(torchmetrics.Metric):
     def __init__(self, num_classes, threshold):
@@ -69,7 +78,7 @@ class MultiLabelMetrics(torchmetrics.Metric):
         self.recall = (self.true_positives / (self.true_positives + self.false_negatives))
         self.f_score = ((2 * self.true_positives) / (2 * self.true_positives + self.false_positives + self.false_negatives))
 
-        return {'Accuracy': self.accuracy.item(), 'Precision': self.precision.item(), 'Recall': self.recall.item(), 'F-Score': self.f_score.item()}
+        return {'Accuracy': round(self.accuracy.item(), 2), 'Precision': self.precision.item(), 'Recall': self.recall.item(), 'F-Score': self.f_score.item()}
 
     def save(self, model, classifier_type, dataset):
         f = open(model + "_" + classifier_type + "_" + dataset + "_" + "test_metrics.txt", "w")
@@ -78,6 +87,34 @@ class MultiLabelMetrics(torchmetrics.Metric):
         f.write("Recall: " + str(self.recall.item()) + "\n")
         f.write("F-Score: " + str(self.f_score.item()))
         f.close()
+
+
+
+class ClassificationMultiLabelMetrics():
+    def __init__(self, threshold, num_classes):
+        self.accuracy = torchmetrics.Accuracy(threshold, num_classes)
+        self.precision = torchmetrics.Precision(num_classes, threshold)
+        self.recall = torchmetrics.Recall(num_classes, threshold)
+        self.f1 = torchmetrics.F1(num_classes, threshold)
+
+    def __call__(self, activations, targets):
+        logits = torch.sigmoid(activations)
+        self.accuracy(logits, targets)
+        self.precision(logits, targets)
+        self.recall(logits, targets)
+        self.f1(logits, targets)
+
+    def compute(self):
+        return {'Accuracy': self.accuracy.compute(), 'Precision': self.precision.compute(), 'Recall': self.recall.compute(), 'F-Score': self.f1.compute()}
+        #return f'Acc: {self.accuracy.compute()'
+
+    def reset(self):
+        self.accuracy.reset()
+        self.precision.reset()
+        self.recall.reset()
+        self.f1.reset()
+
+
 
 
 ### BELOW ARE JUST UTILITY FUNCTIONS, NOT THE ONES USED FOR THE RESULTS IN THE PAPER/THESIS ###
