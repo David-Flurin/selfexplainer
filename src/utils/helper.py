@@ -18,11 +18,11 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
                 target_vectors[i][index] = 1.0
 
     if dataset == "SMALLVOC":
-        target_dict = get_target_dictionary(include_background_class)
+        target_dict = get_small_target_dictionary(include_background_class)
         objects = [item['annotation']['object'] for item in annotations]
 
         batch_size = len(objects)
-        target_vectors = torch.full((batch_size, 20), fill_value=0.0, device=device)
+        target_vectors = torch.full((batch_size, len(target_dict)), fill_value=0.0, device=device)
         for i in range(batch_size):
             object_names = [item['name'] for item in objects[i]]
 
