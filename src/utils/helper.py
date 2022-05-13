@@ -140,9 +140,9 @@ def get_target_dictionary(include_background_class):
 
 def get_small_target_dictionary(include_background_class):
     if include_background_class:
-        target_dict = {'background' : 0, 'cat' : 8, 'dog' : 12, 'sheep' : 17}
+        target_dict = {'background' : 0, 'cat' : 1, 'dog' : 2, 'sheep' : 3}
     else:
-        target_dict = {'cat' : 7, 'dog' : 11, 'sheep' : 16}
+        target_dict = {'cat' : 0, 'dog' : 1, 'sheep' : 2}
 
     return target_dict
 
