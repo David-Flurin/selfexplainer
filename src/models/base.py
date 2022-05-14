@@ -123,10 +123,10 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY']:
-            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
-            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes)
+        if self.dataset in ['COLOR', 'TOY', 'SMALLVOC', 'VOC']:
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -515,7 +515,7 @@ class BaseModel(pl.LightningModule):
 
         self.log('val_loss', float(loss))
        
-        self.valid_metrics(output['image'][3], target_vector)
+        self.valid_metrics(output['image'][3], target_vector.int())
 
         return loss
    
