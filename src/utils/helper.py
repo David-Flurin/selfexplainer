@@ -27,8 +27,15 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
             object_names = [item['name'] for item in objects[i]]
 
             for name in object_names:
-                index = target_dict[name]
-                target_vectors[i][index] = 1.0
+                try:
+                    index = target_dict[name]
+                    target_vectors[i][index] = 1.0
+                except KeyError:
+                    pass
+        if target_vectors.sum() < batch_size:
+            raise ValueError('Target vector is all zero')
+
+            
 
     elif dataset == "COCO":
         batch_size = len(annotations)

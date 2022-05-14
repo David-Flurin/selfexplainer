@@ -652,7 +652,7 @@ class BaseModel(pl.LightningModule):
     
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-4)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
         lr_scheduler_config = {
         "scheduler": lr_scheduler,
         "interval": "epoch",
