@@ -596,10 +596,9 @@ class BaseModel(pl.LightningModule):
 
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
-                background_entropy_loss = entropy_loss(output['background'][3])
+                background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
             elif self.bg_loss == 'distance':
-                if self.class_loss == 'ce':
-                    background_entropy_loss = bg_loss(output['background'][0], target_vector, self.background_loss)
+                background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
             loss += background_entropy_loss
 
         os.makedirs(os.path.dirname(Path(self.save_path) / "test_losses" / filename), exist_ok=True)
