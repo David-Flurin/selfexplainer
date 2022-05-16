@@ -19,9 +19,14 @@ from utils.image_display import save_all_class_masked_images, save_mask, save_ma
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
+from evaluation.compute_scores import selfexplainer_compute_numbers
 
 import GPUtil
 from matplotlib import pyplot as plt
+
+VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC2007/SegmentationClass/")
+
 
 class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1, pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
@@ -645,6 +650,12 @@ class BaseModel(pl.LightningModule):
             class_dict = get_class_dictionary(self.dataset)
             for k,v in self.logit_stats.items():
                 v.plot(dir + f'/{k}.png', list(class_dict.keys()))
+
+        if self.dataset == "SMALLVOC":
+            segmentations_path = SMALLVOC_segmentations_path
+        elif self.dataset == 'VOC':
+            segmentations_path = VOC_segmentations_path
+        selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
     # def configure_optimizers(self):
