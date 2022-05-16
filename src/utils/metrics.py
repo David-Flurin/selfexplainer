@@ -99,7 +99,6 @@ class ClassificationMultiLabelMetrics():
         self.f1 = torchmetrics.F1(num_classes, threshold).to(device)
 
     def __call__(self, activations, targets):
-        print(activations.device, targets.device)
         logits = torch.sigmoid(activations)
         self.accuracy(logits, targets)
         self.precision(logits, targets)
