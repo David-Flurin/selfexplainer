@@ -121,7 +121,7 @@ def get_filename_from_annotations(annotations, dataset):
     elif dataset == "CUB":
         filename = annotations[0]['filename']
 
-    elif dataset == "TOY":
+    elif dataset in ["TOY", 'TOY_SAVED']:
         filename = annotations[0]['filename']
 
     elif dataset == "COLOR":
