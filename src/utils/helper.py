@@ -184,7 +184,7 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         return get_target_dictionary(include_background_class=include_background_class)
     if dataset == 'SMALLVOC':
         return get_small_target_dictionary(include_background_class=include_background_class)
-    elif dataset == 'TOY':
+    elif dataset in ['TOY', 'TOY_SAVED']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
         return get_color_dictionary(include_background_class=include_background_class, rgb=rgb)
