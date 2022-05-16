@@ -10,7 +10,7 @@ from pathlib import Path
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
 from data.dataloader import VOCDataModule, COCODataModule, ToyDataModule
-from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
+#from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
 from utils.helper import get_target_dictionary
 
 from torchray.utils import get_device
@@ -122,7 +122,92 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             p_mask = None
             p_background = None
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
-    
+
+def selfexplainer_evaluation(masks_path, segmentations_path, dataset_name, model, data_module, compute_p=True):
+
+    for x, category_id, filename in segmented_generator(data_module, segmentations_path):
+        seg_mask = open_segmentation_mask(segmentations_path / filename, dataset_name)
+
+        try:
+            npz_name = Path(str(filename)[:-4] + ".npz")
+            mask = np.load(masks_path / npz_name, dataset_name)["arr_0"]
+        except:
+            continue
+        if np.sum(np.isnan(mask)):
+            mask = np.zeros(shape=mask.shape, dtype=np.float32)
+        if compute_p:
+            x = x.to(model.device)
+            logits = model(x)
+            p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
+            x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
+            logits_mask = model.forward(x_masked)
+            p_mask = torch.nn.functional.softmax(logits_mask, dim=1).detach().cpu().numpy().squeeze()
+            x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(device) * x
+            logits_background = model.forward(x_background)
+            p_background = torch.nn.functional.softmax(logits_background, dim=1).detach().cpu().numpy().squeeze()
+        else:
+            p = None
+            p_mask = None
+            p_background = None
+        yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()    
+
+def selfexplainer_compute_numbers(masks_path, segmentations_path, dataset_name, model, data_module, method, compute_p=True):
+#     sparsity = []
+#     sparsity_masked = []
+#     sparsity_background = []
+
+#     entropy = []
+#     entropy_masked = []
+#     entropy_background = []
+
+    d_f1_25 = []
+    d_f1_50 = []
+    d_f1_75 = []
+    c_f1 = []
+    a_f1s = []
+    aucs = [] 
+
+    d_IOU = []
+    c_IOU = []
+    sal = []
+
+    over = []
+    background_c = []
+    mask_c = []
+    sr = []
+
+
+
+
+    for mask, seg_mask, p, p_mask, p_background, category_id, x in selfexplainer_evaluation(masks_path, segmentations_path, dataset_name, model, data_module, method, compute_p):
+
+#         sparsity.append(prob_sparsity(p))
+#         sparsity_masked.append(prob_sparsity(p_mask))
+#         sparsity_background.append(prob_sparsity(p_background))
+
+#         entropy.append(prob_entropy(p))
+#         entropy_masked.append(prob_entropy(p_mask))
+#         entropy_background.append(prob_entropy(p_background))
+        d_f1_25.append(discrete_f1(mask, seg_mask, 0.25))
+        d_f1_50.append(discrete_f1(mask, seg_mask, 0.50))
+        d_f1_75.append(discrete_f1(mask, seg_mask, 0.75))
+        c_f1.append(soft_f1(mask, seg_mask))
+        a_f1s.append(f1s(mask, seg_mask))
+        aucs.append(auc(mask, seg_mask))
+
+        d_IOU.append(discrete_IOU(mask, seg_mask))
+        c_IOU.append(continuous_IOU(mask, seg_mask))
+
+        sal.append(saliency(p_mask, category_id, mask))
+
+        over.append(overlap(mask, seg_mask))
+        background_c.append(background_coverage(mask, seg_mask))
+        mask_c.append(mask_coverage(mask, seg_mask))
+
+        sr.append(sim_ratio(mask, seg_mask))
+        
+    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr
+
         
 def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True):
 #     sparsity = []
