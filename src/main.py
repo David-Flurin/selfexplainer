@@ -202,6 +202,8 @@ if args.train_model:
         plot_dir = args.save_path + '/plots'
         os.makedirs(plot_dir)
         plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss', 'loss'], plot_dir)
+        if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
+            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss')
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)
