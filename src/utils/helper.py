@@ -52,7 +52,7 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
             target = annotations[i]['target']
             target_vectors[i][target] = 1.0
 
-    elif dataset == "TOY":
+    elif dataset in ["TOY", "TOY_SAVED"]:
         target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
         batch_size = len(annotations)
         target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
@@ -121,7 +121,7 @@ def get_filename_from_annotations(annotations, dataset):
     elif dataset == "CUB":
         filename = annotations[0]['filename']
 
-    elif dataset == "TOY":
+    elif dataset in ["TOY", 'TOY_SAVED']:
         filename = annotations[0]['filename']
 
     elif dataset == "COLOR":
@@ -184,7 +184,7 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         return get_target_dictionary(include_background_class=include_background_class)
     if dataset == 'SMALLVOC':
         return get_small_target_dictionary(include_background_class=include_background_class)
-    elif dataset == 'TOY':
+    elif dataset in ['TOY', 'TOY_SAVED']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
         return get_color_dictionary(include_background_class=include_background_class, rgb=rgb)

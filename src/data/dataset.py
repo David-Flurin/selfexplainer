@@ -7,6 +7,7 @@ import torchvision
 from PIL import Image
 from pycocotools.coco import COCO
 from random import randint
+from xml.etree import cElementTree as ElementTree
 
 from toy_dataset import generator
 from color_dataset import generator as color_generator
@@ -87,6 +88,47 @@ class ToyDataset(Dataset):
         return len(self.ids)
 
 
+class ToyDataset_Saved(Dataset):
+    def __init__(self, root, mode, transform_fn=None, segmentation=False, target='texture'):
+        self.root = root
+        self.ids = []
+        with open(os.path.join(root, 'imagesets', target+'s', mode+'.txt'), 'r') as f:
+            lines = f.readlines()
+            for l in lines:
+                self.ids.append(l.rstrip())
+
+        self.transform = transform_fn
+        self.segmentation = segmentation
+        self.target = target        
+
+    def __getitem__(self, index):
+        
+        filename = self.ids[index]
+        img =  Image.open(self.root/ 'images'/ f'{filename}.png').convert("RGB")  
+        tree = ElementTree.parse(self.root / 'annotations'/ f'{filename}.xml')
+        root = tree.getroot()
+        annotations = XmlDictConfig(root)
+        sample = {'objects': [], 'background': None}
+        for _, objects in annotations['objects'].items():
+            sample['objects'].append((objects['shape'], objects['texture']))
+        sample['background'] = annotations['background']
+
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+
+        if self.segmentation:
+            seg = Image.open(os.path.join(self.root, 'segmentations', self.target+"s", filename+'.png')).convert("RGB")
+            seg = torchvision.transforms.functional.to_tensor(seg)
+            return img, seg, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
+        else:
+            return img, {'objects': sample['objects'], 'background': sample['background'], 'filename': filename}
+
+    def __len__(self):
+        return len(self.ids)
+
+
 class ColorDataset(Dataset):
     def __init__(self, epoch_length, rgb, transform_fn=None, segmentation=False):
         self.ids = range(0, epoch_length)
@@ -149,3 +191,50 @@ class CUB200Dataset(Dataset):
 
     def __len__(self):
         return len(self.annotations)
+
+
+class XmlDictConfig(dict):
+    '''
+    Example usage:
+
+    >>> tree = ElementTree.parse('your_file.xml')
+    >>> root = tree.getroot()
+    >>> xmldict = XmlDictConfig(root)
+
+    Or, if you want to use an XML string:
+
+    >>> root = ElementTree.XML(xml_string)
+    >>> xmldict = XmlDictConfig(root)
+
+    And then use xmldict for what it is... a dict.
+    '''
+    def __init__(self, parent_element):
+        if parent_element.items():
+            self.update(dict(parent_element.items()))
+        for element in parent_element:
+            if element:
+                # treat like dict - we assume that if the first two tags
+                # in a series are different, then they are all different.
+                if len(element) == 1 or element[0].tag != element[1].tag:
+                    aDict = XmlDictConfig(element)
+                # treat like list - we assume that if the first two tags
+                # in a series are the same, then the rest are the same.
+                else:
+                    # here, we put the list in dictionary; the key is the
+                    # tag name the list elements all share in common, and
+                    # the value is the list itself 
+                    aDict = {element[0].tag: XmlListConfig(element)}
+                # if the tag has attributes, add those to the dict
+                if element.items():
+                    aDict.update(dict(element.items()))
+                self.update({element.tag: aDict})
+            # this assumes that if you've got an attribute in a tag,
+            # you won't be having any text. This may or may not be a 
+            # good idea -- time will tell. It works for the way we are
+            # currently doing XML configuration files...
+            elif element.items():
+                self.update({element.tag: dict(element.items())})
+            # finally, if there are no child tags and no attributes, extract
+            # the text
+            else:
+                self.update({element.tag: element.text})

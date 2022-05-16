@@ -12,7 +12,7 @@ from pathlib import Path
 import pickle
 import hashlib
 
-from data.dataloader import ColorDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule
+from data.dataloader import ColorDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
@@ -20,6 +20,8 @@ from models.fcn_16 import FCN16
 
 from models.mlp import MLP
 from utils.image_display import save_all_class_masked_images, save_masked_image
+
+from toy_dataset import generator
 
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -76,6 +78,14 @@ elif args.dataset == "TOY":
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8 if args.model_to_train == 'fcn' else 8
+
+elif args.dataset == "TOY_SAVED":
+    data_path = main_dir / args.data_base_path / 'TOY'
+    data_module = ToyData_Saved_Module(
+        data_path=data_path, segmentation=(args.toy_segmentations), 
+        train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
+    )
+    num_classes = 8 
 elif args.dataset == "COLOR":
     data_module = ColorDataModule(
         epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), 
@@ -192,6 +202,8 @@ if args.train_model:
         plot_dir = args.save_path + '/plots'
         os.makedirs(plot_dir)
         plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss', 'loss'], plot_dir)
+        if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
+            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss')
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)

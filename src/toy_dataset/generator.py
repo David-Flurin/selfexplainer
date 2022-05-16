@@ -32,9 +32,9 @@ def string_to_rgb(s):
 
 class Generator:
 
-    shapes = [Circle, Triangle, Square, Pentagon, Hexagon, Octagon, Heart, Cross, Star]
+    shapes = [Circle, Triangle, Square, Pentagon, Hexagon, Heart, Cross, Star]
 
-    base = 'dataset'
+    base = '../toy_dataset_instance'
     img_size = (224,224)
     min_radius = 30
     max_radius = 80
@@ -66,6 +66,22 @@ class Generator:
         self.num_b_tex = len(self.b_textures)
 
 
+    def create_easy(self, total, proportions):
+        mkdir(Path(self.base, 'images'))
+        mkdir(Path(self.base, 'segmentations'))
+        mkdir(Path(self.base, 'annotations'))
+
+        train = []
+        val = []
+        test = []
+        for i in range(total):
+            sample = self.generate_sample(1)
+            self.__save(sample)
+            
+
+
+
+
         
     def generate_sample(self, num_objects):
         if num_objects > len(self.shapes):
@@ -92,20 +108,22 @@ class Generator:
             for _ in range(number_per_shape):
                 for shape in self.shapes:
                     filename = f'{i:0{num_length}d}'
-                    shapes, textures = self.generate([shape], filename)
-                    for s in shapes:
+                    s = self.__generate([shape])
+                    self.__save(s, filename)
+                    for o in s['objects']:
                         try:
-                            samples_shape[s] += [filename]
+                            samples_shape[o[0]] += [filename]
                         except KeyError:
-                            samples_shape[s] = [filename]
-                    for t in textures:
+                            samples_shape[o[0]] = [filename]
+
                         try:
-                            samples_texture[self.f_texture_names[t]] += [filename]
+                            samples_texture[o[1]] += [filename]
                         except KeyError:
-                            samples_texture [self.f_texture_names[t]] = [filename]
+                            samples_texture [o[1]] = [filename]
                     
                     pbar.update()
                     i += 1
+        
         
         
 
@@ -167,6 +185,11 @@ class Generator:
             test += (get_i(test_idx, v))
 
         train.sort(key=int)
+        val.sort(key=int)
+        test.sort(key=int)
+        self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'train.txt'), train)
+        self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'val.txt'), val)
+        self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'test.txt'), test)
         
 
                     
@@ -210,9 +233,14 @@ class Generator:
         background = ET.SubElement(annotation, 'background')
         background.text = sample['background']
 
+        # from matplotlib import pyplot as plt
+        # plt.imshow(sample['image'])
+        # plt.show()
 
-        cv2.imwrite(join(self.base, 'images', f'{filename}.jpg'), sample['image'])
-        cv2.imwrite(join(self.base, 'segmentations', f'{filename}.jpg'), sample['seg'])
+        plt.imsave(join(self.base, 'images', f'{filename}.png'), sample['image'], format='png')
+        plt.imsave(join(self.base, 'segmentations', 'shapes', f'{filename}.png'), sample['seg_shape']/255., format='png')
+        plt.imsave(join(self.base, 'segmentations', 'textures', f'{filename}.png'), sample['seg_tex']/255., format='png')
+
 
         tree = ET.ElementTree(annotation)
         tree.write(join(self.base, 'annotations', f'{filename}.xml'))
@@ -238,6 +266,9 @@ class Generator:
         mkdir(self.base)
         mkdir(Path(self.base, 'images'))
         mkdir(Path(self.base, 'segmentations'))
+        mkdir(Path(self.base, 'segmentations', 'shapes'))
+        mkdir(Path(self.base, 'segmentations', 'textures'))
+
         mkdir(Path(self.base, 'annotations'))
         mkdir(Path(self.base, 'imagesets'))
 

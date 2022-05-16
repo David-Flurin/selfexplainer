@@ -89,5 +89,5 @@ def plot_losses(event_folder, names, save_path):
         plt.plot(steps, value, label = loss, linewidth=1., alpha=alpha)
     plt.legend()
     plt.grid()
-    plt.savefig(save_path + '/losses.png')
+    plt.savefig(save_path)
 
