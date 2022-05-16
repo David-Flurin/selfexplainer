@@ -166,8 +166,8 @@ def bg_loss(segmentations, target_vector, loss):
         batch_mean = batch_softmax.sum(dim=(2,3))
         #batch_mean = batch_mean / batch_mean.sum()
         
-        batch_losses = (batch_mean[target_idx] -1/c).abs()
-        #batch_loss = (batch_mean - 1/c).square().sum(1).sqrt()
+        #batch_losses = (batch_mean[target_idx] -1/c).abs()
+        batch_losses = (batch_mean - 1/c).square().sum(1).sqrt()
         #batch_loss = torch.nn.functional.cosine_similarity(batch_mean)
     
     elif loss == 'segmentations_distance':
