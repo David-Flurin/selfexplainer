@@ -92,7 +92,7 @@ class MultiLabelMetrics(torchmetrics.Metric):
 
 class ClassificationMultiLabelMetrics():
     def __init__(self, threshold, num_classes, gpu):
-        device = f'cuda:{gpu}' if torch.cuda.is_available else 'cpu'
+        device = f'cuda:{gpu}' if torch.cuda.is_available() else 'cpu'
         self.accuracy = torchmetrics.Accuracy(threshold, num_classes).to(device)
         self.precision = torchmetrics.Precision(num_classes, threshold).to(device)
         self.recall = torchmetrics.Recall(num_classes, threshold).to(device)

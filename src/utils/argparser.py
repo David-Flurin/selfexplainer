@@ -55,6 +55,7 @@ def get_parser():
     parser.add_argument('--checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained self-explainer.')
     parser.add_argument('--frozen', default=False, type=str2bool, help='If the object and background pass of selfexplainer models has frozen weights')
     parser.add_argument('--freeze_every', default=20, type=int, help='Every n iterations, the model is frozen for the object and background pass.')
+    parser.add_argument('--weighting_koeff', default=1.0, type=float, help='Koefficient of the softmax weighting scheme to generate logits.')
 
 
     # Model-specific parameters
