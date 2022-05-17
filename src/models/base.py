@@ -129,9 +129,9 @@ class BaseModel(pl.LightningModule):
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED' 'SMALLVOC', 'VOC']:
-            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
-            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu)
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -558,11 +558,11 @@ class BaseModel(pl.LightningModule):
             for k,v in self.logit_stats.items():
                 v.plot(dir + f'/{k}.png', list(class_dict.keys()))
 
-        if self.dataset == "SMALLVOC":
-            segmentations_path = SMALLVOC_segmentations_path
-        elif self.dataset == 'VOC':
-            segmentations_path = VOC_segmentations_path
-        selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
+        # if self.dataset == "SMALLVOC":
+        #     segmentations_path = SMALLVOC_segmentations_path
+        # elif self.dataset == 'VOC':
+        #     segmentations_path = VOC_segmentations_path
+        # selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
     # def configure_optimizers(self):
