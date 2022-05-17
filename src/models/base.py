@@ -128,7 +128,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED' 'SMALLVOC', 'VOC']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
@@ -185,9 +185,9 @@ class BaseModel(pl.LightningModule):
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
         
-        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        logits = weighted_segmentations.sum(dim=(2,3))
-        #logits = segmentations.mean((2,3))
+        # weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        # logits = weighted_segmentations.sum(dim=(2,3))
+        logits = segmentations.mean((2,3))
         
 
         return segmentations, target_mask, non_target_mask, logits
