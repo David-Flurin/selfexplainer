@@ -269,7 +269,7 @@ class BaseModel(pl.LightningModule):
 
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
-                background_entropy_loss = self.bg_loss_regularizer * self.classification_loss_fn(output['background'][3], output['image'][3])
+                background_entropy_loss = self.bg_loss_regularizer * self.classification_loss_fn(output['background'][3], torch.nn.functional.softmax(output['image'][3], dim=1).detach())
             elif self.bg_loss == 'distance':
                     background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
