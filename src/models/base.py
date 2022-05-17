@@ -32,7 +32,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce'):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False):
 
         super().__init__()
 
@@ -45,6 +45,9 @@ class BaseModel(pl.LightningModule):
         self.frozen = None
         self.dataset = dataset
         self.num_classes = num_classes
+
+        self.aux_classifier = aux_classifier
+
 
         self.use_similarity_loss = use_similarity_loss
         self.similarity_regularizer = similarity_regularizer
@@ -176,21 +179,30 @@ class BaseModel(pl.LightningModule):
         return output
 
     def _forward(self, image, targets, frozen=False):
-        if frozen:
-            segmentations = self.frozen(image)
+        if self.aux_classifier:
+            if frozen:
+                segmentations, logits = self.frozen(image)
+            else:
+                segmentations, logits = self.model(image) # [batch_size, num_classes, height, width]
         else:
-            segmentations = self.model(image) # [batch_size, num_classes, height, width]
+            if frozen:
+                segmentations = self.frozen(image)
+            else:
+                segmentations = self.model(image) # [batch_size, num_classes, height, width]
         
 
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
+        if not self.aux_classifier:
+            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+            logits = weighted_segmentations.sum(dim=(2,3))
         
-        # weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-        # logits = weighted_segmentations.sum(dim=(2,3))
-        logits = segmentations.mean((2,3))
+        # logits = segmentations.mean((2,3))
         
 
         return segmentations, target_mask, non_target_mask, logits
+
+
 
     def measure_weighting(self, segmentations):
         with self.profiler.profile("softmax_weighing"):
