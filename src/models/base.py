@@ -232,8 +232,8 @@ class BaseModel(pl.LightningModule):
         
         # if self.first_of_epoch:
         #     self.first_of_epoch = False
-        for b in range(image.size()[0]):
-            save_image(image[b], f'check_toydata/{b}_{random.randint(0, 10000)}.png', self.dataset)
+        # for b in range(image.size()[0]):
+        #     save_image(image[b], f'check_toydata/{b}_{random.randint(0, 10000)}.png', self.dataset)
 
 
         

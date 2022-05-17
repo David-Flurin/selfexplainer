@@ -106,12 +106,15 @@ class ClassMaskAreaLoss(MaskAreaLoss):
 
         return losses.mean()
 
-def entropy_loss(logits):
-    min_prob = 1e-16
-    probs = F.softmax(logits, dim=-1).clamp(min=min_prob)
-    log_probs = probs.log()
-    entropy = (-probs * log_probs)
-    entropy_loss = -entropy.mean()
+def entropy_loss(sm):
+    # min_prob = 1e-16
+    # probs = F.softmax(logits, dim=-1).clamp(min=min_prob)
+    # log_probs = probs.log()
+    # entropy = (-probs * log_probs)
+    # entropy_loss = -entropy.mean()
+    b, c = sm.size()
+    entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
+
 
     return entropy_loss
 
@@ -210,9 +213,9 @@ def background_activation_loss(mask):
     return t.mean()
 
 
-# t = torch.tensor([[1., 3.08, 1.], [1., 3.08, 1.,]])
-# tt = torch.tensor([[1., 0., 0.], [0., 1., 0.]])
-# print(relu_classification(t, tt, 0.8, 0.3))
+t = torch.tensor([[.16, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12]])
+tt = torch.tensor([[1., 0., 0.], [0., 1., 0.]])
+print(entropy_loss(t))
 
 
 
