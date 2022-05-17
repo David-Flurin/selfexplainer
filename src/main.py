@@ -187,7 +187,7 @@ print('Use area loss:', model.use_mask_area_loss)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="val_loss",
+    monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
