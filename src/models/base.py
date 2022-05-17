@@ -274,7 +274,7 @@ class BaseModel(pl.LightningModule):
 
         if self.use_mask_area_loss:
             #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
-            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()**1.5) #+ output['object'][1].mean())
             #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
             self.log('mask_area_loss', mask_area_loss)
             mask_loss += mask_area_loss
