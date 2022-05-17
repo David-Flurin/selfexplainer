@@ -8,5 +8,8 @@ class SelfExplainer(BaseModel):
         super().__init__(**kwargs)
 
         self.model = Deeplabv3Resnet50Model(num_classes=kwargs['num_classes'], pretrained=kwargs['pretrained'], aux_classifier=kwargs['aux_classifier'])
-        self.bg_loss = 'distance'
+        if kwargs['aux_classifier']:
+            self.bg_loss = 'entropy'
+        else:
+            self.bg_loss = 'distance'
         
