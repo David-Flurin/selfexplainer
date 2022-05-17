@@ -3,6 +3,10 @@ import torch
 from torchmetrics import Accuracy
 import pytorch_lightning as pl
 import os
+import random
+
+from matplotlib import pyplot as plt 
+
 
 from torch import nn, softmax
 from torch.optim import Adam
@@ -212,6 +216,7 @@ class BaseModel(pl.LightningModule):
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
+        
         if self.dataset in ['VOC', 'SMALLVOC']:
             image, annotations = batch
         else:
@@ -223,6 +228,14 @@ class BaseModel(pl.LightningModule):
            self.frozen = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
+
+        
+        # if self.first_of_epoch:
+        #     self.first_of_epoch = False
+        for b in range(image.size()[0]):
+            save_image(image[b], f'check_toydata/{b}_{random.randint(0, 10000)}.png', self.dataset)
+
+
         
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
