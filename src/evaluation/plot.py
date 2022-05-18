@@ -90,4 +90,5 @@ def plot_losses(event_folder, names, save_path):
     plt.legend()
     plt.grid()
     plt.savefig(save_path)
+    plt.close()
 

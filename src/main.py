@@ -12,7 +12,7 @@ from pathlib import Path
 import pickle
 import hashlib
 
-from data.dataloader import ColorDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
+from data.dataloader import ColorDataModule, MNISTDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
 from models.classifier import Classifier
@@ -51,6 +51,13 @@ if args.dataset == "VOC":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
     )
     num_classes = 20
+if args.dataset == "MNIST":
+    data_path = main_dir / args.data_base_path / 'MNIST'
+    data_module = MNISTDataModule(
+        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+    )
+    num_classes = 10
 elif args.dataset == "SMALLVOC":
     data_path = main_dir / args.data_base_path / 'VOC2007_small'
     data_module = VOCDataModule(
@@ -201,7 +208,7 @@ trainer = pl.Trainer(
     callbacks = [early_stop_callback],
     gpus = [args.gpu] if torch.cuda.is_available() else 0,
     #detect_anomaly = True,
-    log_every_n_steps = 5,
+    log_every_n_steps = 80//args.train_batch_size,
     enable_checkpointing = args.checkpoint_callback
     #amp_backend='apex',
     #amp_level='02'
@@ -217,6 +224,9 @@ if args.train_model:
         if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
             plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss'], plot_dir+'/val_losses.png')
     trainer.test(model=model, datamodule=data_module)
+    if logger:
+        if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
+            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss'], plot_dir+'/val_losses.png')
 else:
     trainer.test(model=model, datamodule=data_module)
 
