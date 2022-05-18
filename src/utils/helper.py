@@ -1,5 +1,6 @@
 import torch
 import os
+import random
 
 def get_targets_from_annotations(annotations, dataset, num_classes, include_background_class=False, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
@@ -131,6 +132,10 @@ def get_filename_from_annotations(annotations, dataset):
 
     elif dataset == "COLOR":
         filename = annotations[0]['filename']
+
+    elif dataset == 'MNIST':
+        filename = f'{annotations[0]}_{random.randint(0,10000)}'
+
 
 
     else:
