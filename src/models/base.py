@@ -135,7 +135,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC', 'MNIST']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
@@ -217,7 +217,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -370,7 +370,7 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -409,9 +409,10 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            #similarity_loss = self.classification_loss_fn(output['object'][3], target_vector)
-            self.log('val_similarity_loss', similarity_loss)
+            #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
+            logit_fn = torch.sigmoid if self.class_loss else lambda x: torch.nn.functional(x, dim=-1)
+            similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
+            self.log('similarity_loss', similarity_loss)
 
             obj_back_loss += similarity_loss
 
@@ -467,7 +468,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

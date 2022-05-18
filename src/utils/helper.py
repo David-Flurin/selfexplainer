@@ -72,6 +72,11 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
         for i in range(batch_size):
             target_vectors[i] = torch.Tensor(annotations[i]['logits'])
 
+    elif dataset == "MNIST":
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            target_vectors[i][annotations[i]] = 1.0
 
     return target_vectors
 
