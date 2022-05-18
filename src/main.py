@@ -187,7 +187,8 @@ print('Use area loss:', model.use_mask_area_loss)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
+    #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
+    monitor = 'loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
@@ -201,7 +202,7 @@ trainer = pl.Trainer(
     callbacks = [early_stop_callback],
     gpus = [args.gpu] if torch.cuda.is_available() else 0,
     #detect_anomaly = True,
-    log_every_n_steps = 5,
+    log_every_n_steps = 80//args.train_batch_size,
     enable_checkpointing = args.checkpoint_callback
     #amp_backend='apex',
     #amp_level='02'
@@ -213,9 +214,9 @@ if args.train_model:
     if logger:
         plot_dir = args.save_path + '/plots'
         os.makedirs(plot_dir)
-        #plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss', 'loss'], plot_dir+'/train_losses.png')
-        #if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
-        #    plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss'], plot_dir+'/val_losses.png')
+        plot_losses(logger.log_dir, ['classification_loss', 'background_entropy_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss', 'loss'], plot_dir+'/train_losses.png')
+        if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
+            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss'], plot_dir+'/val_losses.png')
     trainer.test(model=model, datamodule=data_module)
 else:
     trainer.test(model=model, datamodule=data_module)
