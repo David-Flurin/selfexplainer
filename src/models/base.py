@@ -410,7 +410,7 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            logit_fn = torch.sigmoid if self.class_loss else lambda x: torch.nn.functional(x, dim=-1)
+            logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional(x, dim=-1)
             similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
             self.log('similarity_loss', similarity_loss)
 
