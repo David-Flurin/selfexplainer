@@ -265,9 +265,8 @@ def get_training_image_transformer(use_data_augmentation=False, bw=False):
                                   T.ToTensor(), 
                                   T.Normalize(mean = mean, std = std)])
     else:
-        transformer = T.Compose([ T.Resize(size=(64,64)),
-                                  # T.Resize(256),
-                                  # T.CenterCrop(224),
+        transformer = T.Compose([ T.Resize(256),
+                                  T.CenterCrop(224),
                                   T.ToTensor(), 
                                   T.Normalize(mean = mean, std = std)
                                   ])
