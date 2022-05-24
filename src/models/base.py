@@ -19,7 +19,7 @@ import pickle
 #from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
-from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks
+from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
@@ -265,7 +265,11 @@ class BaseModel(pl.LightningModule):
         #print(classification_loss_initial)
 
         classification_loss = classification_loss_initial
-        self.log('classification_loss', classification_loss)        
+        self.log('classification_loss', classification_loss)   
+
+        self.log('classification_loss_1Pass', classification_loss)   
+
+        self.log('classification_loss_2Pass', self.classification_loss_fn(output['object'][3], target_vector))     
 
         loss = classification_loss
         
@@ -287,7 +291,7 @@ class BaseModel(pl.LightningModule):
             elif self.bg_loss == 'distance':
                     background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
-            self.log('background_entropy_loss', background_entropy_loss)
+            self.log('background_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
 
@@ -320,6 +324,11 @@ class BaseModel(pl.LightningModule):
         
         self.i += 1.
         self.log('iterations', self.i)
+
+        if self.i % 5 == 4:
+            self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
 
         self.log('loss', float(loss))
        
@@ -388,6 +397,7 @@ class BaseModel(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
+
         if self.use_background_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
 
@@ -422,7 +432,7 @@ class BaseModel(pl.LightningModule):
             elif self.bg_loss == 'distance':
                     background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
-            self.log('val_background_entropy_loss', background_entropy_loss)
+            self.log('val_background_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
 
@@ -454,6 +464,10 @@ class BaseModel(pl.LightningModule):
         
 
         self.log('val_loss', float(loss))
+        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+
        
         self.valid_metrics(output['image'][3], target_vector.int())
 
