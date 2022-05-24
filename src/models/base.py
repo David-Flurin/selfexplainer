@@ -484,6 +484,7 @@ class BaseModel(pl.LightningModule):
         self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        log_string = ''
         for b in range(image.size()[0]):
             log_string += f'Batch {b}:  \n'
             logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
