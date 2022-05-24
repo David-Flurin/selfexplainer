@@ -329,6 +329,23 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            log_string = ''
+            logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            for b in range(image.size()[0]):
+                log_string += f'Batch {b}:  \n'
+                logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+
+                probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
+                probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
+                log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
+
+                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+                log_string += '  \n'
+            self.logger.experiment.add_text('Train Logits', log_string,  self.i)
 
         self.log('loss', float(loss))
        
