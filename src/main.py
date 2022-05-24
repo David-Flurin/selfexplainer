@@ -23,7 +23,11 @@ from utils.image_display import save_all_class_masked_images, save_masked_image
 
 from toy_dataset import generator
 
-
+from matplotlib import pyplot as plt
+g = generator.Generator('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/foreground.txt', '/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/background.txt')
+for i in range(20):
+    s = g.generate_sample(2)
+quit()
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 parser = get_parser()

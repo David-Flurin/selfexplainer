@@ -304,16 +304,31 @@ class Heart(Shape):
         super().__init__(radius, pos, img_size)
         self.seg_color = np.array(to_rgb('darkgreen'))
         
-        self.mask = np.zeros(img_size)
+        from matplotlib import pyplot as plt
+
+        self.mask = np.zeros(img_size, dtype=np.float32)
         xx, yy = np.mgrid[:img_size[0], :img_size[1]]
-        heartline = -((yy - pos[0])**2 + (xx - pos[1])**2 - radius**2)**3 - ((yy - pos[0])**2 * (xx - pos[1])**3) * 2*radius
-        self.mask[np.where(heartline > 1)] = 1
+        # heartline = -((yy - pos[1])**2 + (xx - pos[0])**2 - radius**2)**3 - ((yy - pos[1])**2 * (xx - pos[0])**3) * 2*radius
+        # self.mask[np.where(heartline > 1)] = 1
+        # self.mask = scipy.ndimage.rotate(self.mask, rotation, reshape=False)
+        # self.mask[np.where(self.mask < 0.9)] = 0
+        heartline = -((yy - img_size[0]//2)**2 + (xx - img_size[1]//2)**2 - radius**2)**3 - ((yy - img_size[0]//2)**2 * (xx - img_size[1]//2)**3) * 2*radius
+        self.mask[np.where(heartline > 1)] = 1.
         self.mask = scipy.ndimage.rotate(self.mask, rotation, reshape=False)
-        self.mask[np.where(self.mask < 0.9)] = 0
+        self.mask[np.where(self.mask < 0.9)] = 0.
+        cropped = crop(self.mask)
+        self.mask = np.zeros(img_size)
+        cropped_origin = (pos[0]-cropped.shape[0]//2, pos[1]-cropped.shape[1]//2)
+        self.mask[max(0,cropped_origin[0]):min(cropped_origin[0] + cropped.shape[0], img_size[0]), max(cropped_origin[1],0):min(cropped_origin[1] + cropped.shape[1], img_size[1])] = cropped[max(0, -cropped_origin[0]):min(cropped.shape[0], img_size[0]-cropped_origin[0]), max(0, -cropped_origin[1]):min(cropped.shape[1], img_size[1]-cropped_origin[1])]
 
 
+def crop(img):
+    rows = np.any(img, axis=1)
+    cols = np.any(img, axis=0)
+    rmin, rmax = np.where(rows)[0][[0, -1]]
+    cmin, cmax = np.where(cols)[0][[0, -1]]
 
-
+    return img[rmin:rmax+1, cmin:cmax+1]
 
 
 
