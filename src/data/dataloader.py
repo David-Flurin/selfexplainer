@@ -6,7 +6,7 @@ import numpy as np
 import pytorch_lightning as pl
 import torchvision.transforms as T
 
-from torchvision.datasets import VOCDetection
+from torchvision.datasets import VOCDetection, MNIST
 from torch.utils.data import DataLoader
 from typing import Optional
 from pathlib import Path
@@ -45,6 +45,43 @@ class VOCDataModule(pl.LightningDataModule):
 
     def val_dataloader(self):
         return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def test_dataloader(self):
+        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+
+
+class MNISTDataModule(pl.LightningDataModule):
+
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+        super().__init__()
+
+        self.data_path = Path(data_path)
+
+        if os.path.exists(self.data_path) and len(os.listdir(self.data_path)) > 2:
+            self.download = False
+        else:
+            self.download = True
+
+        self.train_transformer = get_training_image_transformer(use_data_augmentation, bw=True)
+        self.test_transformer = get_testing_image_transformer(bw=True)
+
+        self.train_batch_size = train_batch_size
+        self.val_batch_size = val_batch_size
+        self.test_batch_size = test_batch_size
+        
+    def prepare_data(self):
+        pass
+
+    def setup(self, stage: Optional[str] = None):
+        trainval = MNIST(root=self.data_path, train=True, download=self.download, transform=self.train_transformer)
+        self.train, self.val   = torch.utils.data.random_split(trainval, (40000, 20000))
+        self.test  = MNIST(root=self.data_path, train=False, download=self.download, transform=self.test_transformer)
+
+    def train_dataloader(self):
+        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def val_dataloader(self):
+        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def test_dataloader(self):
         return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
@@ -214,8 +251,10 @@ class ColorDataModule(pl.LightningDataModule):
 
 
 
-def get_training_image_transformer(use_data_augmentation=False):
+def get_training_image_transformer(use_data_augmentation=False, bw=False):
 
+    mean = [0.1307] if bw else [0.485, 0.456, 0.406]
+    std = [0.3081] if bw else [0.229, 0.224, 0.225]
     if use_data_augmentation:
         transformer = T.Compose([ T.RandomHorizontalFlip(),
                                   T.RandomRotation(10),
@@ -224,22 +263,24 @@ def get_training_image_transformer(use_data_augmentation=False):
                                   #T.CenterCrop(224),
                                   T.Resize(size=(224,224)),
                                   T.ToTensor(), 
-                                  T.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+                                  T.Normalize(mean = mean, std = std)])
     else:
-        transformer = T.Compose([ T.Resize(size=(224,224)),
+        transformer = T.Compose([ T.Resize(size=(64,64)),
                                   # T.Resize(256),
                                   # T.CenterCrop(224),
                                   T.ToTensor(), 
-                                  T.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])
+                                  T.Normalize(mean = mean, std = std)
                                   ])
 
     return transformer
 
-def get_testing_image_transformer():
+def get_testing_image_transformer(bw = False):
 
+    mean = [0.1307] if bw else [0.485, 0.456, 0.406]
+    std = [0.3081] if bw else [0.229, 0.224, 0.225]
     transformer = T.Compose([ T.Resize(size=(224,224)),
                               T.ToTensor(), 
-                              T.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])])
+                              T.Normalize(mean = mean, std = std)])
 
     return transformer
 

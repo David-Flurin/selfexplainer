@@ -56,6 +56,8 @@ def get_parser():
     parser.add_argument('--frozen', default=False, type=str2bool, help='If the object and background pass of selfexplainer models has frozen weights')
     parser.add_argument('--freeze_every', default=20, type=int, help='Every n iterations, the model is frozen for the object and background pass.')
     parser.add_argument('--weighting_koeff', default=1.0, type=float, help='Koefficient of the softmax weighting scheme to generate logits.')
+    parser.add_argument('--aux_classifier', default=False, type=str2bool, help='Use an auxiliary classifier head.')
+
 
 
     # Model-specific parameters

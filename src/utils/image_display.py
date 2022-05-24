@@ -48,14 +48,17 @@ def save_masked_image(image, mask, filename, dataset):
     path_file = os.path.splitext(filename)[0]
 
     if dataset != 'COLOR':
-        image = get_unnormalized_image(image)
+        image = get_unnormalized_image(image, dataset=dataset)
     masked_nat_im = get_masked_image(image, mask)
 
 
     
 
     if dataset != 'COLOR':
-        plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+        if dataset != 'MNIST':
+            plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+        else:
+            plt.imsave(path_file + ".png", masked_nat_im.detach().cpu().squeeze() /255., format='png', cmap='gray', vmin=0, vmax=1)
     else:
         b,c, h, w = masked_nat_im.size()
                 
@@ -86,11 +89,14 @@ def save_image(image, filename, dataset):
     path_file = os.path.splitext(filename)[0]
 
     if dataset != 'COLOR':
-        image = get_unnormalized_image(image)
+        image = get_unnormalized_image(image, dataset=dataset)
     
 
     if dataset != 'COLOR':
-        plt.imsave(path_file + ".png", np.stack(image.cpu().squeeze(), axis=2), format="png")
+        if dataset != 'MNIST':
+            plt.imsave(path_file + ".png", np.stack(image.detach().cpu().squeeze(), axis=2), format="png")
+        else:
+            plt.imsave(path_file + ".png", image.detach().cpu().squeeze() /255., format='png', cmap='gray', vmin=0, vmax=1)
     else:
         b,c, h, w = image.size()
 
@@ -198,8 +204,12 @@ def show_most_likely_class_masks(image, segmentations, logits, threshold=0.0):
             add_subplot_with_class_mask(fig, i)
             show_image(masked_nat_im)
 
-def get_unnormalized_image(image):
-    inverse_transform = T.Compose([T.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
+def get_unnormalized_image(image, dataset=None):
+    if dataset == 'MNIST':
+        inverse_transform = T.Compose([T.Normalize(mean = [0.] , std = [1/0.3081]),
+                                        T.Normalize(mean = [ -0.1307], std = [1.])])
+    else:
+        inverse_transform = T.Compose([T.Normalize(mean = [ 0., 0., 0. ], std = [ 1/0.229, 1/0.224, 1/0.225 ]),
                                    T.Normalize(mean = [ -0.485, -0.456, -0.406 ], std = [ 1., 1., 1. ])])
 
     nat_image = inverse_transform(image)
@@ -247,6 +257,9 @@ def get_target_labels(dataset, include_background_class):
 
     elif dataset == 'COLOR':
         targets = list(get_color_dictionary(include_background_class, rgb=True).keys())
+
+    elif dataset == 'MNIST':
+        targets = list(range(0,10))
 
 
     return targets
