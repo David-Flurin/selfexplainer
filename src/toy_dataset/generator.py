@@ -213,18 +213,11 @@ class Generator:
             s = shape(radius, (center_x, center_y), self.img_size, rotation)
             shape_obj.append((s, f_tex_idx))
         img, seg_tex, seg_shape = self.__assemble(shape_obj, self.b_textures[b_tex_idx])
-        from matplotlib import pyplot as plt
-        for i in range(6):
-            for j in range(6):
-                img[specs[0][1]-3+i, specs[0][2]-3+j] = np.array([0., 255., 0.])
-                img[specs[1][1]-3+i, specs[1][2]-3+j] = np.array([0., 0., 255.])
-        plt.imshow(img)
-        plt.show()
 
         objects = []
         for shape in shape_obj:
             shape_name = (str(shape[0].__class__).split('.')[-1]).split('\'')[0].lower()
-            objects.append((shape_name, self.f_texture_names[f_tex_idx]))
+            objects.append((shape_name, self.f_texture_names[shape[1]]))
         return {'image': img, 'seg_tex': seg_tex, 'seg_shape': seg_shape, 'objects': objects, 'background': self.b_texture_names[b_tex_idx]}
 
 

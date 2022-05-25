@@ -23,11 +23,7 @@ from utils.image_display import save_all_class_masked_images, save_masked_image
 
 from toy_dataset import generator
 
-from matplotlib import pyplot as plt
-g = generator.Generator('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/foreground.txt', '/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/background.txt')
-for i in range(20):
-    s = g.generate_sample(2)
-quit()
+
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 parser = get_parser()
@@ -85,7 +81,7 @@ elif args.dataset == "CUB":
     num_classes = 200
 elif args.dataset == "TOY":
     data_module = ToyDataModule(
-        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), 
+        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), multiclass=args.multiclass, 
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8 if args.model_to_train == 'fcn' else 8
@@ -132,7 +128,7 @@ if args.model_to_train == "selfexplainer":
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, 
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -141,7 +137,7 @@ if args.model_to_train == "selfexplainer":
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, 
         )
 
 elif args.model_to_train == "fcn":

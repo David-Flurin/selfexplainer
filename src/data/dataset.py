@@ -49,7 +49,7 @@ class COCODataset(Dataset):
 
 
 class ToyDataset(Dataset):
-    def __init__(self, epoch_length, transform_fn=None, segmentation=False, target='texture'):
+    def __init__(self, epoch_length, transform_fn=None, segmentation=False, multiclass=False, target='texture'):
         self.ids = range(0, epoch_length)
         self.transform = transform_fn
         self.segmentation = segmentation
@@ -63,10 +63,12 @@ class ToyDataset(Dataset):
             self.foreground_textures[t] = 0
         for t in self.generator.b_texture_names:
             self.background_textures[t] = 0
+
+        self.num_objects = 2 if multiclass else 1
         
 
     def __getitem__(self, index):
-        sample = self.generator.generate_sample(1)       
+        sample = self.generator.generate_sample(randint(1, self.num_objects))       
 
         if self.transform is not None:
             img = self.transform(Image.fromarray(sample['image']))

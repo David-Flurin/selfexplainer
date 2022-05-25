@@ -36,7 +36,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False):
 
         super().__init__()
 
@@ -83,6 +83,8 @@ class BaseModel(pl.LightningModule):
         self.frozen = frozen
         self.freeze_every = freeze_every
 
+        self.multiclass = multiclass
+
         # self.attention_layer = None
         # if use_attention_layer:
         #     l = [
@@ -116,14 +118,14 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
-        if self.class_loss == 'ce':
+        if not self.multiclass:
             self.classification_loss_fn = nn.CrossEntropyLoss()
-        elif self.class_loss == 'bce':
-            self.classification_loss_fn = nn.BCEWithLogitsLoss()
-        elif self.class_loss == 'threshold':
-            self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         else:
-            raise ValueError(f'Classification loss argument {self.class_loss} not known')
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
+        # elif self.class_loss == 'threshold':
+        #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
+        # else:
+        #     raise ValueError(f'Classification loss argument {self.class_loss} not known')
 
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
@@ -224,6 +226,7 @@ class BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+
         if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.frozen = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
@@ -279,7 +282,7 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
             similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
             self.log('similarity_loss', similarity_loss)
 

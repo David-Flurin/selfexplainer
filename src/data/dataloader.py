@@ -152,12 +152,13 @@ class CUB200DataModule(pl.LightningDataModule):
 
 class ToyDataModule(pl.LightningDataModule):
 
-    def __init__(self, epoch_length, test_samples, segmentation=False, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, epoch_length, test_samples, segmentation=False, multiclass=False, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
         super().__init__()
 
         self.epoch_length = epoch_length
         self.test_samples = test_samples
         self.segmentation = segmentation
+        self.multiclass = multiclass
 
         self.train_transformer = get_training_image_transformer()
         self.test_transformer = get_training_image_transformer()
@@ -170,8 +171,8 @@ class ToyDataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer, segmentation=self.segmentation)
-        self.test = ToyDataset(self.test_samples, transform_fn=self.test_transformer, segmentation=self.segmentation)
+        self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer, segmentation=self.segmentation, multiclass=self.multiclass)
+        self.test = ToyDataset(self.test_samples, transform_fn=self.test_transformer, segmentation=self.segmentation, multiclass=self.multiclass)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
@@ -265,7 +266,7 @@ def get_training_image_transformer(use_data_augmentation=False, bw=False):
                                   T.ToTensor(), 
                                   T.Normalize(mean = mean, std = std)])
     else:
-        transformer = T.Compose([ T.Resize(size=(64,64)),
+        transformer = T.Compose([ T.Resize(size=(224,224)),
                                   # T.Resize(256),
                                   # T.CenterCrop(224),
                                   T.ToTensor(), 
