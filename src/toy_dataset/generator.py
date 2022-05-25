@@ -1,3 +1,4 @@
+from email import generator
 from multiprocessing.sharedctypes import Value
 from os import mkdir
 from os.path import join
@@ -86,6 +87,10 @@ class Generator:
     def generate_sample(self, num_objects):
         if num_objects > len(self.shapes):
             raise ValueError(f'Number of objects cannot exceed total available shapes ({len(self.shapes)})')
+
+        # if num_objects > 1:
+        #     self.max_radius = int(self.max_radius * 0.75)
+        self.max_radius = max(self.max_radius, self.min_radius)
         idx = sample(range(0, len(self.shapes)), num_objects)
         return self.__generate(get_i(idx, self.shapes))
 
@@ -202,13 +207,19 @@ class Generator:
 
     def __generate(self, shapes):
         shape_obj = []
+        specs = self.__randomize(self.img_size[0], len(shapes))
         for i, shape in enumerate(shapes):
-            y_part = self.img_size[1] // len(shapes)
-            radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx = self.__randomize((self.img_size[0], y_part))
-            center_y += i*y_part
+            radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx = specs[i]
             s = shape(radius, (center_x, center_y), self.img_size, rotation)
             shape_obj.append((s, f_tex_idx))
         img, seg_tex, seg_shape = self.__assemble(shape_obj, self.b_textures[b_tex_idx])
+        from matplotlib import pyplot as plt
+        for i in range(6):
+            for j in range(6):
+                img[specs[0][1]-3+i, specs[0][2]-3+j] = np.array([0., 255., 0.])
+                img[specs[1][1]-3+i, specs[1][2]-3+j] = np.array([0., 0., 255.])
+        plt.imshow(img)
+        plt.show()
 
         objects = []
         for shape in shape_obj:
@@ -248,15 +259,42 @@ class Generator:
 
 
 
-    def __randomize(self, size):
-        radius =  randint(self.min_radius, min((min(size)-30)/2, self.max_radius))
-        center_x = randint(20 + radius, size[0] - 20 - radius)
-        center_y = randint(20 + radius, size[1] - 20 - radius)
-        rotation = randint(0, 360)
-        f_tex_idx = randint(0, self.num_f_tex -1)
-        b_tex_idx = randint(0, self.num_b_tex -1)
-        
-        return radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx
+    def __randomize(self, size, objects):
+        if objects == 1:
+            radius =  randint(self.min_radius, min((size-30)/2, self.max_radius))
+            center_x = randint(20 + radius, size - 20 - radius)
+            center_y = randint(20 + radius, size - 20 - radius)
+            rotation = randint(0, 360)
+            f_tex_idx = randint(0, self.num_f_tex -1)
+            b_tex_idx = randint(0, self.num_b_tex -1)
+            
+            return [[radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx]]
+        if objects == 2:
+            max_radius = min(((size -20 - 2*self.min_radius) // 2), self.max_radius)
+            radius_1 = randint(self.min_radius, max_radius)
+            max_radius = min(((size - 20 - 2*radius_1) // 2), self.max_radius) 
+            radius_2 = randint(self.min_radius, max_radius)
+            free = size - 20 - 2*(radius_1 + radius_2)
+
+            offset_x_1 = 10 if randint(0,1) == 0 else (size - 10 - 2*radius_1 - free//2)
+            offset_y_1 = 10 if randint(0,1) == 0 else (size - 10 - 2*radius_1 - free//2)
+            offset_x_2 = 10 if offset_x_1 > 10 else (size - 10 - 2*radius_2 - free//2)
+            offset_y_2 = 10 if offset_y_1 > 10 else (size - 10 - 2*radius_2 - free//2)
+            center_x_1 = randint(offset_x_1 + radius_1, offset_x_1 + radius_1 + free//2)
+            center_y_1 = randint(offset_y_1 + radius_1, offset_y_1 + radius_1 + free//2)
+            center_x_2 = randint(offset_x_2 + radius_2, offset_x_2 + radius_2 + free//2)
+            center_y_2 = randint(offset_y_2 + radius_2, offset_y_2 + radius_2 + free//2)
+            rotation_1 = randint(0, 360)
+            rotation_2 = randint(0, 360)
+            f_tex_idx_1 = randint(0, self.num_f_tex -1)
+            b_tex_idx_1 = randint(0, self.num_b_tex -1)
+            f_tex_idx_2 = randint(0, self.num_f_tex -1)
+            b_tex_idx_2 = randint(0, self.num_b_tex -1)
+            return [
+               [radius_1, center_x_1, center_y_1, rotation_1, f_tex_idx_1, b_tex_idx_1],
+               [radius_2, center_x_2, center_y_2, rotation_2, f_tex_idx_2, b_tex_idx_2] 
+            ]
+
         #return 41, 159, 108, 15, 1, 1
 
 
