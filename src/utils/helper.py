@@ -18,7 +18,7 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 
-    if dataset == "SMALLVOC":
+    if dataset in ["SMALLVOC", 'OISMALL']:
         target_dict = get_small_target_dictionary(include_background_class)
         objects = [item['annotation']['object'] for item in annotations]
 
@@ -157,9 +157,9 @@ def get_target_dictionary(include_background_class):
 
 def get_small_target_dictionary(include_background_class):
     if include_background_class:
-        target_dict = {'background' : 0, 'cat' : 1, 'dog' : 2, 'sheep' : 3}
+        target_dict = {'background' : 0, 'cat' : 1, 'dog' : 2, 'bird' : 3}
     else:
-        target_dict = {'cat' : 0, 'dog' : 1, 'sheep' : 2}
+        target_dict = {'cat' : 0, 'dog' : 1, 'bird' : 2}
 
     return target_dict
 
