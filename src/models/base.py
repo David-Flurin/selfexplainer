@@ -137,7 +137,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC', 'MNIST']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC', 'OISMALL']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
@@ -219,7 +219,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -334,20 +334,20 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
             logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            for b in range(image.size()[0]):
-                log_string += f'Batch {b}:  \n'
-                logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
-                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+            
+            log_string += f'Batch {0}:  \n'
+            logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[0]] 
+            logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+            log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
 
-                probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
-                probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
-                log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
+            probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[0]]
+            probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
+            log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
-                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
-                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
-                log_string += '  \n'
+            logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[0]] 
+            logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+            log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+            log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
 
         self.log('loss', float(loss))
@@ -399,7 +399,7 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -519,7 +519,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'MNIST']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

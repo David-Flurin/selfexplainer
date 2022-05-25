@@ -8,6 +8,9 @@ from PIL import Image
 from pycocotools.coco import COCO
 from random import randint
 from xml.etree import cElementTree as ElementTree
+import fiftyone as fo
+from fiftyone import ViewField as F
+import json
 
 from toy_dataset import generator
 from color_dataset import generator as color_generator
@@ -47,6 +50,53 @@ class COCODataset(Dataset):
     def __len__(self):
         return len(self.ids)
 
+class OISmallDataset(Dataset):
+    def __init__(
+        self,
+        root,
+        transform_fn=None,
+        gt_field="ground_truth",
+        classes=None,
+    ):
+        with open(root/'labels.json', 'r') as jsonfile:
+            labels = json.load(jsonfile)
+        self.root = root
+        classes = labels['classes']
+        
+        labels = labels['labels']
+        target_classes = {classes.index('Cat'):'cat', classes.index('Dog'):'dog', classes.index('Bird'):'bird'}
+        self.img_to_class = {}
+        for img, l in labels.items():
+            if l == None:
+                continue
+            for i, c in target_classes.items():
+                if i in l:
+                    self.img_to_class[img] = [c] if img not in self.img_to_class else self.img_to_class[img] + [c]
+        
+        self.images = list(self.img_to_class.keys())
+        print('Cats:', sum('cat' in value for value in self.img_to_class.values()))
+        print('Dogs:', sum('dog' in value for value in self.img_to_class.values()))
+        print('Sheeps:', sum('bird' in value for value in self.img_to_class.values()))
+
+        self.transforms = transform_fn
+        self.gt_field = gt_field
+        
+
+    def __getitem__(self, idx):
+        img_path = self.root / 'data' / (self.images[idx] +'.jpg')
+
+        img = Image.open(img_path).convert("RGB")
+
+        if self.transforms is not None:
+            img = self.transforms(img)
+
+        return img, {'annotation':{'object': [{'name': name} for name in self.img_to_class[self.images[idx]]]}}
+
+
+    def __len__(self):
+        return len(self.images)
+
+    
 
 class ToyDataset(Dataset):
     def __init__(self, epoch_length, transform_fn=None, segmentation=False, multiclass=False, target='texture'):

@@ -250,7 +250,7 @@ def get_target_labels(dataset, include_background_class):
             targets = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
                     'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
                     'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    elif dataset == 'SMALLVOC':
+    elif dataset in ['SMALLVOC', 'OISMALL']:
         targets = list(get_small_target_dictionary(include_background_class))
     elif dataset in ['TOY', 'TOY_SAVED']:
         targets = list(get_toy_target_dictionary(include_background_class, 'texture').keys())
