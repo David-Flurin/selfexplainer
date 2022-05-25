@@ -266,14 +266,9 @@ def get_training_image_transformer(use_data_augmentation=False, bw=False):
                                   T.ToTensor(), 
                                   T.Normalize(mean = mean, std = std)])
     else:
-<<<<<<< HEAD
         transformer = T.Compose([ T.Resize(size=(224,224)),
                                   # T.Resize(256),
                                   # T.CenterCrop(224),
-=======
-        transformer = T.Compose([ T.Resize(256),
-                                  T.CenterCrop(224),
->>>>>>> 117beca1beeb9167095891ce69400f48a8b2cdcb
                                   T.ToTensor(), 
                                   T.Normalize(mean = mean, std = std)
                                   ])
