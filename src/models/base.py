@@ -267,9 +267,9 @@ class BaseModel(pl.LightningModule):
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)   
 
-        self.log('classification_loss_1Pass', classification_loss)   
-
-        self.log('classification_loss_2Pass', self.classification_loss_fn(output['object'][3], target_vector))     
+        if self.use_similarity_loss:
+            self.log('classification_loss_1Pass', classification_loss)   
+            self.log('classification_loss_2Pass', self.classification_loss_fn(output['object'][3], target_vector))     
 
         loss = classification_loss
         
@@ -325,7 +325,7 @@ class BaseModel(pl.LightningModule):
         self.i += 1.
         self.log('iterations', self.i)
 
-        if self.i % 5 == 4:
+        if self.i % 5 == 4 and self.use_similarity_loss:
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
@@ -480,26 +480,27 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
 
-        self.log('val_loss', float(loss))
-        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-        self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
-        self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
-        log_string = ''
-        for b in range(image.size()[0]):
-            log_string += f'Batch {b}:  \n'
-            logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
-            logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-            log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+        if self.use_similarity_loss:
+            self.log('val_loss', float(loss))
+            self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            log_string = ''
+            for b in range(image.size()[0]):
+                log_string += f'Batch {b}:  \n'
+                logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
 
-            probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
-            probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
-            log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
+                probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
+                probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
+                log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
-            logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
-            logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-            log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
-            log_string += '  \n'
-        self.logger.experiment.add_text('Val Logits', log_string,  self.i)
+                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+                log_string += '  \n'
+            self.logger.experiment.add_text('Val Logits', log_string,  self.i)
 
        
         self.valid_metrics(output['image'][3], target_vector.int())
