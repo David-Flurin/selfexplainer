@@ -107,15 +107,15 @@ class ClassMaskAreaLoss(MaskAreaLoss):
         return losses.mean()
 
 def entropy_loss(logits):
-    # min_prob = 1e-16
-    # probs = F.softmax(logits, dim=-1).clamp(min=min_prob)
-    # log_probs = probs.log()
-    # entropy = (-probs * log_probs)
-    # entropy_loss = -entropy.mean()
+    min_prob = 1e-16
+    probs = F.softmax(logits, dim=-1).clamp(min=min_prob)
+    log_probs = probs.log()
+    entropy = (-probs * log_probs)
+    entropy_loss = -entropy.mean()
 
-    b, c = logits.size()
-    sm = nn.functional.softmax(logits, dim=-1)
-    entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
+    #b, c = logits.size()
+    #sm = nn.functional.softmax(logits, dim=-1)
+    #entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
 
 
     return entropy_loss
