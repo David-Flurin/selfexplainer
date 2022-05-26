@@ -68,9 +68,9 @@ class OISmallDataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        self.train = OISmallDataset(root=self.data_path, transform_fn=self.train_transformer)
-        self.val = OISmallDataset(root=self.data_path, transform_fn=self.test_transformer)
-        self.test = OISmallDataset(root=self.data_path, transform_fn=self.test_transformer)
+        self.train = OISmallDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
+        self.val = OISmallDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
+        self.test = OISmallDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())

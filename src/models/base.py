@@ -333,7 +333,7 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
-            logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
             
             log_string += f'Batch {0}:  \n'
             logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[0]] 
