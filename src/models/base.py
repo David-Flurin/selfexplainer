@@ -305,11 +305,12 @@ class BaseModel(pl.LightningModule):
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
             mask_loss += mask_variation_loss
 
-        if self.use_mask_area_loss:
+        
             #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
-            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+        mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
             #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
-            self.log('mask_area_loss', mask_area_loss)
+        self.log('mask_area_loss', mask_area_loss)
+        if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
 
@@ -463,13 +464,12 @@ class BaseModel(pl.LightningModule):
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
             mask_loss += mask_variation_loss
 
-        if self.use_mask_area_loss:
             #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
             mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
             #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
-            self.log('val_mask_area_loss', mask_area_loss)
-            mask_loss += mask_area_loss
-
+            self.log('mask_area_loss', mask_area_loss)
+            if self.use_mask_area_loss:
+                mask_loss += mask_area_loss
 
         if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
             if self.use_weighted_loss:
