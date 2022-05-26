@@ -8,8 +8,6 @@ from PIL import Image
 from pycocotools.coco import COCO
 from random import randint
 from xml.etree import cElementTree as ElementTree
-import fiftyone as fo
-from fiftyone import ViewField as F
 import json
 
 from toy_dataset import generator
