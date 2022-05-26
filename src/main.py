@@ -211,20 +211,37 @@ early_stop_callback = EarlyStopping(
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
-trainer = pl.Trainer(
-    logger = logger,
-    callbacks = [early_stop_callback],
-    gpus = [args.gpu] if torch.cuda.is_available() else 0,
-    #detect_anomaly = True,
-    #log_every_n_steps = 80//args.train_batch_size,
-    log_every_n_steps = 5,
-    # val_check_interval = 200,
-    # limit_val_batches = 100,
-    enable_checkpointing = args.checkpoint_callback
-    #amp_backend='apex',
-    #amp_level='02'
-    #profiler=profiler
-)
+if args.dataset == 'OISMALL':
+    trainer = pl.Trainer(
+        logger = logger,
+        callbacks = [early_stop_callback],
+        gpus = [args.gpu] if torch.cuda.is_available() else 0,
+        #detect_anomaly = True,
+        #log_every_n_steps = 80//args.train_batch_size,
+        log_every_n_steps = 5,
+        val_check_interval = 100,
+        limit_val_batches = 50,
+        enable_checkpointing = args.checkpoint_callback
+        #amp_backend='apex',
+        #amp_level='02'
+        #profiler=profiler
+    )
+else:
+    trainer = pl.Trainer(
+        logger = logger,
+        callbacks = [early_stop_callback],
+        gpus = [args.gpu] if torch.cuda.is_available() else 0,
+        #detect_anomaly = True,
+        #log_every_n_steps = 80//args.train_batch_size,
+        log_every_n_steps = 5,
+        # val_check_interval = 200,
+        # limit_val_batches = 100,
+        enable_checkpointing = args.checkpoint_callback
+        #amp_backend='apex',
+        #amp_level='02'
+        #profiler=profiler
+    )
+
 
 if args.train_model:
     trainer.fit(model=model, datamodule=data_module)
