@@ -316,7 +316,9 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
             if self.use_weighted_loss:
-                loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
+                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
+                self.log('weighted_loss', w_loss)
+                loss += w_loss
             else:
                 loss = loss + obj_back_loss + mask_loss
 
