@@ -163,10 +163,15 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             
+            
             masked_image = i_mask.unsqueeze(1) * image
+            from matplotlib import pyplot as plt
+            plt.imshow(masked_image[0].detach().permute(1,2,0))
+            plt.show()
             if self.i % 5 == 4:
                 self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
+            sanity_check = self._forward(torch.zeros_like(masked_image), targets, frozen=False)
         
         if self.use_background_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -354,7 +359,7 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
 
         self.log('loss', float(loss))
-       
+        
         self.train_metrics(output['image'][3], target_vector.int())
 
         #DEBUG
