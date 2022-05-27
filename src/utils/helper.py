@@ -118,7 +118,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
-    if dataset in ["VOC", 'SMALLVOC']:
+    if dataset in ["VOC", 'SMALLVOC', 'OISMALL']:
         filename = annotations[0]['annotation']['filename']
 
     elif dataset == "COCO":
@@ -192,7 +192,7 @@ def get_color_dictionary(include_background_class, rgb=True):
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
     if dataset == 'VOC':
         return get_target_dictionary(include_background_class=include_background_class)
-    if dataset == 'SMALLVOC':
+    if dataset in ['SMALLVOC', 'OISMALL']:
         return get_small_target_dictionary(include_background_class=include_background_class)
     elif dataset in ['TOY', 'TOY_SAVED']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
@@ -228,8 +228,11 @@ def extract_masks(segmentations, target_vectors, gpu=0):
         non_class_indices = target_vectors[i].eq(0.0)
 
         target_masks[i] = (segmentations[i][class_indices]).amax(dim=0)
-        
-        non_target_masks[i] = (segmentations[i][non_class_indices]).amax(dim=0)
+       
+        if torch.any(non_class_indices):
+            non_target_masks[i] = (segmentations[i][non_class_indices]).amax(dim=0)
+        else:
+            non_target_masks[i] = torch.zeros((h, w))
 
     return target_masks.sigmoid(), non_target_masks.sigmoid()
 
