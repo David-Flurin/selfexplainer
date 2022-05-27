@@ -88,7 +88,7 @@ class OISmallDataset(Dataset):
         if self.transforms is not None:
             img = self.transforms(img)
 
-        return img, {'annotation':{'object': [{'name': name} for name in self.img_to_class[self.images[idx]]]}}
+        return img, {'annotation':{'object': [{'name': name} for name in self.img_to_class[self.images[idx]]], 'filename': self.images[idx]}}
 
 
     def __len__(self):
