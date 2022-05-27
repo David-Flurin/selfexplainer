@@ -20,7 +20,7 @@ import pickle
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
+from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
 from evaluation.compute_scores import selfexplainer_compute_numbers
@@ -78,7 +78,6 @@ class BaseModel(pl.LightningModule):
         self.objective = objective
 
         self.test_background_logits = []
-        self.class_loss = class_loss
 
         self.frozen = frozen
         self.freeze_every = freeze_every
@@ -138,9 +137,9 @@ class BaseModel(pl.LightningModule):
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC', 'OISMALL']:
-            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
-            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss=self.class_loss)
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -288,9 +287,9 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
+            #similarity_loss = self.similarity_regularizer * similarity_loss_fn(logit_fn(output['image'][3].detach()),  logit_fn(output['object'][3]))
+            similarity_loss = self.similarity_regularizer * self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
             self.log('similarity_loss', similarity_loss)
 
             obj_back_loss += similarity_loss
@@ -315,17 +314,20 @@ class BaseModel(pl.LightningModule):
         
             #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
         mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
-            #mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
+        mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
         self.log('mask_area_loss', mask_area_loss)
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
 
-        if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
+        if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 5, 0.2)
+                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 5, 0.1)
                 self.log('weighted_loss', w_loss)
                 loss += w_loss
+                #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
+                #self.log('weighted mask loss', w_m_loss)
+                #loss += w_m_loss
             else:
                 loss = loss + obj_back_loss + mask_loss
 

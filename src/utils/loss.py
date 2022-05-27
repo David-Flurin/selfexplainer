@@ -107,16 +107,17 @@ class ClassMaskAreaLoss(MaskAreaLoss):
         return losses.mean()
 
 def entropy_loss(logits):
+    
     min_prob = 1e-16
     probs = F.softmax(logits, dim=-1).clamp(min=min_prob)
     log_probs = probs.log()
     entropy = (-probs * log_probs)
     entropy_loss = -entropy.mean()
-
-    #b, c = logits.size()
-    #sm = nn.functional.softmax(logits, dim=-1)
-    #entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
-
+    '''
+    b, c = logits.size()
+    sm = nn.functional.softmax(logits, dim=-1)
+    entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
+    '''
 
     return entropy_loss
 
@@ -146,6 +147,8 @@ def weighted_loss(l_1, l_2, steepness, offset):
     loss1 = l_1.detach().item()
     return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
 
+def similarity_loss_fn(props_1, probs_2):
+    return (props_1 - probs_2).abs().mean()
 
 # t = torch.zeros((2, 224, 224))
 # t[0, 0:50, 0:50] += torch.ones((50, 50))
