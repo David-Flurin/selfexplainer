@@ -143,8 +143,8 @@ def mask_similarity_loss(logits, targets, imask, omask):
     return batch_losses.mean()
 
 def weighted_loss(l_1, l_2, steepness, offset):
-    loss1 = l_1.item()
-    return l_1 + min(1., math.exp(-steepness * (loss1 - offset))) * l_2
+    loss1 = l_1.detach().item()
+    return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
 
 
 # t = torch.zeros((2, 224, 224))
