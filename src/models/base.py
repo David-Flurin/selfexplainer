@@ -162,8 +162,10 @@ class BaseModel(pl.LightningModule):
             i_mask = perfect_mask
         
         if self.use_similarity_loss:
-            masked_image = i_mask.unsqueeze(1) * image
             
+            masked_image = i_mask.unsqueeze(1) * image
+            if self.i % 5 == 4:
+                self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
         
         if self.use_background_loss:   
@@ -197,7 +199,6 @@ class BaseModel(pl.LightningModule):
             else:
                 segmentations = self.model(image) # [batch_size, num_classes, height, width]
         
-
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
         if not self.aux_classifier:
@@ -317,7 +318,7 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss or self.use_mask_variation_loss or self.use_mask_area_loss:
             if self.use_weighted_loss:
-                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 2, 0.2)
+                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 5, 0.2)
                 self.log('weighted_loss', w_loss)
                 loss += w_loss
             else:
@@ -329,8 +330,6 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
-        self.i += 1.
-        self.log('iterations', self.i)
 
         if self.i % 5 == 4 and self.use_similarity_loss:
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
@@ -377,6 +376,8 @@ class BaseModel(pl.LightningModule):
         # o = self.optimizers()
         # self.manual_backward(loss)
         # o.step()
+        self.i += 1.
+        self.log('iterations', self.i)
         return loss
 
     def training_epoch_end(self, outs):
