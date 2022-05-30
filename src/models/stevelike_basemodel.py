@@ -292,6 +292,8 @@ class Slike_BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             self.train_metrics(logits_mask, target_vector.int())
+        else:
+            self.train_metrics(logits, target_vector.int())
 
         self.i += 1.
         self.log('iterations', self.i)

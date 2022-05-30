@@ -164,9 +164,6 @@ class BaseModel(pl.LightningModule):
             
             
             masked_image = i_mask.unsqueeze(1) * image
-            from matplotlib import pyplot as plt
-            plt.imshow(masked_image[0].detach().permute(1,2,0))
-            plt.show()
             if self.i % 5 == 4:
                 self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
