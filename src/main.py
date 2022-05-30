@@ -220,12 +220,12 @@ print('Use area loss:', model.use_mask_area_loss)
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
-    monitor = 'loss',
+    monitor = 'iterations',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=0.
+    mode="max",
+    stopping_threshold=0.
 )
 
 #profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')

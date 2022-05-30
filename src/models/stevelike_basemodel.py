@@ -421,23 +421,23 @@ class Slike_BaseModel(pl.LightningModule):
         
         if self.save_masked_images and image.size()[0] == 1:
             filename = Path(self.save_path) / "masked_images" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, target_mask, filename)
+            save_masked_image(image, target_mask, filename, self.dataset)
 
         if self.save_masks and image.size()[0] == 1:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_mask(target_mask, Path(self.save_path) / "masks" / filename)
+            save_mask(target_mask, Path(self.save_path) / "masks" / filename, self.dataset)
 
         if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masks(image, segmentations, filename)
+            save_all_class_masks(image, segmentations, filename, self.dataset)
         
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)
             classification_loss_mask = self.classification_loss_fn(logits_mask, labels)
         else:
-            classification_loss_mask = self.classification_loss_fn(logits_mask, targets)
+            classification_loss_mask = self.classification_loss_fn(logits_mask, target_vector)
 
-        classification_loss_inversed_mask = self.entropy_regularizer * entropy_loss(logits_inversed_mask)
+        classification_loss_inversed_mask = self.bg_loss_regularizer * entropy_loss(logits_inversed_mask)
         loss = classification_loss_mask + classification_loss_inversed_mask
 
         if self.use_mask_variation_loss:
@@ -451,15 +451,11 @@ class Slike_BaseModel(pl.LightningModule):
             loss += mask_area_loss
 
         self.log('test_loss', loss)
-        self.test_metrics(logits_mask, targets)
-
-        self.log('test_loss', loss)
-
         
-
-
-
-        self.test_metrics(output['image'][3], target_vector.int())
+        if self.use_similarity_loss:
+            self.test_metrics(logits_mask, target_vector.int())
+        else:
+            self.test_metrics(logits, target_vector.int())
 
     def test_epoch_end(self, outs):
         m = self.test_metrics.compute()
