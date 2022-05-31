@@ -242,8 +242,9 @@ class Slike_BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if not self.class_only and self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = self.classification_loss_fn(logits_mask, logits_classifier)
+            #logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            #similarity_loss = self.classification_loss_fn(logits_mask, logit_fn(logits_classifier))
+            similarity_loss = self.classification_loss_fn(logits_mask, target_vector)
             self.log('similarity_loss', similarity_loss)
             obj_back_loss += similarity_loss
 
@@ -282,7 +283,7 @@ class Slike_BaseModel(pl.LightningModule):
                 loss = loss + obj_back_loss + mask_loss
         
 
-        if self.i % 5 == 4 and self.use_similarity_loss:
+        if self.i % 5 == 4 and self.use_similarity_loss and not self.class_only:
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             #self.logger.experiment.add_image('Train 1PassOutput', target_mask.unsqueeze(1), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 2PassOutput', target_mask.unsqueeze(1), self.i, dataformats='NCHW')
@@ -290,7 +291,7 @@ class Slike_BaseModel(pl.LightningModule):
 
         self.log('loss', float(loss))
         
-        if self.use_similarity_loss:
+        if self.use_similarity_loss and not self.class_only:
             self.train_metrics(logits_mask, target_vector.int())
         else:
             self.train_metrics(logits, target_vector.int())
@@ -416,7 +417,7 @@ class Slike_BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        logits, logits_classifier, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, segmentations_classifier = self(image, targets)
+        logits, logits_classifier, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, segmentations_classifier = self(image, target_vector)
 
         
         if self.save_masked_images and image.size()[0] == 1:
