@@ -243,7 +243,7 @@ class Slike_BaseModel(pl.LightningModule):
         if not self.class_only and self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = self.classification_loss_fn(logits_mask, logits_classifier)
+            similarity_loss = self.classification_loss_fn(logits_mask, logit_fn(logits_classifier))
             self.log('similarity_loss', similarity_loss)
             obj_back_loss += similarity_loss
 
