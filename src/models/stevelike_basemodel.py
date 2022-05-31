@@ -500,7 +500,14 @@ class Slike_BaseModel(pl.LightningModule):
     
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
-            if k.startswith('frozen'):
+            if k.startswith('classifier'):
                 del checkpoint['state_dict'][k]
+
+    def on_load_checkpoint(self, checkpoint):
+        for k in list(checkpoint['state_dict'].keys()):
+            if k.startswith('classifier'):
+                del checkpoint['state_dict'][k]
+
+    
 
 
