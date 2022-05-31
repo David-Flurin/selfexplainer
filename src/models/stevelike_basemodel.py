@@ -225,19 +225,19 @@ class Slike_BaseModel(pl.LightningModule):
 
         loss = torch.zeros(1, device = image.device)
         logits, logits_classifier, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, segmentations_classifier = self(image, target_vector)
-        if self.class_only:
-            if self.objective == 'classification':
-                classification_loss_initial = self.classification_loss_fn(logits, target_vector)
-            elif self.objective == 'segmentation':
-                targets = targets.to(torch.float64)
-                classification_loss_initial = self.classification_loss_fn(segmentations, targets)
-            else:
-                raise ValueError('Unknown objective')
+        #if self.class_only:
+        if self.objective == 'classification':
+            classification_loss_initial = self.classification_loss_fn(logits, target_vector)
+        elif self.objective == 'segmentation':
+            targets = targets.to(torch.float64)
+            classification_loss_initial = self.classification_loss_fn(segmentations, targets)
+        else:
+            raise ValueError('Unknown objective')
         
-            classification_loss = classification_loss_initial
-            self.log('classification_loss', classification_loss)   
+        classification_loss = classification_loss_initial
+        self.log('classification_loss', classification_loss)   
 
-            loss += classification_loss
+        loss += classification_loss
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if not self.class_only and self.use_similarity_loss:
@@ -262,15 +262,18 @@ class Slike_BaseModel(pl.LightningModule):
         if not self.class_only and self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(target_mask) + self.total_variation_conv(non_target_mask))
             mask_loss += mask_variation_loss
+            self.log('Area TV loss', mask_variation_loss)
 
         
-            #mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
-        
+            
+            
         
         if not self.class_only and self.use_mask_area_loss:
-            mask_area_loss = self.mask_total_area_regularizer * target_mask.mean()
+            mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(segmentations, target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
+            self.log('Bounding area loss', mask_area_loss)
+            mask_area_loss += self.mask_total_area_regularizer * target_mask.mean()
             mask_area_loss += self.ncmask_total_area_regularizer * non_target_mask.mean()
-            self.log('mask_area_loss', mask_area_loss)
+            self.log('Mean area loss', mask_area_loss)
             mask_loss += mask_area_loss
 
 

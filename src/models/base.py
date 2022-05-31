@@ -306,13 +306,15 @@ class BaseModel(pl.LightningModule):
         mask_loss = torch.zeros((1), device=loss.device)
         if self.use_mask_variation_loss:
             mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
+            self.log('TV mask loss', mask_variation_loss)
             mask_loss += mask_variation_loss
 
         
-        mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vector))
+        mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
+        self.log('Bounding area loss', mask_area_loss)
         mask_area_loss += self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
         mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
-        self.log('mask_area_loss', mask_area_loss)
+        self.log('Mean area loss', mask_area_loss)
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
@@ -449,7 +451,7 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            logit_fn = torch.sigmoid if self.class_loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
             similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
             self.log('val_similarity_loss', similarity_loss)
 

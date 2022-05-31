@@ -35,6 +35,7 @@ if args.arg_log:
 #pl.seed_everything(args.seed)
 profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 
+print('Dir: ',args.save_path)
 
 # Set up Logging
 if args.use_tensorboard_logger:
