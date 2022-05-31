@@ -71,6 +71,7 @@ def get_parser():
     parser.add_argument('--use_weighted_loss', default=False, type=str2bool, help='whether to use a dynamically weighted loss.')
     parser.add_argument('--use_mask_variation_loss', default=True, type=str2bool, help='whether to use variation loss on the mask.')
     parser.add_argument('--use_mask_area_loss', default=True, type=str2bool, help='whether to use area loss on the mask.')
+    parser.add_argument('--use_bounding_loss', default=True, type=str2bool, help='whether to use bounding loss on the mask.')
     # parser.add_argument('--use_mask_coherency_loss', default=True, type=str2bool, help='whether to use mask coherency loss (only for self-explainer architecture)')
     # parser.add_argument('--entropy_regularizer', default=1.0, type=float, help='loss weighting term for entropy loss')
     parser.add_argument('--mask_variation_regularizer', default=1.0, type=float, help='loss weighting term for mask variation loss')

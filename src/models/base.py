@@ -36,7 +36,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False):
 
         super().__init__()
 
@@ -63,6 +63,7 @@ class BaseModel(pl.LightningModule):
         self.use_mask_area_loss = use_mask_area_loss
         self.mask_total_area_regularizer = mask_total_area_regularizer
         self.ncmask_total_area_regularizer = ncmask_total_area_regularizer
+        self.use_bounding_loss = use_bounding_loss
         self.use_mask_variation_loss = use_mask_variation_loss
         self.mask_variation_regularizer = mask_variation_regularizer
 
@@ -161,8 +162,6 @@ class BaseModel(pl.LightningModule):
             i_mask = perfect_mask
         
         if self.use_similarity_loss:
-            
-            
             masked_image = i_mask.unsqueeze(1) * image
             if self.i % 5 == 4:
                 self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
@@ -279,9 +278,6 @@ class BaseModel(pl.LightningModule):
 
         loss = classification_loss
         
-        #loss = torch.zeros(1, device=image.device, requires_grad=True)
-
-        
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
@@ -309,21 +305,26 @@ class BaseModel(pl.LightningModule):
             self.log('TV mask loss', mask_variation_loss)
             mask_loss += mask_variation_loss
 
-        
-        mask_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
-        self.log('Bounding area loss', mask_area_loss)
-        mask_area_loss += self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
-        mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
-        self.log('Mean area loss', mask_area_loss)
+
+        if self.use_bounding_loss:
+            bounding_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
+            self.log('Bounding area loss', bounding_area_loss)
+            mask_loss += bounding_area_loss
+
         if self.use_mask_area_loss:
+            mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
+            mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
+            self.log('Mean area loss', mask_area_loss)
             mask_loss += mask_area_loss
 
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_loss = weighted_loss(loss, obj_back_loss + mask_loss, 5, 0.1)
-                self.log('weighted_loss', w_loss)
-                loss += w_loss
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 5, 0.1)
+                self.log('weighted_loss', w_obj_back_loss)
+                w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
+                self.log('Weighted mask losses', w_mask_loss)
+                loss += w_obj_back_loss + w_mask_loss
                 #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
                 #self.log('weighted mask loss', w_m_loss)
                 #loss += w_m_loss
