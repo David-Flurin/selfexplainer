@@ -335,26 +335,25 @@ class Slike_BaseModel(pl.LightningModule):
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
 
-        if self.class_only and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
+        if not self.class_only and self.i == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.classifier = deepcopy(self.model)
            for _,p in self.classifier.named_parameters():
                p.requires_grad_(False)
 
 
-        logits, logits_classifier, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, segmentations_classifier = self(image, targets)
-        if self.class_only:
-            if self.objective == 'classification':
-                classification_loss_initial = self.classification_loss_fn(logits, target_vector)
-            elif self.objective == 'segmentation':
-                targets = targets.to(torch.float64)
-                classification_loss_initial = self.classification_loss_fn(segmentations, targets)
-            else:
-                raise ValueError('Unknown objective')
+        logits, logits_classifier, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, segmentations_classifier = self(image, target_vector)
+        if self.objective == 'classification':
+            classification_loss_initial = self.classification_loss_fn(logits, target_vector)
+        elif self.objective == 'segmentation':
+            targets = targets.to(torch.float64)
+            classification_loss_initial = self.classification_loss_fn(segmentations, targets)
+        else:
+            raise ValueError('Unknown objective')
         
-            classification_loss = classification_loss_initial
-            self.log('val_classification_loss', classification_loss)   
+        classification_loss = classification_loss_initial
+        self.log('val_classification_loss', classification_loss)   
 
-            loss = classification_loss
+        loss = classification_loss
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if not self.class_only and self.use_similarity_loss:
