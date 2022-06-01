@@ -497,31 +497,30 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
 
-        if self.i % 5 == 4:
-            masked_image = output['image'][1].unsqueeze(1) * image
-            self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
-            self.log('val_loss', float(loss))
-            self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-            self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        masked_image = output['image'][1].unsqueeze(1) * image
+        self.logger.experiment.add_image('Val Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
+        self.log('val_loss', float(loss))
+        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        if self.use_similarity_loss:
+            self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        log_string = ''
+        for b in range(image.size()[0]):
+            log_string += f'Batch {b}:  \n'
+            logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
+            logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+            log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+
+            probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
+            probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
+            log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
+
             if self.use_similarity_loss:
-                self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
-            log_string = ''
-            for b in range(image.size()[0]):
-                log_string += f'Batch {b}:  \n'
-                logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
+                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
-
-                probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[b]]
-                probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
-                log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
-
-                if self.use_similarity_loss:
-                    logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
-                    logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                    log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
-                log_string += '  \n'
-            self.logger.experiment.add_text('Val Logits', log_string,  self.i)
+                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+            log_string += '  \n'
+        self.logger.experiment.add_text('Val Logits', log_string,  self.i)
 
        
         self.valid_metrics(output['image'][3], target_vector.int())
