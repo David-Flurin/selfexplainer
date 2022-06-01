@@ -336,7 +336,7 @@ class BaseModel(pl.LightningModule):
         
 
         if self.i % 5 == 4:
-            masked_image = self.output['image'][1].unsqueeze(1) * image
+            masked_image = output['image'][1].unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
@@ -498,7 +498,7 @@ class BaseModel(pl.LightningModule):
         
 
         if self.i % 5 == 4:
-            masked_image = self.output['image'][1].unsqueeze(1) * image
+            masked_image = output['image'][1].unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.log('val_loss', float(loss))
             self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
