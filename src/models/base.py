@@ -163,10 +163,7 @@ class BaseModel(pl.LightningModule):
         
         if self.use_similarity_loss:
             masked_image = i_mask.unsqueeze(1) * image
-            if self.i % 5 == 4:
-                self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
-            sanity_check = self._forward(torch.zeros_like(masked_image), targets, frozen=False)
         
         if self.use_background_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
@@ -339,6 +336,8 @@ class BaseModel(pl.LightningModule):
         
 
         if self.i % 5 == 4:
+            masked_image = self.output['image'][1].unsqueeze(1) * image
+            self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
             if self.use_similarity_loss:
@@ -498,11 +497,14 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
 
-        if self.use_similarity_loss:
+        if self.i % 5 == 4:
+            masked_image = self.output['image'][1].unsqueeze(1) * image
+            self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.log('val_loss', float(loss))
             self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
-            self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            if self.use_similarity_loss:
+                self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
             for b in range(image.size()[0]):
                 log_string += f'Batch {b}:  \n'
@@ -514,9 +516,10 @@ class BaseModel(pl.LightningModule):
                 probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
                 log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
-                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
-                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+                if self.use_similarity_loss:
+                    logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
+                    logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                    log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
                 log_string += '  \n'
             self.logger.experiment.add_text('Val Logits', log_string,  self.i)
 
