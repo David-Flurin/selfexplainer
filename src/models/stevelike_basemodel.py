@@ -159,20 +159,17 @@ class Slike_BaseModel(pl.LightningModule):
             return logits, None, None, None, None, None, None, None
 
         if self.aux_classifier:
-            classifier_segmentations, classifier_logits = self.classifier(image) # [batch_size, num_classes, height, width]
+            classifier_segmentations, classifier_logits = self.classifier(image)
         else:
-            classifier_segmentations = self.classifier(image) # [batch_size, num_classes, height, width]
-        
-        target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
+            classifier_segmentations = self.classifier(image)
 
+        target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu)
         if self.use_similarity_loss:
             masked_image = target_mask.unsqueeze(1) * image
-            if self.i % 5 == 4:
-                self.logger.experiment.add_image('Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             if self.aux_classifier:
-                segmentations, logits_mask = self.classifier(masked_image)
+                segmentations_object_pass, logits_mask = self.classifier(masked_image)
             else:
-                segmentations = self.classifier(masked_image)
+                segmentations_object_pass = self.classifier(masked_image)
         else:
             logits_mask = None
             
@@ -183,9 +180,9 @@ class Slike_BaseModel(pl.LightningModule):
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
             if self.aux_classifier:
-                segmentations, logits_inversed_mask = self.classifier(inverted_masked_image)
+                segmentations_bg_pass, logits_inversed_mask = self.classifier(inverted_masked_image)
             else:
-                segmentations = self.classifier(masked_image)
+                segmentations_bg_pass = self.classifier(masked_image)
 
 
 
@@ -337,6 +334,7 @@ class Slike_BaseModel(pl.LightningModule):
 
         if not self.class_only and self.i == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.classifier = deepcopy(self.model)
+           print('Copied model')
            for _,p in self.classifier.named_parameters():
                p.requires_grad_(False)
 
