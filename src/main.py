@@ -221,7 +221,7 @@ print('Use area loss:', model.use_mask_area_loss)
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
-    monitor = 'loss',
+    monitor='loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
@@ -258,7 +258,7 @@ else:
         enable_checkpointing = args.checkpoint_callback,
         #amp_backend='apex',
         #amp_level='02'
-        #profiler=profiler
+        #profiler='pytorch'
     )
 
 
