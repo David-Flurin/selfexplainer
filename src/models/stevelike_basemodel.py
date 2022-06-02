@@ -283,11 +283,10 @@ class Slike_BaseModel(pl.LightningModule):
                 loss = loss + obj_back_loss + mask_loss
         
 
-        if self.i % 5 == 4:
-            masked_image = target_mask.unsqueeze(1) * image
-            self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
-            self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-            self.logger.experiment.add_image('Train 1PassOutput', target_mask.unsqueeze(1), self.i, dataformats='NCHW')
+        masked_image = target_mask.unsqueeze(1) * image
+        self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Train 1PassOutput', target_mask.unsqueeze(1), self.i, dataformats='NCHW')
 
         self.log('loss', float(loss))
         
@@ -296,8 +295,8 @@ class Slike_BaseModel(pl.LightningModule):
         else:
             self.train_metrics(logits, target_vector.int())
 
-        self.i += 1.
-        self.log('iterations', self.i)
+        #self.i += 1.
+        #self.log('iterations', self.i)
         return loss
 
     def training_epoch_end(self, outs):
