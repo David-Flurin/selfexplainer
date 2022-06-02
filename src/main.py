@@ -255,7 +255,7 @@ else:
         log_every_n_steps = 5,
         # val_check_interval = 200,
         # limit_val_batches = 100,
-        enable_checkpointing = args.checkpoint_callback
+        enable_checkpointing = args.checkpoint_callback,
         #amp_backend='apex',
         #amp_level='02'
         #profiler=profiler

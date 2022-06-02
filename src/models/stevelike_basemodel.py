@@ -217,7 +217,7 @@ class Slike_BaseModel(pl.LightningModule):
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
 
-        if not self.class_only and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
+        if not self.class_only and self.i == 0 and (self.use_similarity_loss or self.use_background_loss):
             self.classifier = deepcopy(self.model)
             for p in self.classifier.parameters():
                p.requires_grad = False
