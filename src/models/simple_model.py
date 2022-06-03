@@ -1,36 +1,17 @@
-from cv2 import threshold
 import torch
-from torchmetrics import Accuracy
 import pytorch_lightning as pl
-import os
-import random
-
-from matplotlib import pyplot as plt 
-
 
 from torch import nn, softmax
 from torch.optim import Adam
 from pathlib import Path
-
-from copy import deepcopy
-
-import pickle
-from models.DeepLabv3 import Deeplabv3Resnet50Model
-
-#from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
-from evaluation.compute_scores import selfexplainer_compute_numbers
 
-import GPUtil
-
-VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC2007/SegmentationClass/")
-
+from models.DeepLabv3 import Deeplabv3Resnet50Model
 
 class Simple_Model(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
@@ -62,13 +43,8 @@ class Simple_Model(pl.LightningModule):
 
         
     def training_step(self, batch, batch_idx):
-        #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL']:
-            image, annotations = batch
-        else:
-            image, seg, annotations = batch
-            targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
+        image, annotations = batch
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
 
