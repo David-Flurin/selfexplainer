@@ -109,7 +109,7 @@ class BaseModel(pl.LightningModule):
         #self.automatic_optimization = False
         # -------------------------------------------
 
-
+        
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
             self.b_text_dist = Distribution()
@@ -212,7 +212,7 @@ class BaseModel(pl.LightningModule):
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-
+        image = image.to(self.device)
 
         if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.frozen = deepcopy(self.model)
