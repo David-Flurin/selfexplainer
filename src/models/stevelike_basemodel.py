@@ -157,45 +157,25 @@ class Slike_BaseModel(pl.LightningModule):
         if self.class_only:
             return logits, None, None, None, None, None, None, None
 
-        if self.aux_classifier:
-            classifier_segmentations, classifier_logits = self.classifier(image)
-        else:
-            classifier_segmentations = self.classifier(image)
-
+        classifier_segmentations, classifier_logits = self.classifier(image)
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu)
         if self.use_similarity_loss:
             masked_image = target_mask.unsqueeze(1) * image
-            if self.aux_classifier:
-                segmentations_object_pass, logits_mask = self.classifier(masked_image)
-            else:
-                segmentations_object_pass = self.classifier(masked_image)
+            _, logits_mask = self.classifier(masked_image)
         else:
             logits_mask = None
             
-
         if self.use_background_loss:   
             target_mask_inversed = torch.ones_like(target_mask) - target_mask
-            if image.dim() > 3:
-                target_mask_inversed = target_mask_inversed.unsqueeze(1)
+            target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
-            if self.aux_classifier:
-                segmentations_bg_pass, logits_inversed_mask = self.classifier(inverted_masked_image)
-            else:
-                segmentations_bg_pass = self.classifier(masked_image)
-
-
-
-        if not self.aux_classifier:
-            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-            logits = weighted_segmentations.sum(dim=(2,3))
-        
-        # logits = segmentations.mean((2,3))
-        
+            _, logits_inversed_mask = self.classifier(inverted_masked_image)
+        else:
+            logits_inversed_mask = None        
 
         return logits, classifier_logits, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, classifier_segmentations
 
-
-
+        
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
@@ -288,8 +268,8 @@ class Slike_BaseModel(pl.LightningModule):
         else:
             self.train_metrics(logits, target_vector.int())
 
-        #self.i += 1.
-        #self.log('iterations', self.i)
+        self.i += 1.
+        self.log('iterations', self.i)
         return loss
 
     def training_epoch_end(self, outs):

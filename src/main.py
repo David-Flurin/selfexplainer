@@ -229,7 +229,7 @@ early_stop_callback = EarlyStopping(
     stopping_threshold=0.
 )
 
-profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_report')
+profiler = AdvancedProfiler(dirpath=main_dir, filename='simple_model_report')
 if args.dataset == 'OISMALL':
     trainer = pl.Trainer(
         logger = logger,
@@ -252,7 +252,7 @@ else:
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,
-        log_every_n_steps = 5,
+        log_every_n_steps = 1,
         # val_check_interval = 200,
         # limit_val_batches = 100,
         enable_checkpointing = args.checkpoint_callback,
