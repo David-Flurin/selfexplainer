@@ -221,15 +221,15 @@ print('Use area loss:', model.use_mask_area_loss)
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
-    monitor='loss',
+    monitor='iterations',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="min",
-    #stopping_threshold=0.
+    mode="max",
+    stopping_threshold=0.
 )
 
-#profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
+profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
 if args.dataset == 'OISMALL':
     trainer = pl.Trainer(
         logger = logger,
@@ -252,13 +252,13 @@ else:
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,
-        log_every_n_steps = 5,
+        log_every_n_steps = 1,
         # val_check_interval = 200,
         # limit_val_batches = 100,
         enable_checkpointing = args.checkpoint_callback,
         #amp_backend='apex',
         #amp_level='02'
-        #profiler='pytorch'
+        profiler=profiler
     )
 
 
