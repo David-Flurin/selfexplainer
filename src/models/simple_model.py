@@ -15,6 +15,7 @@ from pathlib import Path
 from copy import deepcopy
 
 import pickle
+from models.DeepLabv3 import Deeplabv3Resnet50Model
 
 #from torchviz import make_dot
 
@@ -39,16 +40,17 @@ class Simple_Model(pl.LightningModule):
 
         super().__init__()
 
+        self.i = 0
         self.gpu = gpu
-        
-
-    def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
+        self.aux_classifier = aux_classifier
+        self.model = Deeplabv3Resnet50Model(pretrained=False, num_classes=num_classes, aux_classifier=aux_classifier)
+        self.learning_rate = learning_rate
+        self.dataset = dataset
+        self.num_classes = num_classes
+        self.multiclass = multiclass
         if not self.multiclass:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss()
-
-        if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
 
@@ -56,7 +58,7 @@ class Simple_Model(pl.LightningModule):
         segmentations, logits = self.model(image)
         
 
-        return segmentations
+        return logits
 
         
     def training_step(self, batch, batch_idx):
@@ -96,12 +98,7 @@ class Simple_Model(pl.LightningModule):
         self.log('iterations', self.i)
         return loss
    
-    def validation_epoch_end(self, outs):
-        m = self.valid_metrics.compute()
-        self.log('valid_metric', m)
-        for k,v in m.items():
-            self.log(f'{k}', v, prog_bar=True, logger=False)
-        self.valid_metrics.reset()
+
 
 
 

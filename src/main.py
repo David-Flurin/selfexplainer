@@ -15,6 +15,7 @@ import hashlib
 from data.dataloader import ColorDataModule, MNISTDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
+from models.simple_model import Simple_Model
 from models.classifier import Classifier
 from models.fcn_16 import FCN16
 
@@ -211,12 +212,13 @@ elif args.model_to_train == "classifier":
             args.checkpoint,
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
         )
+elif args.model_to_train == 'simple':
+    model = Simple_Model(
+        num_classes=num_classes, pretrained=False, aux_classifier=args.aux_classifier, learning_rate=args.learning_rate, dataset = args.dataset, multiclass=args.multiclass
+    )
 else:
     raise Exception("Unknown model type: " + args.model_to_train)
 
-
-print('Use variation loss:', model.use_mask_variation_loss)
-print('Use area loss:', model.use_mask_area_loss)
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
@@ -229,11 +231,7 @@ early_stop_callback = EarlyStopping(
     stopping_threshold=0.
 )
 
-<<<<<<< HEAD
 profiler = AdvancedProfiler(dirpath=main_dir, filename='performance_report')
-=======
-profiler = AdvancedProfiler(dirpath=main_dir, filename='advanced_p_report')
->>>>>>> 7933ef6a7d96ead140c6afe644e1e10966afbfc6
 if args.dataset == 'OISMALL':
     trainer = pl.Trainer(
         logger = logger,
