@@ -35,12 +35,11 @@ class Slike_BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.04, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, class_only=False):
+                 gpu=0, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, class_only=False):
 
         super().__init__()
 
         self.gpu = gpu
-        self.profiler = profiler
 
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
@@ -197,12 +196,6 @@ class Slike_BaseModel(pl.LightningModule):
 
 
 
-    def measure_weighting(self, segmentations):
-        with self.profiler.profile("softmax_weighing"):
-            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-            logits = weighted_segmentations.sum(dim=(2,3))
-        return logits
-        
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
@@ -282,14 +275,14 @@ class Slike_BaseModel(pl.LightningModule):
             else:
                 loss = loss + obj_back_loss + mask_loss
         
-
+        '''
         masked_image = target_mask.unsqueeze(1) * image
         self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Train 1PassOutput', target_mask.unsqueeze(1), self.i, dataformats='NCHW')
 
         self.log('loss', float(loss))
-        
+        '''
         if self.use_similarity_loss and not self.class_only:
             self.train_metrics(logits_mask, target_vector.int())
         else:
@@ -487,9 +480,9 @@ class Slike_BaseModel(pl.LightningModule):
         # selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
-    # def configure_optimizers(self):
-    #     return Adam(self.parameters(), lr=self.learning_rate)
-    
+    def configure_optimizers(self):
+        return Adam(self.parameters(), lr=self.learning_rate)
+    ''' 
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
@@ -502,7 +495,7 @@ class Slike_BaseModel(pl.LightningModule):
         "name": None,
         }
         return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
-    
+    '''
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('classifier'):
