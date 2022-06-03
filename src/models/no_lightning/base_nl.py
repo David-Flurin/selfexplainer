@@ -39,6 +39,7 @@ class BaseModel(pl.LightningModule):
                  gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, writer=None):
 
         super().__init__()
+        print('Device:',self.device)
 
         self.gpu = gpu
         self.profiler = profiler
