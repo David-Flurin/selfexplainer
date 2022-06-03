@@ -1,6 +1,6 @@
 from cgi import test
 from evaluation.plot import plot_losses
-
+import cProfile 
 import torch
 import os
 import sys
@@ -222,9 +222,11 @@ class Trainer():
     def test(self):
         pass
 
+def run():
+    trainer = Trainer(model, data_module)
+    trainer.fit(10)
 
-trainer = Trainer(model, data_module)
-trainer.fit(10)
+cProfile.run('run()')
 
 
 
