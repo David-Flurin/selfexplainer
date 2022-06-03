@@ -175,12 +175,7 @@ class Slike_BaseModel(pl.LightningModule):
 
         return logits, classifier_logits, logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations, classifier_segmentations
 
-<<<<<<< HEAD
         
-=======
-
-
->>>>>>> 7933ef6a7d96ead140c6afe644e1e10966afbfc6
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
