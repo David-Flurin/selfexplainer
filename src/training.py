@@ -178,7 +178,7 @@ class Trainer():
 
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = model.to(self.device)
-        self.optimizer = torch.optim.Adam(model.parameters(), lr)
+        self.optimizer = torch.optim.SGD(model.parameters(), lr)
 
         data_module.setup()
         self.train_loader = data_module.train_dataloader()
@@ -226,8 +226,8 @@ def run():
     trainer = Trainer(model, data_module)
     trainer.fit(10)
 
-cProfile.run('run()')
-
+#cProfile.run('run()')
+run()
 
 
 
