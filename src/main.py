@@ -104,10 +104,10 @@ elif args.dataset == "TOY_SAVED":
     num_classes = 8 
 elif args.dataset == "COLOR":
     data_module = ColorDataModule(
-        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), 
+        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), multiclass=args.multiclass,
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size, rgb=args.rgb
     )
-    num_classes = 2
+    num_classes = 3
 else:
     raise Exception("Unknown dataset " + args.dataset)
 
@@ -189,9 +189,9 @@ elif args.model_to_train == "mlp":
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss = args.class_loss, 
+         save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss = args.class_loss, 
          rgb=args.rgb, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, target_threshold=args.target_threshold, 
-         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer
+         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass,
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -199,9 +199,9 @@ elif args.model_to_train == "mlp":
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, profiler=profiler, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss=args.class_loss, 
+         save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss=args.class_loss, 
          rgb=args.rgb, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, target_threshold=args.target_threshold, 
-         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer
+         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass,
         )
 elif args.model_to_train == "classifier":
     model = Classifier(
@@ -223,12 +223,12 @@ else:
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
-    monitor='iterations',
+    monitor='loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
-    mode="max",
-    stopping_threshold=0.
+    mode="min",
+    #stopping_threshold=0.
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')

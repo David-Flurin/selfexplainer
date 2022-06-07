@@ -237,8 +237,8 @@ class BaseModel(pl.LightningModule):
         #print(output['image'][3])
         #print(target_vector)
 
-        if self.use_background_loss:
-            self.test_background_logits.append(output['background'][3].sum().item())
+        # if self.use_background_loss:
+        #     self.test_background_logits.append(output['background'][3].sum().item())
 
  
 
@@ -406,8 +406,8 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector)
 
 
-        if self.use_background_loss:
-            self.test_background_logits.append(output['background'][3].sum().item())
+        # if self.use_background_loss:
+        #     self.test_background_logits.append(output['background'][3].sum().item())
 
 
         if self.objective == 'classification':

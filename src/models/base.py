@@ -119,7 +119,7 @@ class BaseModel(pl.LightningModule):
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
         if not self.multiclass:
-            self.classification_loss_fn = nn.CrossEntropyLoss()
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         # elif self.class_loss == 'threshold':
@@ -130,6 +130,7 @@ class BaseModel(pl.LightningModule):
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
+        self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
@@ -160,16 +161,53 @@ class BaseModel(pl.LightningModule):
         i_mask = output['image'][1]
         if perfect_mask != None:
             i_mask = perfect_mask
+
         
         if self.use_similarity_loss:
-            masked_image = i_mask.unsqueeze(1) * image
-            output['object'] = self._forward(masked_image, targets, frozen=self.frozen)
+            # plt.imshow(masked_image[0].detach().permute(1,2,0))
+            # plt.show()
+            if self.train:
+                i_masks = torch.sigmoid(output['image'][0])
+                # fig = plt.figure()
+                # for i in range(i_masks.size(0)):
+                #     for j in range(i_masks.size(1)):
+                #         fig.add_subplot(6,2,2*j+i+1)
+                #         plt.imshow(i_masks[i, j].detach())
+                # fig.add_subplot(6,2,7)
+                # plt.imshow(image[0].detach().permute(1,2,0))
+                # fig.add_subplot(6,2,8)
+                # plt.imshow(image[1].detach().permute(1,2,0))
+                max_objects = 0
+                for b in range(targets.size()[0]):
+                    if targets[b].sum() > max_objects:
+                        max_objects = int(targets[b].sum().item())
+                for i in range(max_objects):
+                    batch_indices = (targets.sum(1) > i).nonzero().squeeze(1)
+                    new_batch = torch.index_select(image, 0, batch_indices)
+                    seg_indices_list = []
+                    for b_idx in batch_indices.tolist():
+                        seg_indices_list.append((targets[b_idx] == 1.).nonzero()[i])
+                    seg_indices = torch.cat(seg_indices_list)
+                    inter = torch.index_select(i_masks, 0, batch_indices)
+                    new_batch_masks = inter[torch.arange(inter.size(0)), seg_indices].unsqueeze(1)
+                    # fig.add_subplot(6,2,9+(i*2))
+                    # plt.imshow(new_batch_masks[0].detach().permute(1,2,0))
+                    # if new_batch_masks.size(0)>1:
+                    #     fig.add_subplot(6,2,9+(i*2)+1)
+                    #     plt.imshow(new_batch_masks[1].detach().permute(1,2,0))
+                    new_batch_masked = new_batch_masks * new_batch
+                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
+                # plt.show()
+            else:
+                output['object'] = self._forward(i_mask * image, targets)
+            
         
         if self.use_background_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
+            
             # from matplotlib import pyplot as plt
             # fig = plt.figure(figsize=(10,10))
             # for b in range(image.size()[0]):
@@ -214,6 +252,9 @@ class BaseModel(pl.LightningModule):
             weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
             logits = weighted_segmentations.sum(dim=(2,3))
         return logits
+
+    def on_train_start(self) -> None:
+        self.train = True
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
@@ -225,20 +266,16 @@ class BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+        # from matplotlib import pyplot as plt
+        # print(target_vector)
+        # plt.imshow(image[0].permute(1,2,0))
+        # plt.show()
 
         if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
            self.frozen = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
 
-        
-        # if self.first_of_epoch:
-        #     self.first_of_epoch = False
-        # for b in range(image.size()[0]):
-        #     save_image(image[b], f'check_toydata/{b}_{random.randint(0, 10000)}.png', self.dataset)
-
-
-        
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
@@ -271,15 +308,29 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss:
             self.log('classification_loss_1Pass', classification_loss)   
-            self.log('classification_loss_2Pass', self.classification_loss_fn(output['object'][3], target_vector))     
+            self.log('classification_loss_2Pass', self.classification_loss_fn(output['object_0'][3], target_vector))     
 
         loss = classification_loss
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            #logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            similarity_loss = torch.zeros((1), device=loss.device)
             #similarity_loss = self.similarity_regularizer * similarity_loss_fn(logit_fn(output['image'][3].detach()),  logit_fn(output['object'][3]))
-            similarity_loss = self.similarity_regularizer * self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
+            max_objects = 0
+
+            for b in range(target_vector.size(0)):
+                if target_vector[b].sum() > max_objects:
+                    max_objects = int(target_vector[b].sum().item())
+            for i in range(max_objects):
+                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
+                seg_indices_list = []
+                for b_idx in batch_indices:
+                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
+                seg_indices = torch.cat(seg_indices_list)
+                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)))
+                single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
+                similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
             self.log('similarity_loss', similarity_loss)
 
             obj_back_loss += similarity_loss
@@ -341,7 +392,7 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
             if self.use_similarity_loss:
-                self.logger.experiment.add_image('Train 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+                self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
             logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
             
@@ -355,7 +406,7 @@ class BaseModel(pl.LightningModule):
             log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
             if self.use_similarity_loss:
-                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[0]] 
+                logits_list = [f'{i:.3f}' for i in output['object_0'][3].tolist()[0]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             log_string += '  \n'
@@ -368,9 +419,9 @@ class BaseModel(pl.LightningModule):
         #DEBUG
 
         #Save min and max logits
-        if self.count_logits:
-            for k, v in output.items():
-                self.logit_stats[k].update(v[3])
+        # if self.count_logits:
+        #     for k, v in output.items():
+        #         self.logit_stats[k].update(v[3])
 
         # self.global_image_mask = output['image'][1]
         # self.global_object_mask = output['object'][1]
@@ -498,9 +549,9 @@ class BaseModel(pl.LightningModule):
         
 
         masked_image = output['image'][1].unsqueeze(1) * image
-        self.logger.experiment.add_image('Val Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Masked Images', (masked_image), self.i, dataformats='NCHW')
         self.log('val_loss', float(loss))
-        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Images', (image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
         if self.use_similarity_loss:
             self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
@@ -533,6 +584,9 @@ class BaseModel(pl.LightningModule):
         for k,v in m.items():
             self.log(f'{k}', v, prog_bar=True, logger=False)
         self.valid_metrics.reset()
+
+    def on_test_epoch_start(self) -> None:
+        self.train = False
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
@@ -579,7 +633,7 @@ class BaseModel(pl.LightningModule):
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        if self.test_i < 21 and self.save_all_class_masks and image.size()[0] == 1:
+        if self.dataset != 'COLOR' and self.test_i < 21 and self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
             if self.use_background_loss:
@@ -660,21 +714,21 @@ class BaseModel(pl.LightningModule):
         # selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
-    # def configure_optimizers(self):
-    #     return Adam(self.parameters(), lr=self.learning_rate)
-    
     def configure_optimizers(self):
-        optim = Adam(self.parameters(), lr=self.learning_rate)
-        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
-        lr_scheduler_config = {
-        "scheduler": lr_scheduler,
-        "interval": "epoch",
-        "frequency": 1,
-        "monitor": "loss",
-        "strict": True,
-        "name": None,
-        }
-        return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
+        return Adam(self.parameters(), lr=self.learning_rate)
+    
+    # def configure_optimizers(self):
+    #     optim = Adam(self.parameters(), lr=self.learning_rate)
+    #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
+    #     lr_scheduler_config = {
+    #     "scheduler": lr_scheduler,
+    #     "interval": "epoch",
+    #     "frequency": 1,
+    #     "monitor": "loss",
+    #     "strict": True,
+    #     "name": None,
+    #     }
+    #     return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
     
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):

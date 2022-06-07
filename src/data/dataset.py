@@ -7,8 +7,10 @@ import torchvision
 from PIL import Image
 from pycocotools.coco import COCO
 from random import randint
+import random
 from xml.etree import cElementTree as ElementTree
 import json
+import numpy as np
 
 from toy_dataset import generator
 from color_dataset import generator as color_generator
@@ -180,24 +182,46 @@ class ToyDataset_Saved(Dataset):
 
 
 class ColorDataset(Dataset):
-    def __init__(self, epoch_length, rgb, transform_fn=None, segmentation=False):
+    def __init__(self, epoch_length, rgb, transform_fn=None, segmentation=False, multiclass=False):
         self.ids = range(0, epoch_length)
         self.transform = transform_fn
         self.segmentation = segmentation
         self.generator = color_generator.Generator(rgb)
 
+        self.multiclass = multiclass
+
         if rgb:
-            self.colors = [[255., 0., 0.], [0., 0., 255.], [0., 255., 0.]]
+            self.colors = [[255., 0., 0.], [0., 0., 255.], [255., 51., 204.], [0., 255., 0.]]
         else:
-            self.colors = [170., 255., 85]
+            self.colors = [170., 255., 85.]
 
     def __getitem__(self, index):
-        current_color = randint(0,1)
-        sample = self.generator.generate_sample(self.colors[-1], self.colors[current_color])
+        
+        if self.multiclass:
+            num_classes = randint(1,2)
+            if num_classes == 2:
+                current_colors = random.sample(range(len(self.colors)-1), 2)
+                sample = self.generator.generate_multilabel(self.colors[-1], [self.colors[i] for i in current_colors])
+                logits = [0] * (len(self.colors) - 1)
+                for i in current_colors:
+                    logits[i] = 1
+            else:
+                current_color = randint(0,len(self.colors) -2)
+                sample = self.generator.generate_sample(self.colors[-1], self.colors[current_color])
+                logits = [0] * (len(self.colors) - 1)
+                logits[current_color] = 1
+
+
+        else:
+            current_color = randint(0,len(self.colors) -2)
+            sample = self.generator.generate_sample(self.colors[-1], self.colors[current_color])
+            logits = [0] * (len(self.colors) - 1)
+            logits[current_color] = 1
+
         seg = torch.from_numpy(sample)
 
         if self.transform is not None:
-            img = self.transform(Image.fromarray(sample))
+            img = self.transform(Image.fromarray(sample.astype(np.uint8)))
         else:
             img = torch.from_numpy(sample)
             if img.dim() == 3:
@@ -205,11 +229,8 @@ class ColorDataset(Dataset):
 
         filename = ''
         filename += f'{randint(0, 9999):05d}'
-        logits = [1 - current_color, current_color]
-        if self.segmentation:
-            return img, seg, {'logits': logits, 'filename': filename}
-        else:
-            return img, {'logits': logits, 'filename': filename}
+        return img.float(), seg, {'logits': logits, 'filename': filename}
+        
 
     def __len__(self):
         return len(self.ids)

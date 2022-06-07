@@ -64,9 +64,9 @@ class MaskAreaLoss():
         if (self.min_area == 0.0):
             return torch.tensor(0.0)
 
-        ones_length = (int)(self.image_size * self.image_size * self.min_area)
+        ones_length = (int)(sorted_mask.size()[0] * self.min_area)
         ones = torch.ones(ones_length, device=self.device)
-        zeros = torch.zeros((self.image_size * self.image_size) - ones_length, device=self.device)
+        zeros = torch.zeros(sorted_mask.size()[0] - ones_length, device=self.device)
         ones_and_zeros = torch.cat((ones, zeros), dim=0)
 
         # [1, 1, 0, 0, 0] - [0.9, 0.9, 0.9, 0.5, 0.1] = [0.1, 0.1, -0.9, -0.5, -0.1] -> [0.1, 0.1, 0, 0, 0]
@@ -78,9 +78,9 @@ class MaskAreaLoss():
         if (self.max_area == 1.0):
             return torch.tensor(0.0)
 
-        ones_length = (int)(self.image_size * self.image_size * self.max_area)
+        ones_length = (int)(sorted_mask.size()[0] * self.max_area)
         ones = torch.ones(ones_length, device=self.device)
-        zeros = torch.zeros((self.image_size * self.image_size) - ones_length, device=self.device)
+        zeros = torch.zeros(sorted_mask.size()[0] - ones_length, device=self.device)
         ones_and_zeros = torch.cat((ones, zeros), dim=0)
 
         # [0.9, 0.9, 0.9, 0.5, 0.1] - [1, 1, 1, 1, 0] = [-0.1, -0.1, -0.1, -0.5, 0.1] -> [0, 0, 0, 0, 0.1]
