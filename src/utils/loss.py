@@ -166,7 +166,7 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
         elif mode=='rel':
             single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
             for b in range(batch_indices.size(0)):
-                single_target[b] = deepcopy(output['image'][3][batch_indices[b]])
+                single_target[b] = deepcopy(output['image'][3][batch_indices[b]].detach())
                 n_t = (target_vector[b] == 0.).nonzero()
                 n_t_mean = output['image'][3][b][n_t].mean()
                 t = (target_vector[b] == 1.).nonzero()
