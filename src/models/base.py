@@ -328,7 +328,7 @@ class BaseModel(pl.LightningModule):
                 for b_idx in batch_indices:
                     seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
                 seg_indices = torch.cat(seg_indices_list)
-                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)))
+                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
                 single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
                 similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
             self.log('similarity_loss', similarity_loss)
@@ -714,21 +714,21 @@ class BaseModel(pl.LightningModule):
         # selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
-    def configure_optimizers(self):
-        return Adam(self.parameters(), lr=self.learning_rate)
+    #def configure_optimizers(self):
+    #    return Adam(self.parameters(), lr=self.learning_rate)
     
-    # def configure_optimizers(self):
-    #     optim = Adam(self.parameters(), lr=self.learning_rate)
-    #     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
-    #     lr_scheduler_config = {
-    #     "scheduler": lr_scheduler,
-    #     "interval": "epoch",
-    #     "frequency": 1,
-    #     "monitor": "loss",
-    #     "strict": True,
-    #     "name": None,
-    #     }
-    #     return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
+    def configure_optimizers(self):
+        optim = Adam(self.parameters(), lr=self.learning_rate)
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
+        lr_scheduler_config = {
+        "scheduler": lr_scheduler,
+        "interval": "epoch",
+        "frequency": 1,
+        "monitor": "loss",
+        "strict": True,
+        "name": None,
+        }
+        return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
     
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
