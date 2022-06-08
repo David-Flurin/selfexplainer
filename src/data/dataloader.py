@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from typing import Optional
 from pathlib import Path
 
-from data.dataset import COCODataset, CUB200Dataset, ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset
+from data.dataset import COCODataset, CUB200Dataset, ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset, OIDataset
 
 class VOCDataModule(pl.LightningDataModule):
 
@@ -72,6 +72,39 @@ class OISmallDataModule(pl.LightningDataModule):
         self.train = OISmallDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
         self.val = OISmallDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
         self.test = OISmallDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
+
+    def train_dataloader(self):
+        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def val_dataloader(self):
+        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def test_dataloader(self):
+        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+
+
+
+class OIDataModule(pl.LightningDataModule):
+
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+        super().__init__()
+
+        self.data_path = Path(data_path)
+
+        self.train_transformer = get_training_image_transformer(use_data_augmentation)
+        self.test_transformer = get_testing_image_transformer()
+
+        self.train_batch_size = train_batch_size
+        self.val_batch_size = val_batch_size
+        self.test_batch_size = test_batch_size
+
+    def prepare_data(self):
+        pass
+
+    def setup(self, stage: Optional[str] = None):
+        self.train = OIDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
+        self.val = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
+        self.test = OIDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())

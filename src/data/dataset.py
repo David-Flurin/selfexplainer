@@ -95,6 +95,41 @@ class OISmallDataset(Dataset):
     def __len__(self):
         return len(self.images)
 
+class OIDataset(Dataset):
+    def __init__(
+        self,
+        root,
+        transform_fn=None,
+    ):
+
+        with open(root/'labels.json', 'r') as jsonfile:
+            self.labels = json.load(jsonfile)
+        self.root = root
+        
+        self.images = list(self.labels.keys())
+
+        t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Airplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorcycle', 'Train', 'Bottle', 'Chair', 'Table', 'Plant', 'Sofa', 'TV']
+        for c in t_class_list:
+            s = sum(c in value for value in self.labels.values())
+            print(f'{c}:', s)
+
+        self.transforms = transform_fn
+        
+
+    def __getitem__(self, idx):
+        img_path = self.root / 'data' / (self.images[idx] +'.jpg')
+        img = Image.open(img_path).convert("RGB")
+
+        if self.transforms is not None:
+            img = self.transforms(img)
+        
+
+        return img, {'annotation':{'object': [{'name': name.lower()} for name in self.labels[self.images[idx]]], 'filename': self.images[idx]}}
+
+
+    def __len__(self):
+        return len(self.images)
+
     
 
 class ToyDataset(Dataset):

@@ -12,7 +12,7 @@ from pathlib import Path
 import pickle
 import hashlib
 
-from data.dataloader import ColorDataModule, MNISTDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
+from data.dataloader import ColorDataModule, MNISTDataModule, OIDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
@@ -60,6 +60,13 @@ elif args.dataset == "OISMALL":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
     )
     num_classes = 3
+elif args.dataset == "OI":
+    data_path = main_dir / args.data_base_path / 'OI'
+    data_module = OIDataModule(
+        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+    )
+    num_classes = 20
 elif args.dataset == "MNIST":
     data_path = main_dir / args.data_base_path / 'MNIST'
     data_module = MNISTDataModule(
