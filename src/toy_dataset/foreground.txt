@@ -4,5 +4,5 @@ Fur.jpg
 Moss.jpg
 Paint.jpg
 Rock.jpg
-Wood.tif
+Wood.jpg
 Splatter.jpg
