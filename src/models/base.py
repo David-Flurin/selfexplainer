@@ -227,12 +227,20 @@ class BaseModel(pl.LightningModule):
             if frozen:
                 segmentations, logits = self.frozen(image)
             else:
-                segmentations, logits = self.model(image) # [batch_size, num_classes, height, width]
+                if self.training and image.size(0) == 1:
+                    image = image.repeat(2,1,1,1)
+                    segmentations, logits = self.model(image)[0].unsqueeze(0)
+                else:
+                    segmentations, logits = self.model(image)
         else:
             if frozen:
                 segmentations = self.frozen(image)
             else:
-                segmentations = self.model(image) # [batch_size, num_classes, height, width]
+                if self.training and image.size(0) == 1:
+                    image = image.repeat(2,1,1,1)
+                    segmentations = self.model(image)[0].unsqueeze(0)
+                else:
+                    segmentations = self.model(image)
         
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
