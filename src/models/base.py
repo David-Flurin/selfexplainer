@@ -271,7 +271,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

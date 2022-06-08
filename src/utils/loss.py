@@ -175,7 +175,8 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
         else:
             raise ValueError(f'Similarity loss mode {mode} not known')
             
-        similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target)
+        single_target_probs = torch.sigmoid(single_target)
+        similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target_probs)
     return similarity_loss
 
 # t = torch.zeros((2, 224, 224))
