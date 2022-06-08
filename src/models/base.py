@@ -229,7 +229,9 @@ class BaseModel(pl.LightningModule):
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
-                    segmentations, logits = self.model(image)[0].unsqueeze(0)
+                    segmentations, logits = self.model(image)
+                    segmentations = segmentations[0].unsqueeze(0)
+                    logits = logits[0].unsqueeze(0)
                 else:
                     segmentations, logits = self.model(image)
         else:
@@ -273,7 +275,6 @@ class BaseModel(pl.LightningModule):
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        print(target_vector)
         # from matplotlib import pyplot as plt
         # print(target_vector)
         # plt.imshow(image[0].permute(1,2,0))
