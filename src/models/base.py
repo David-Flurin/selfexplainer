@@ -84,6 +84,7 @@ class BaseModel(pl.LightningModule):
         self.freeze_every = freeze_every
 
         self.multiclass = multiclass
+        self.is_testing = False
 
         # self.attention_layer = None
         # if use_attention_layer:
@@ -166,7 +167,7 @@ class BaseModel(pl.LightningModule):
         if self.use_similarity_loss:
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
-            if self.train:
+            if not self.is_testing:
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -262,7 +263,7 @@ class BaseModel(pl.LightningModule):
         return logits
 
     def on_train_start(self) -> None:
-        self.train = True
+        self.is_testing = False
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
@@ -609,7 +610,7 @@ class BaseModel(pl.LightningModule):
         self.valid_metrics.reset()
 
     def on_test_epoch_start(self) -> None:
-        self.train = False
+        self.is_testing = True
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
