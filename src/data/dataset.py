@@ -79,7 +79,6 @@ class OISmallDataset(Dataset):
         print('Sheeps:', sum('bird' in value for value in self.img_to_class.values()))
 
         self.transforms = transform_fn
-        self.gt_field = gt_field
         
 
     def __getitem__(self, idx):

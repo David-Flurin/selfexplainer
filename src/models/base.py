@@ -315,10 +315,10 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             #logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = torch.zeros((1), device=loss.device)
             #similarity_loss = self.similarity_regularizer * similarity_loss_fn(logit_fn(output['image'][3].detach()),  logit_fn(output['object'][3]))
-            max_objects = 0
 
+            similarity_loss = torch.zeros((1), device=loss.device)
+            max_objects = 0
             for b in range(target_vector.size(0)):
                 if target_vector[b].sum() > max_objects:
                     max_objects = int(target_vector[b].sum().item())
@@ -504,8 +504,21 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = self.classification_loss_fn(output['object'][3], logit_fn(output['image'][3]).detach())
+            #logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            similarity_loss = torch.zeros((1), device=loss.device)
+            max_objects = 0
+            for b in range(target_vector.size(0)):
+                if target_vector[b].sum() > max_objects:
+                    max_objects = int(target_vector[b].sum().item())
+            for i in range(max_objects):
+                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
+                seg_indices_list = []
+                for b_idx in batch_indices:
+                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
+                seg_indices = torch.cat(seg_indices_list)
+                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)))
+                single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
+                similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
             self.log('val_similarity_loss', similarity_loss)
 
             obj_back_loss += similarity_loss
@@ -554,8 +567,10 @@ class BaseModel(pl.LightningModule):
         self.logger.experiment.add_image('Val Images', (image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
         if self.use_similarity_loss:
-            self.logger.experiment.add_image('Val 2PassOutput', output['object'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Val 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
         log_string = ''
+        logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+
         for b in range(image.size()[0]):
             log_string += f'Batch {b}:  \n'
             logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[b]] 
@@ -567,7 +582,7 @@ class BaseModel(pl.LightningModule):
             log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
             if self.use_similarity_loss:
-                logits_list = [f'{i:.3f}' for i in output['object'][3].tolist()[b]] 
+                logits_list = [f'{i:.3f}' for i in output['object_0'][3].tolist()[b]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             log_string += '  \n'
