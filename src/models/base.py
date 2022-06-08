@@ -36,7 +36,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel'):
 
         super().__init__()
 
@@ -55,6 +55,7 @@ class BaseModel(pl.LightningModule):
 
         self.use_similarity_loss = use_similarity_loss
         self.similarity_regularizer = similarity_regularizer
+        self.similarity_loss_mode = similarity_loss_mode
         self.use_background_loss = use_background_loss
         self.background_loss = background_loss
         self.bg_loss_regularizer = bg_loss_regularizer
@@ -327,23 +328,10 @@ class BaseModel(pl.LightningModule):
             #logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
             #similarity_loss = self.similarity_regularizer * similarity_loss_fn(logit_fn(output['image'][3].detach()),  logit_fn(output['object'][3]))
 
-            similarity_loss = torch.zeros((1), device=loss.device)
-            max_objects = 0
-            for b in range(target_vector.size(0)):
-                if target_vector[b].sum() > max_objects:
-                    max_objects = int(target_vector[b].sum().item())
-            for i in range(max_objects):
-                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
-                seg_indices_list = []
-                for b_idx in batch_indices:
-                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
-                seg_indices = torch.cat(seg_indices_list)
-                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
-                single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
-                similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
-            self.log('similarity_loss', similarity_loss)
+            sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
+            self.log('similarity_loss', sim_loss)
 
-            obj_back_loss += similarity_loss
+            obj_back_loss += sim_loss
 
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
@@ -515,23 +503,11 @@ class BaseModel(pl.LightningModule):
         if self.use_similarity_loss:
             #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
             #logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            similarity_loss = torch.zeros((1), device=loss.device)
-            max_objects = 0
-            for b in range(target_vector.size(0)):
-                if target_vector[b].sum() > max_objects:
-                    max_objects = int(target_vector[b].sum().item())
-            for i in range(max_objects):
-                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
-                seg_indices_list = []
-                for b_idx in batch_indices:
-                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
-                seg_indices = torch.cat(seg_indices_list)
-                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
-                single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
-                similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
-            self.log('val_similarity_loss', similarity_loss)
-
-            obj_back_loss += similarity_loss
+            
+            sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
+            self.log('val_similarity_loss', sim_loss)
+            
+            obj_back_loss += sim_loss
 
         if self.use_background_loss:
             if self.bg_loss == 'entropy':

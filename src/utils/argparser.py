@@ -66,6 +66,8 @@ def get_parser():
     parser.add_argument('--learning_rate', default=1e-5, type=float, help='learning rate used by the Adam optimizer')
     parser.add_argument('--use_similarity_loss', default=False, type=str2bool, help='whether to use similaity loss between image and obejct pass.')
     parser.add_argument('--similarity_regularizer', default=1.0, type=float, help='loss weighting term for similarity loss')
+    parser.add_argument('--similarity_loss_mode', default='rel', type=str, help='If similarity loss should be calculated relative to first pass or absolute to target labels (rel/abs)')
+
     parser.add_argument('--use_background_loss', default=False, type=str2bool, help='whether to use entropy loss on background logits.')
     parser.add_argument('--bg_loss_regularizer', default=1.0, type=float, help='Weight of background loss.')   
     parser.add_argument('--use_weighted_loss', default=False, type=str2bool, help='whether to use a dynamically weighted loss.')

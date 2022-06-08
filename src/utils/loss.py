@@ -3,6 +3,7 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 
 import math
+from copy import deepcopy
 
 from torch import nn
 
@@ -147,8 +148,35 @@ def weighted_loss(l_1, l_2, steepness, offset):
     loss1 = l_1.detach().item()
     return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
 
-def similarity_loss_fn(props_1, probs_2):
-    return (props_1 - probs_2).abs().mean()
+def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
+    similarity_loss = torch.zeros((1), device=target_vector.device)
+    max_objects = 0
+    for b in range(target_vector.size(0)):
+        if target_vector[b].sum() > max_objects:
+            max_objects = int(target_vector[b].sum().item())
+    for i in range(max_objects):
+        batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
+        seg_indices_list = []
+        for b_idx in batch_indices:
+            seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
+        seg_indices = torch.cat(seg_indices_list)
+        if mode=='abs':
+            single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
+            single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
+        elif mode=='rel':
+            single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
+            for b in range(batch_indices.size(0)):
+                single_target[b] = deepcopy(output['image'][3][batch_indices[b]])
+                n_t = (target_vector[b] == 0.).nonzero()
+                n_t_mean = output['image'][3][b][n_t].mean()
+                t = (target_vector[b] == 1.).nonzero()
+                non_target_objects = torch.cat([t[0:i], t[i+1:]])
+                single_target[b][non_target_objects] = n_t_mean
+        else:
+            raise ValueError(f'Similarity loss mode {mode} not known')
+            
+        similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target)
+    return similarity_loss
 
 # t = torch.zeros((2, 224, 224))
 # t[0, 0:50, 0:50] += torch.ones((50, 50))

@@ -144,7 +144,7 @@ if args.model_to_train == "selfexplainer":
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss,
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode,
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -153,7 +153,7 @@ if args.model_to_train == "selfexplainer":
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu,  use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss,
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode,
         )
 
 elif args.model_to_train == "slike_selfexplainer":
