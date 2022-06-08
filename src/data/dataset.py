@@ -108,8 +108,8 @@ class OIDataset(Dataset):
         
         self.images = list(self.labels.keys())
 
-        t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Airplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorcycle', 'Train', 'Bottle', 'Chair', 'Table', 'Plant', 'Sofa', 'TV']
-        for c in t_class_list:
+        self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Airplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorcycle', 'Train', 'Bottle', 'Chair', 'Table', 'Plant', 'Sofa', 'TV']
+        for c in self.t_class_list:
             s = sum(c in value for value in self.labels.values())
             print(f'{c}:', s)
 
@@ -124,7 +124,7 @@ class OIDataset(Dataset):
             img = self.transforms(img)
         
 
-        return img, {'annotation':{'object': [{'name': name.lower()} for name in self.labels[self.images[idx]]], 'filename': self.images[idx]}}
+        return img, {'annotation':{'object': [{'name': name.lower()} for name in set.intersection(set(self.t_class_list), set(self.labels[self.images[idx]]))], 'filename': self.images[idx]}}
 
 
     def __len__(self):
