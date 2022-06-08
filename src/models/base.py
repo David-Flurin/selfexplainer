@@ -265,7 +265,7 @@ class BaseModel(pl.LightningModule):
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-
+        print(target_vector)
         # from matplotlib import pyplot as plt
         # print(target_vector)
         # plt.imshow(image[0].permute(1,2,0))
@@ -516,7 +516,7 @@ class BaseModel(pl.LightningModule):
                 for b_idx in batch_indices:
                     seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
                 seg_indices = torch.cat(seg_indices_list)
-                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)))
+                single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
                 single_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
                 similarity_loss += self.similarity_regularizer * self.similarity_loss_fn(output[f'object_{i}'][3], single_target)
             self.log('val_similarity_loss', similarity_loss)
