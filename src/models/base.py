@@ -570,9 +570,9 @@ class BaseModel(pl.LightningModule):
         
 
         masked_image = output['image'][1].unsqueeze(1) * image
-        self.logger.experiment.add_image('Val Masked Images', (masked_image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
         self.log('val_loss', float(loss))
-        self.logger.experiment.add_image('Val Images', (image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
         self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
         if self.use_similarity_loss:
             self.logger.experiment.add_image('Val 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
