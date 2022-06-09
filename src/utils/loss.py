@@ -148,7 +148,7 @@ def weighted_loss(l_1, l_2, steepness, offset):
     loss1 = l_1.detach().item()
     return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
 
-def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
+def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='rel'):
     similarity_loss = torch.zeros((1), device=target_vector.device)
     max_objects = 0
     for b in range(target_vector.size(0)):
@@ -174,8 +174,11 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
                 single_target[b][non_target_objects] = n_t_mean
         else:
             raise ValueError(f'Similarity loss mode {mode} not known')
-            
-        single_target_probs = torch.nn.functional.softmax(single_target, dim=1)
+
+        if mode=='rel':   
+            single_target_probs = torch.sigmoid(single_target)
+        else:
+            single_target_probs = single_target
         similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target_probs)
     return similarity_loss
 

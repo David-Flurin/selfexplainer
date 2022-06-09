@@ -8,7 +8,7 @@ import random
 from matplotlib import pyplot as plt 
 
 
-from torch import nn, softmax
+from torch import device, nn, softmax
 from torch.optim import Adam
 from pathlib import Path
 
@@ -121,9 +121,9 @@ class BaseModel(pl.LightningModule):
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
         if not self.multiclass:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss()
+            self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss()
+            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes)
         # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
@@ -303,7 +303,8 @@ class BaseModel(pl.LightningModule):
 
 
         if self.objective == 'classification':
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+                classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
             #classification_loss_background = self.classification_loss_fn(b_logits, targets)
         elif self.objective == 'segmentation':
