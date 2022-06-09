@@ -175,7 +175,7 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='abs'):
         else:
             raise ValueError(f'Similarity loss mode {mode} not known')
             
-        single_target_probs = torch.sigmoid(single_target)
+        single_target_probs = torch.nn.functional.softmax(single_target, dim=1)
         similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target_probs)
     return similarity_loss
 

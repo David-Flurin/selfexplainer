@@ -271,7 +271,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -715,9 +715,9 @@ class BaseModel(pl.LightningModule):
         # selfexplainer_compute_numbers(Path(self.save_path) / "masked_image", segmentations_path, self.dataset,  )
 
 
-    #def configure_optimizers(self):
-    #    return Adam(self.parameters(), lr=self.learning_rate)
-    
+    def configure_optimizers(self):
+        return Adam(self.parameters(), lr=self.learning_rate)
+    '''
     def configure_optimizers(self):
         optim = Adam(self.parameters(), lr=self.learning_rate)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optim, patience=3, threshold=0.001, min_lr=1e-5)
@@ -730,7 +730,7 @@ class BaseModel(pl.LightningModule):
         "name": None,
         }
         return {'optimizer': optim, 'lr_scheduler': lr_scheduler_config}
-    
+    '''
     def on_save_checkpoint(self, checkpoint):
         for k in list(checkpoint['state_dict'].keys()):
             if k.startswith('frozen'):
