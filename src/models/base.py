@@ -303,7 +303,13 @@ class BaseModel(pl.LightningModule):
 
 
         if self.objective == 'classification':
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            if self.multiclass:
+                weights = torch.where(target_vector == 1., 1., 1/self.num_classes)
+                #weights = torch.ones(target_vector.size(0))
+                classification_loss_initial = torch.nn.functional.binary_cross_entropy_with_logits(output['image'][3], target_vector, pos_weight=weights)
+            else:
+                classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            
             #classification_loss_object = self.classification_loss_fn(o_logits, targets)
             #classification_loss_background = self.classification_loss_fn(b_logits, targets)
         elif self.objective == 'segmentation':
