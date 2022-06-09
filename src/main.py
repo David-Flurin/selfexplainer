@@ -198,7 +198,7 @@ elif args.model_to_train == "mlp":
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss = args.class_loss, 
          rgb=args.rgb, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, target_threshold=args.target_threshold, 
-         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass,
+         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, similarity_loss_mode=args.similarity_loss_mode,
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -208,7 +208,7 @@ elif args.model_to_train == "mlp":
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, objective=args.objective, class_loss=args.class_loss, 
          rgb=args.rgb, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, target_threshold=args.target_threshold, 
-         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass,
+         non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, similarity_loss_mode=args.similarity_loss_mode,
         )
 elif args.model_to_train == "classifier":
     model = Classifier(
