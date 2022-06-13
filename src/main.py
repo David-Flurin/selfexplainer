@@ -12,7 +12,7 @@ from pathlib import Path
 import pickle
 import hashlib
 
-from data.dataloader import ColorDataModule, MNISTDataModule, OIDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module
+from data.dataloader import ColorDataModule, MNISTDataModule, OIDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module, VOC2012DataModule
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
@@ -48,6 +48,13 @@ else:
 # Set up data module
 if args.dataset == "VOC":
     data_path = main_dir / args.data_base_path / 'VOC2007'
+    data_module = VOCDataModule(
+        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+    )
+    num_classes = 20
+if args.dataset == "VOC":
+    data_path = main_dir / args.data_base_path / 'VOC2012'
     data_module = VOCDataModule(
         data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation

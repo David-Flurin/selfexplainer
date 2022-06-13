@@ -211,16 +211,16 @@ class BaseModel(pl.LightningModule):
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
             
-            # from matplotlib import pyplot as plt
-            # fig = plt.figure(figsize=(10,10))
-            # for b in range(image.size()[0]):
-            #     fig.add_subplot(b+1,3,b*3+1)
-            #     plt.imshow(image[b].detach().transpose(0,2))
-            #     fig.add_subplot(b+1,3,b*3+2)
-            #     plt.imshow(i_mask[b].detach().transpose(0,1))
-            #     fig.add_subplot(b+1,3,b*3+3)
-            #     plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
-            # plt.show()
+            from matplotlib import pyplot as plt
+            fig = plt.figure(figsize=(10,10))
+            for b in range(image.size()[0]):
+                fig.add_subplot(b+1,3,b*3+1)
+                plt.imshow(image[b].detach().transpose(0,2))
+                fig.add_subplot(b+1,3,b*3+2)
+                plt.imshow(i_mask[b].detach().transpose(0,1))
+                fig.add_subplot(b+1,3,b*3+3)
+                plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
+            plt.show()
             output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
         return output
@@ -272,7 +272,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -399,7 +399,7 @@ class BaseModel(pl.LightningModule):
         
         
 
-        if self.i % 100 == 99:
+        if self.i % 5 == 4:
             masked_image = output['image'][1].unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
@@ -425,7 +425,7 @@ class BaseModel(pl.LightningModule):
             if self.use_background_loss:
                 logits_list = [f'{i:.3f}' for i in output['background'][3].tolist()[0]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+                log_string += f'3Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
 
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
