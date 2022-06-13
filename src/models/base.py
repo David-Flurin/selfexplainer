@@ -105,6 +105,7 @@ class BaseModel(pl.LightningModule):
         self.global_object_mask = None
         self.first_of_epoch = True
         self.same_images = {}
+        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0.}
 
         #self.automatic_optimization = False
         # -------------------------------------------
@@ -317,10 +318,23 @@ class BaseModel(pl.LightningModule):
 
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)   
-
+        
         if self.use_similarity_loss:
-            self.log('classification_loss_1Pass', classification_loss)   
-            self.log('classification_loss_2Pass', self.classification_loss_fn(output['object_0'][3], target_vector))     
+            self.log('classification_loss_1Pass', classification_loss)  
+            max_objects = 0
+            for b in range(target_vector.size(0)):
+                if target_vector[b].sum() > max_objects:
+                    max_objects = int(target_vector[b].sum().item())
+            for i in range(max_objects):
+                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
+                seg_indices_list = []
+                for b_idx in batch_indices:
+                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
+                seg_indices = torch.cat(seg_indices_list)
+                s_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
+                s_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
+                self.sim_losses[f'object_{i}'] =  torch.nn.functional.cross_entropy(output[f'object_{i}'][3].detach(), s_target)
+            self.log('classification_loss_2Pass', self.sim_losses)     
 
         loss = classification_loss
         
@@ -385,7 +399,7 @@ class BaseModel(pl.LightningModule):
         
         
 
-        if self.i % 5 == 4:
+        if self.i % 100 == 99:
             masked_image = output['image'][1].unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
@@ -393,7 +407,7 @@ class BaseModel(pl.LightningModule):
             if self.use_similarity_loss:
                 self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
-            logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
             
             log_string += f'Batch {0}:  \n'
             logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[0]] 
@@ -408,8 +422,14 @@ class BaseModel(pl.LightningModule):
                 logits_list = [f'{i:.3f}' for i in output['object_0'][3].tolist()[0]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+            if self.use_background_loss:
+                logits_list = [f'{i:.3f}' for i in output['background'][3].tolist()[0]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
+            
 
         self.log('loss', float(loss))
         
@@ -570,6 +590,10 @@ class BaseModel(pl.LightningModule):
 
             if self.use_similarity_loss:
                 logits_list = [f'{i:.3f}' for i in output['object_0'][3].tolist()[b]] 
+                logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
+                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+            if self.use_background_loss:
+                logits_list = [f'{i:.3f}' for i in output['background'][3].tolist()[0]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             log_string += '  \n'
