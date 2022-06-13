@@ -105,7 +105,7 @@ class BaseModel(pl.LightningModule):
         self.global_object_mask = None
         self.first_of_epoch = True
         self.same_images = {}
-        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0.}
+        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0.}
 
         #self.automatic_optimization = False
         # -------------------------------------------
@@ -210,7 +210,8 @@ class BaseModel(pl.LightningModule):
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
             inverted_masked_image = target_mask_inversed * image
-            
+           
+            '''
             from matplotlib import pyplot as plt
             fig = plt.figure(figsize=(10,10))
             for b in range(image.size()[0]):
@@ -221,6 +222,7 @@ class BaseModel(pl.LightningModule):
                 fig.add_subplot(b+1,3,b*3+3)
                 plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             plt.show()
+            '''
             output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
         return output
@@ -351,9 +353,11 @@ class BaseModel(pl.LightningModule):
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
+                background_entropy_loss += self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
             elif self.bg_loss == 'distance':
-                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
+                background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
+            
             self.log('background_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 

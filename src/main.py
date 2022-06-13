@@ -246,7 +246,7 @@ early_stop_callback = EarlyStopping(
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
-if args.dataset == 'OISMALL':
+if args.dataset in ['OISMALL', 'OI']:
     trainer = pl.Trainer(
         logger = logger,
         callbacks = [early_stop_callback],
