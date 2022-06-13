@@ -7,6 +7,7 @@ import shutil
 import datetime
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler, PyTorchProfiler
 from pathlib import Path
 import pickle
@@ -245,11 +246,15 @@ early_stop_callback = EarlyStopping(
     #stopping_threshold=0.
 )
 
+checkpoint_callback = ModelCheckpoint(
+    every_n_train_steps = 100
+)
+
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
-if args.dataset == 'OISMALL':
+if args.dataset in ['OISMALL', 'OI']:
     trainer = pl.Trainer(
         logger = logger,
-        callbacks = [early_stop_callback],
+        callbacks = [early_stop_callback, checkpoint_callback],
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,
@@ -268,13 +273,13 @@ else:
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,
-        log_every_n_steps = 1,
+        log_every_n_steps = 5,
         # val_check_interval = 200,
         # limit_val_batches = 100,
         enable_checkpointing = args.checkpoint_callback,
         #amp_backend='apex',
         #amp_level='02'
-        profiler=profiler
+        #profiler=profiler
     )
 
 
