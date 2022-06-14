@@ -241,7 +241,7 @@ def show_image(image):
     plt.imshow(np.stack(image.squeeze(), axis=2))
 
 def get_target_labels(dataset, include_background_class):
-    if dataset in ['VOC', 'OI']:
+    if dataset in ['VOC',  'VOC2012', 'OI']:
         if include_background_class:
             targets = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
                     'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
