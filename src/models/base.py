@@ -141,7 +141,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC', 'VOC', 'OISMALL', 'OI']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
@@ -274,7 +274,7 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -499,7 +499,7 @@ class BaseModel(pl.LightningModule):
         #        print(k, v)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -633,7 +633,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
