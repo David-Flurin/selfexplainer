@@ -108,7 +108,7 @@ class OIDataset(Dataset):
         
         self.images = list(self.labels.keys())
 
-        self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Aeroplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorbike', 'Train', 'Bottle', 'Chair', 'Diningtable', 'Pottedplant', 'Sofa', 'TV']
+        self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Aeroplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorbike', 'Train', 'Bottle', 'Chair', 'Diningtable', 'Sofa', 'TVmonitor']
         for c in self.t_class_list:
             s = sum(c in value for value in self.labels.values())
             print(f'{c}:', s)

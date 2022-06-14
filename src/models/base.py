@@ -18,7 +18,7 @@ import pickle
 
 #from torchviz import make_dot
 
-from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats
+from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_target_dictionary
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
@@ -353,7 +353,7 @@ class BaseModel(pl.LightningModule):
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
-                background_entropy_loss += self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
+                #background_entropy_loss += self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
             elif self.bg_loss == 'distance':
                 background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
@@ -421,6 +421,19 @@ class BaseModel(pl.LightningModule):
             probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[0]]
             probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
             log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
+
+            '''
+            td = get_target_dictionary(False)
+            td = {v: k for k,v in td.items()}
+            class_string = ''
+            for b in range(target_vector.size(0)):
+                class_string += f'{b}: '
+                for n in range(target_vector[b].size(0)):
+                    if target_vector[b][n] == 1.:
+                        class_string += f'{td[n]},'
+                class_string += f'\n'
+            self.logger.experiment.add_text('Classes', class_string, self.i)
+            '''
 
             if self.use_similarity_loss:
                 logits_list = [f'{i:.3f}' for i in output['object_0'][3].tolist()[0]] 
@@ -620,7 +633,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
