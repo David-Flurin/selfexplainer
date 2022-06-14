@@ -5,7 +5,7 @@ import random
 def get_targets_from_annotations(annotations, dataset, num_classes, include_background_class=False, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
     
-    if dataset in ["VOC", "OI"]:
+    if dataset in ["VOC", 'VOC2012', "OI"]:
         target_dict = get_target_dictionary(include_background_class)
         objects = [item['annotation']['object'] for item in annotations]
 
@@ -118,7 +118,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
-    if dataset in ["VOC", 'SMALLVOC', 'OISMALL', 'OI']:
+    if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
         filename = annotations[0]['annotation']['filename']
 
     elif dataset == "COCO":
@@ -190,7 +190,7 @@ def get_color_dictionary(include_background_class, rgb=True):
     return target
 
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
-    if dataset == ['VOC', 'OI']:
+    if dataset == ['VOC', 'VOC2012', 'OI']:
         return get_target_dictionary(include_background_class=include_background_class)
     if dataset in ['SMALLVOC', 'OISMALL']:
         return get_small_target_dictionary(include_background_class=include_background_class)
