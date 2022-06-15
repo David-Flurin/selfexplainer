@@ -105,7 +105,7 @@ class BaseModel(pl.LightningModule):
         self.global_object_mask = None
         self.first_of_epoch = True
         self.same_images = {}
-        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0.}
+        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0., 'object_5':0., 'object_6':0.}
 
         #self.automatic_optimization = False
         # -------------------------------------------
