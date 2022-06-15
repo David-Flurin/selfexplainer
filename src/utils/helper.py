@@ -319,6 +319,31 @@ def get_class_weights(dataset):
         'tvmonitor': 392}
         target_dict = get_class_dictionary(dataset)
         numeral_stats = {target_dict[k]:v for k,v in stats.items()}
+    elif dataset == 'OI':
+        stats = {
+            'person': 248384,
+            'cat': 12516,
+            'dog': 20607,
+            'bird': 18525,
+            'cow': 1,
+            'horse': 7073,
+            'sheep': 1188,
+            'aeroplane': 12003,
+            'bicycle': 17631,
+            'boat': 25478,
+            'bus': 7293,
+            'car': 89465,
+            'motorbike': 6944,
+            'train': 10081,
+            'bottle': 11456,
+            'chair': 25504,
+            'diningtable': 44845,
+            'pottedplant': 8932,
+            'sofa': 3321,
+            'tvmonitor': 2789
+        }
+        target_dict = get_class_dictionary(dataset)
+        numeral_stats = {k:stats[k] for k,v in target_dict.items()}
     else:
         target_dict = get_class_dictionary(dataset, include_background_class=False)
         numeral_stats = {k: 1 for k in target_dict.keys()}
