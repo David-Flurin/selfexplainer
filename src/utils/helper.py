@@ -190,9 +190,9 @@ def get_color_dictionary(include_background_class, rgb=True):
     return target
 
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
-    if dataset == ['VOC', 'VOC2012', 'OI']:
+    if dataset in ['VOC', 'VOC2012', 'OI']:
         return get_target_dictionary(include_background_class=include_background_class)
-    if dataset in ['SMALLVOC', 'OISMALL']:
+    elif dataset in ['SMALLVOC', 'OISMALL']:
         return get_small_target_dictionary(include_background_class=include_background_class)
     elif dataset in ['TOY', 'TOY_SAVED']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
@@ -293,3 +293,67 @@ class LogitStats():
         fig.tight_layout()
 
         plt.savefig(save_path)
+
+
+def get_class_weights(dataset):
+    if dataset == 'VOC2012':
+        stats = {'aeroplane': 432,
+        'bicycle': 353,
+        'bird': 560,
+        'boat': 426,
+        'bottle': 629,
+        'bus': 292,
+        'car': 1013,
+        'cat': 605,
+        'chair': 1178,
+        'cow': 290,
+        'diningtable': 304,
+        'dog': 756,
+        'horse': 350,
+        'motorbike': 357,
+        'person': 4194,
+        'pottedplant': 484,
+        'sheep': 400,
+        'sofa': 281,
+        'train': 313,
+        'tvmonitor': 392}
+        target_dict = get_class_dictionary(dataset)
+        numeral_stats = {target_dict[k]:v for k,v in stats.items()}
+    elif dataset == 'OI':
+        stats = {
+            'person': 248384,
+            'cat': 12516,
+            'dog': 20607,
+            'bird': 18525,
+            'cow': 1,
+            'horse': 7073,
+            'sheep': 1188,
+            'aeroplane': 12003,
+            'bicycle': 17631,
+            'boat': 25478,
+            'bus': 7293,
+            'car': 89465,
+            'motorbike': 6944,
+            'train': 10081,
+            'bottle': 11456,
+            'chair': 25504,
+            'diningtable': 44845,
+            'pottedplant': 8932,
+            'sofa': 3321,
+            'tvmonitor': 2789
+        }
+        target_dict = get_class_dictionary(dataset)
+        numeral_stats = {k:stats[k] for k,v in target_dict.items()}
+    else:
+        target_dict = get_class_dictionary(dataset, include_background_class=False)
+        numeral_stats = {k: 1 for k in target_dict.keys()}
+
+    return list(calc_class_weights(numeral_stats).values())
+        
+
+def calc_class_weights(stats):
+    tot = sum(stats.values())
+    mean = tot/len(stats)
+    return {k: mean / v for k,v in stats.items()}
+    
+

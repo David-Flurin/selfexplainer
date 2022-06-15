@@ -18,7 +18,7 @@ import pickle
 
 #from torchviz import make_dot
 
-from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_target_dictionary
+from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_target_dictionary, get_class_weights
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
@@ -124,7 +124,7 @@ class BaseModel(pl.LightningModule):
         if not self.multiclass:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes)
+            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes * torch.Tensor(get_class_weights(self.dataset), device=self.device))
         # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
