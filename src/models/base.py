@@ -105,7 +105,7 @@ class BaseModel(pl.LightningModule):
         self.global_object_mask = None
         self.first_of_epoch = True
         self.same_images = {}
-        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0.}
+        self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0., 'object_5':0., 'object_6':0.}
 
         #self.automatic_optimization = False
         # -------------------------------------------
@@ -121,11 +121,12 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
-        pos_weights = torch.ones(self.num_classes, device=self.device)*self.num_classes * torch.Tensor(get_class_weights(self.dataset), device=self.device)
+        pos_weights = torch.ones(self.num_classes, device=self.device)*self.num_classes
+        class_weights = torch.Tensor(get_class_weights(self.dataset), device=self.device)
         if not self.multiclass:
-            self.classification_loss_fn = nn.CrossEntropyLoss(weights=pos_weights)
+            self.classification_loss_fn = nn.CrossEntropyLoss(weight= class_weights)
         else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights)
+            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
         # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
@@ -134,7 +135,7 @@ class BaseModel(pl.LightningModule):
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
-        self.similarity_loss_fn = nn.CrossEntropyLoss(weight = pos_weights)
+        self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
