@@ -346,7 +346,7 @@ def get_class_weights(dataset):
         numeral_stats = {k:stats[k] for k,v in target_dict.items()}
     else:
         target_dict = get_class_dictionary(dataset, include_background_class=False)
-        numeral_stats = {k: 1 for k in target_dict.keys()}
+        return [2. for k in target_dict.keys()]
 
     return list(calc_class_weights(numeral_stats).values())
         

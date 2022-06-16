@@ -8,15 +8,19 @@ import pytorch_lightning as pl
 import torchvision.transforms as T
 
 from torchvision.datasets import VOCDetection, MNIST
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from typing import Optional
 from pathlib import Path
+from xml.etree.ElementTree import parse as ETparse
 
+
+
+from utils.helper import calc_class_weights, get_class_dictionary
 from data.dataset import COCODataset, CUB200Dataset, ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset, OIDataset
 
 class VOCDataModule(pl.LightningDataModule):
 
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
         super().__init__()
 
         self.data_path = Path(data_path)
@@ -28,6 +32,8 @@ class VOCDataModule(pl.LightningDataModule):
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
+
+        self.weighted_sampling = weighted_sampling
 
         self.train_batch_size = train_batch_size
         self.val_batch_size = val_batch_size
@@ -42,13 +48,37 @@ class VOCDataModule(pl.LightningDataModule):
         self.test  = VOCDetection(self.data_path, year="2007", image_set="test", download=self.download, transform=self.test_transformer)
 
     def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
+        if self.weighted_sampling:
+            weights = self.calculate_weights()
+            generator=torch.Generator(device='cuda' if torch.cuda.is_available() else 'cpu')
+            generator.manual_seed(42)
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
+                sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
+        else:
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
         return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def test_dataloader(self):
         return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def calculate_weights(self):
+        img_classes = {}
+        voc_classes = get_class_dictionary('VOC', include_background_class=False)
+        obj_img_count = [0]*len(voc_classes)
+
+        for target in self.train.targets:
+            annotation = self.train.parse_voc_xml(ETparse(target).getroot())
+            target_indices = [0]*len(voc_classes)
+            for object in annotation['annotation']['object']:
+                target_indices[voc_classes[object['name']]] = 1
+                obj_img_count[voc_classes[object['name']]] += 1
+            img_classes[annotation['annotation']['filename']] = np.array(target_indices)
+        
+        class_weights = np.array([1/c for c in obj_img_count])
+        img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
+        return img_weights
 
 class VOC2012DataModule(pl.LightningDataModule):
 
@@ -75,7 +105,7 @@ class VOC2012DataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         self.train = VOCDetection(self.data_path, year="2012", image_set="train", download=self.download, transform=self.train_transformer)
         self.val   = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
-        self.test  = VOCDetection(self.data_path, year="2012", image_set="test", download=self.download, transform=self.test_transformer)
+        self.test  = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())

@@ -34,6 +34,8 @@ def get_parser():
     parser.add_argument('--val_batch_size', default=16, type=int, help='batch size used for validation')
     parser.add_argument('--test_batch_size', default=1, type=int, help='batch size used for testing')
     parser.add_argument('--use_data_augmentation', default=False, type=str2bool, help='set to true to enable data augmentation on training images')
+    parser.add_argument('--weighted_sampling', default=False, type=str2bool, help='Use a WeightedRandomSampler with dataset to counteract class imbalance')
+
 
     # Trainer Parameters
     parser.add_argument('--seed', default=42, type=int, help='seed for all random number generators in pytorch, numpy, and python.random')
