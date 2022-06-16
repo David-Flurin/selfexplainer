@@ -126,7 +126,8 @@ class BaseModel(pl.LightningModule):
         if not self.multiclass:
             self.classification_loss_fn = nn.CrossEntropyLoss(weight= class_weights)
         else:
-            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
+            #self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
+            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
         # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
@@ -136,6 +137,7 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
         self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+        #self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)

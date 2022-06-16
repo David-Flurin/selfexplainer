@@ -75,7 +75,7 @@ class VOC2012DataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         self.train = VOCDetection(self.data_path, year="2012", image_set="train", download=self.download, transform=self.train_transformer)
         self.val   = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
-        self.test  = VOCDetection(self.data_path, year="2012", image_set="test", download=self.download, transform=self.test_transformer)
+        self.test  = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
