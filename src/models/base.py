@@ -143,7 +143,7 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
         if self.weighted_sampling:
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
+            self.similarity_loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
             self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         #self.similarity_loss_fn = nn.CrossEntropyLoss()

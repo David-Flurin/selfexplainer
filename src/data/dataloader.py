@@ -25,10 +25,11 @@ class VOCDataModule(pl.LightningDataModule):
 
         self.data_path = Path(data_path)
 
-        if os.path.exists(self.data_path) and len(os.listdir(self.data_path)) > 2:
-            self.download = False
-        else:
-            self.download = True
+        # if os.path.exists(self.data_path) and len(os.listdir(self.data_path)) > 2:
+        #     self.download = False
+        # else:
+        #     self.download = True
+        self.download=False
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
