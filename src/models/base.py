@@ -131,7 +131,7 @@ class BaseModel(pl.LightningModule):
                 self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         else:
             if self.weighted_sampling:
-                self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
+                self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes/4)
             else:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
             # elif self.class_loss == 'threshold':
@@ -143,7 +143,7 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
         if self.weighted_sampling:
-            self.similarity_loss_fn = nn.CrossEntropyLoss(weight=class_weights)
+            self.similarity_loss_fn = nn.CrossEntropyLoss()
         else:
             self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         #self.similarity_loss_fn = nn.CrossEntropyLoss()
