@@ -425,6 +425,18 @@ class BaseModel(pl.LightningModule):
                 self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+
+            #top_mask = torch.zeros_like(output['image'][1])
+            # for b in range(output['image'][0].size(0)):
+            #     max_area = 0
+            #     max = -1
+            #     for i in range(output['image'][0][b].size(0)):
+            #         area = output['image'][0][b][i].sum()
+            #         if area > max_area:
+            #             max_area = area
+            #             max = i
+            #     top_mask[b] = output['image'][0][b][max]
+            self.logger.experiment.add_image('Train Nontarget mask', output['image'][2].unsqueeze(1), self.i, dataformats='NCHW')
             
             log_string += f'Batch {0}:  \n'
             logits_list = [f'{i:.3f}' for i in output['image'][3].tolist()[0]] 
@@ -605,6 +617,19 @@ class BaseModel(pl.LightningModule):
         self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.val_i, dataformats='NCHW')
         if self.use_similarity_loss:
             self.logger.experiment.add_image('Val 2PassOutput', output['object_0'][1].unsqueeze(1), self.val_i, dataformats='NCHW')
+        
+        # top_mask = torch.zeros_like(output['image'][1])
+        # for b in range(output['image'][0].size(0)):
+        #     max_area = 0
+        #     max = -1
+        #     for i in range(output['image'][0][b].size(0)):
+        #         area = output['image'][0][b][i].sum()
+        #         if area > max_area:
+        #             max_area = area
+        #             max = i
+        #     top_mask[b] = output['image'][0][b][max]
+        self.logger.experiment.add_image('Val Nontarget mask', output['image'][2].unsqueeze(1), self.val_i, dataformats='NCHW')
+
         log_string = ''
         logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
@@ -623,9 +648,9 @@ class BaseModel(pl.LightningModule):
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             if self.use_background_loss:
-                logits_list = [f'{i:.3f}' for i in output['background'][3].tolist()[0]] 
+                logits_list = [f'{i:.3f}' for i in output['background'][3].tolist()[b]] 
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
-                log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
+                log_string += f'3Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             log_string += '  \n'
         self.logger.experiment.add_text('Val Logits', log_string,  self.val_i)
 
