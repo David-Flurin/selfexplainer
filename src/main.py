@@ -72,7 +72,7 @@ elif args.dataset == "OI":
     data_path = main_dir / args.data_base_path / 'OI'
     data_module = OIDataModule(
         data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size,
-        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation, weighted_sampling=args.weighted_sampling
     )
     num_classes = 20
 elif args.dataset == "MNIST":
