@@ -126,9 +126,9 @@ class BaseModel(pl.LightningModule):
         class_weights = torch.Tensor(get_class_weights(self.dataset), device=self.device)
         if not self.multiclass:
             if self.weighted_sampling:
-                self.similarity_loss_fn = nn.CrossEntropyLoss()
+                self.classification_loss_fn = nn.CrossEntropyLoss()
             else:
-                self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+                self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         else:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
@@ -143,7 +143,7 @@ class BaseModel(pl.LightningModule):
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
         if self.weighted_sampling:
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
+            self.similarity_loss_fn = nn.CrossEntropyLoss(weight=class_weights)
         else:
             self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         #self.similarity_loss_fn = nn.CrossEntropyLoss()
