@@ -115,6 +115,7 @@ class OISmallDataModule(pl.LightningDataModule):
         self.test = OISmallDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
+        
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
@@ -127,10 +128,13 @@ class OISmallDataModule(pl.LightningDataModule):
 
 class OIDataModule(pl.LightningDataModule):
 
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
         super().__init__()
 
         self.data_path = Path(data_path)
+
+        self.weighted_sampling = weighted_sampling
+
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
@@ -148,14 +152,39 @@ class OIDataModule(pl.LightningDataModule):
         #self.test = OIDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
+        if self.weighted_sampling:
+            weights = self.calculate_weights()
+            generator=torch.Generator(device='cpu')
+            generator.manual_seed(42)
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
+                sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
         return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
     def test_dataloader(self):
         #return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
         return None
+
+    def calculate_weights(self):
+        oi_classes = get_class_dictionary('OI', include_background_class=False)
+        img_classes = {}
+        obj_img_count = [0] * len(oi_classes)
+        for img, classes in self.train.labels.items():
+            target_indices = [0]*len(oi_classes)
+            for c in classes:
+                obj_img_count[oi_classes[c.lower()]] += 1
+                target_indices[oi_classes[c.lower()]] = 1
+            img_classes[img] = np.array(target_indices)
+
+        class_weights = np.array([1/(c+1) for c in obj_img_count])
+        class_weights = np.array([c if c < 1 else 0 for c in class_weights])
+
+        img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
+        return img_weights
+
+
+
 
 class MNISTDataModule(pl.LightningDataModule):
 
