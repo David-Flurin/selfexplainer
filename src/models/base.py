@@ -656,6 +656,8 @@ class BaseModel(pl.LightningModule):
 
        
         self.valid_metrics(output['image'][3], target_vector.int())
+        
+        self.val_i += 1
 
         return loss
    
