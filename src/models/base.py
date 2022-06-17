@@ -95,6 +95,7 @@ class BaseModel(pl.LightningModule):
         #     self.attention_layer = nn.Conv2d
 
         self.test_i = 0
+        self.val_i = 0
 
         # ---------------- DEBUG -------------------
         self.i = 0.
@@ -511,10 +512,10 @@ class BaseModel(pl.LightningModule):
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
         
-        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
-           self.frozen = deepcopy(self.model)
-           for _,p in self.frozen.named_parameters():
-               p.requires_grad_(False)
+        # if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
+        #    self.frozen = deepcopy(self.model)
+        #    for _,p in self.frozen.named_parameters():
+        #        p.requires_grad_(False)
         
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
@@ -590,12 +591,12 @@ class BaseModel(pl.LightningModule):
         
 
         masked_image = output['image'][1].unsqueeze(1) * image
-        self.logger.experiment.add_image('Val Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Masked Images', get_unnormalized_image(masked_image), self.val_i, dataformats='NCHW')
         self.log('val_loss', float(loss))
-        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-        self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val Images', get_unnormalized_image(image), self.val_i, dataformats='NCHW')
+        self.logger.experiment.add_image('Val 1PassOutput', output['image'][1].unsqueeze(1), self.val_i, dataformats='NCHW')
         if self.use_similarity_loss:
-            self.logger.experiment.add_image('Val 2PassOutput', output['object_0'][1].unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Val 2PassOutput', output['object_0'][1].unsqueeze(1), self.val_i, dataformats='NCHW')
         log_string = ''
         logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
@@ -618,7 +619,7 @@ class BaseModel(pl.LightningModule):
                 logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
                 log_string += f'2Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
             log_string += '  \n'
-        self.logger.experiment.add_text('Val Logits', log_string,  self.i)
+        self.logger.experiment.add_text('Val Logits', log_string,  self.val_i)
 
        
         self.valid_metrics(output['image'][3], target_vector.int())
