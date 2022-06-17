@@ -128,7 +128,7 @@ class BaseModel(pl.LightningModule):
         else:
             #self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
             self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
-        # elif self.class_loss == 'threshold':
+            # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
         #     raise ValueError(f'Classification loss argument {self.class_loss} not known')
