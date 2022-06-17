@@ -36,7 +36,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel'):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True):
 
         super().__init__()
 
@@ -110,7 +110,7 @@ class BaseModel(pl.LightningModule):
 
         #self.automatic_optimization = False
         # -------------------------------------------
-
+        self.weighted_sampling = weighted_sampling
 
         if self.dataset == 'TOY':
             self.f_tex_dist = Distribution()
@@ -125,10 +125,15 @@ class BaseModel(pl.LightningModule):
         pos_weights = torch.ones(self.num_classes, device=self.device)*self.num_classes
         class_weights = torch.Tensor(get_class_weights(self.dataset), device=self.device)
         if not self.multiclass:
-            self.classification_loss_fn = nn.CrossEntropyLoss(weight= class_weights)
+            if self.weighted_sampling:
+                self.similarity_loss_fn = nn.CrossEntropyLoss()
+            else:
+                self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         else:
-            #self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
-            self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
+            if self.weighted_sampling:
+                self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*5)
+            else:
+                self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
             # elif self.class_loss == 'threshold':
         #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
         # else:
@@ -137,7 +142,10 @@ class BaseModel(pl.LightningModule):
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
-        self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+        if self.weighted_sampling:
+            self.similarity_loss_fn = nn.CrossEntropyLoss()
+        else:
+            self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
         #self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
