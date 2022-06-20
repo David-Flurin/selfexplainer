@@ -100,9 +100,9 @@ def plot_class_metrics(labels, metrics, save_path):
     width = 0.15  # the width of the bars
 
     fig, ax = plt.subplots()
-    rect_acc = ax.bar(x - width, metrics['Accuracy'], width, label='Accuracy')
-    rect_pre = ax.bar(x, metrics['Precision'], width, label='Precision')
-    rect_rec = ax.bar(x + width, metrics['Recall'], width, label='Recall')
+    rect_acc = ax.bar(x - width, metrics['Accuracy'].cpu(), width, label='Accuracy')
+    rect_pre = ax.bar(x, metrics['Precision'].cpu(), width, label='Precision')
+    rect_rec = ax.bar(x + width, metrics['Recall'].cpu(), width, label='Recall')
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Metrics')
