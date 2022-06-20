@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def convert_tb_data(root_dir, sort_by=None):
@@ -89,6 +90,31 @@ def plot_losses(event_folder, names, save_path):
         plt.plot(steps, value, label = loss, linewidth=1., alpha=alpha)
     plt.legend()
     plt.grid()
+    plt.savefig(save_path)
+    plt.close()
+
+
+def plot_class_metrics(labels, metrics, save_path):
+    
+    x = np.arange(len(labels))  # the label locations
+    width = 0.15  # the width of the bars
+
+    fig, ax = plt.subplots()
+    rect_acc = ax.bar(x - width, metrics['Accuracy'], width, label='Accuracy')
+    rect_pre = ax.bar(x, metrics['Precision'], width, label='Precision')
+    rect_rec = ax.bar(x + width, metrics['Recall'], width, label='Recall')
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Metrics')
+    ax.set_title('Metrics per class')
+    ax.set_xticks(x, labels)
+    ax.legend()
+
+    ax.bar_label(rect_acc, padding=3)
+    ax.bar_label(rect_pre, padding=3)
+    ax.bar_label(rect_rec, padding=3)
+
+    fig.tight_layout()
     plt.savefig(save_path)
     plt.close()
 

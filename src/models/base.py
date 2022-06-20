@@ -23,6 +23,7 @@ from utils.image_display import save_all_class_masked_images, save_mask, save_ma
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
+from evaluation.plot import plot_class_metrics
 from evaluation.compute_scores import selfexplainer_compute_numbers
 
 import GPUtil
@@ -157,7 +158,7 @@ class BaseModel(pl.LightningModule):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce', classwise=True, dataset=self.dataset)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -636,7 +637,7 @@ class BaseModel(pl.LightningModule):
         self.logger.experiment.add_image('Val Nontarget mask', output['image'][2].unsqueeze(1), self.val_i, dataformats='NCHW')
 
         log_string = ''
-        logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
+        logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
         for b in range(image.size()[0]):
             log_string += f'Batch {b}:  \n'
@@ -779,10 +780,15 @@ class BaseModel(pl.LightningModule):
         self.test_metrics(output['image'][3], target_vector.int())
 
     def test_epoch_end(self, outs):
-        m = self.test_metrics.compute()
+        a_m = self.test_metrics.compute()
+        m = a_m['Total']
         self.log('test_metric', m)
         for k,v in m.items():
             self.log(f'{k}', v, prog_bar=True, logger=False)
+
+        (Path(self.save_path) / 'plots').mkdir(parents=True, exist_ok=True)
+        plot_class_metrics(list(get_class_dictionary(self.dataset).keys()), a_m['Class'], Path(self.save_path) / 'plots' / 'class_metrics.png')
+        
         self.test_metrics.reset()
         #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
 

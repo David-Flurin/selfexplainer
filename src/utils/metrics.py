@@ -2,6 +2,8 @@ import torch
 import torchmetrics
 import numpy as np
 
+from .helper import get_class_dictionary
+
 class SingleLabelMetrics(torchmetrics.Metric):
     def __init__(self, num_classes):
         super().__init__()
@@ -91,15 +93,28 @@ class MultiLabelMetrics(torchmetrics.Metric):
 
 
 class ClassificationMultiLabelMetrics():
-    def __init__(self, threshold, num_classes, gpu, loss):
+    def __init__(self, threshold, num_classes, gpu, loss, classwise = False, dataset=None):
         device = f'cuda:{gpu}' if torch.cuda.is_available() else 'cpu'
-        self.accuracy = torchmetrics.Accuracy(threshold, num_classes).to(device)
-        self.precision = torchmetrics.Precision(num_classes, threshold).to(device)
-        self.recall = torchmetrics.Recall(num_classes, threshold).to(device)
-        self.f1 = torchmetrics.F1(num_classes, threshold).to(device)
+        self.accuracy = torchmetrics.Accuracy(num_classes=num_classes, threshold=threshold).to(device)
+        self.precision = torchmetrics.Precision(num_classes=num_classes, threshold=threshold).to(device)
+        self.recall = torchmetrics.Recall(num_classes=num_classes, threshold=threshold).to(device)
+        self.f1 = torchmetrics.F1(num_classes=num_classes, threshold=threshold).to(device)
         if loss not in ['bce', 'ce']:
             raise ValueError('Unknown loss for metrics')
         self.loss = loss
+
+        self.classwise = classwise
+
+        if self.classwise:
+            if dataset == None:
+                raise ValueError('If calculated classwise, dataset must be specified.')
+            self.class_list = list(get_class_dictionary(dataset).keys())
+            self.class_accuracy = torchmetrics.Accuracy(num_classes=num_classes, threshold=threshold, average=None).to(device)
+            self.class_precision = torchmetrics.Precision(num_classes=num_classes, threshold=threshold, average=None).to(device)
+            self.class_recall = torchmetrics.F1(num_classes=num_classes, threshold=threshold, average=None).to(device)
+            self.class_f1 = torchmetrics.Recall(num_classes=num_classes, threshold=threshold, average=None).to(device)
+        
+            
 
     def __call__(self, activations, targets):
         loss_fn = torch.sigmoid if self.loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
@@ -109,8 +124,19 @@ class ClassificationMultiLabelMetrics():
         self.recall(logits, targets)
         self.f1(logits, targets)
 
+        if self.classwise:
+            self.class_accuracy(logits, targets)
+            self.class_precision(logits, targets)
+            self.class_recall(logits, targets)
+            self.class_f1(logits, targets)
+
+
     def compute(self):
-        return {'Accuracy': self.accuracy.compute(), 'Precision': self.precision.compute(), 'Recall': self.recall.compute(), 'F-Score': self.f1.compute()}
+        if not self.classwise:
+            return {'Accuracy': self.accuracy.compute(), 'Precision': self.precision.compute(), 'Recall': self.recall.compute(), 'F-Score': self.f1.compute()}
+        else:
+            return {'Total': {'Accuracy': self.accuracy.compute(), 'Precision': self.precision.compute(), 'Recall': self.recall.compute(), 'F-Score': self.f1.compute()},
+            'Class': {'Accuracy': self.class_accuracy.compute(), 'Precision': self.class_precision.compute(), 'Recall': self.class_recall.compute(), 'F-Score': self.class_f1.compute()}}
         #return f'Acc: {self.accuracy.compute()'
 
     def reset(self):
@@ -118,6 +144,11 @@ class ClassificationMultiLabelMetrics():
         self.precision.reset()
         self.recall.reset()
         self.f1.reset()
+        if self.classwise:
+            self.class_accuracy.reset()
+            self.class_precision.reset()
+            self.class_recall.reset()
+            self.class_f1.reset()
 
 
 
