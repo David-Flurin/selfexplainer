@@ -95,10 +95,12 @@ class VOC2012DataModule(VOCDataModule):
 
 class OISmallDataModule(pl.LightningDataModule):
 
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
         super().__init__()
 
         self.data_path = Path(data_path)
+
+        self.weighted_sampling = weighted_sampling
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
