@@ -3,6 +3,7 @@ import torch
 from torchmetrics import Accuracy
 import pytorch_lightning as pl
 import os
+import json
 import random
 
 from matplotlib import pyplot as plt 
@@ -788,6 +789,11 @@ class BaseModel(pl.LightningModule):
 
         (Path(self.save_path) / 'plots').mkdir(parents=True, exist_ok=True)
         plot_class_metrics(list(get_class_dictionary(self.dataset).keys()), a_m['Class'], Path(self.save_path) / 'plots' / 'class_metrics.png')
+        with open(Path(self.save_path) / 'plots' / 'class_metrics.json', 'w') as jsonfile:
+            a_m = dict_tensor_to_list(a_m)
+            json.dump(a_m, jsonfile)
+
+
         
         self.test_metrics.reset()
         #save_background_logits(self.test_background_logits, Path(self.save_path) / 'plots' / 'background_logits.png')
@@ -830,3 +836,10 @@ class BaseModel(pl.LightningModule):
                 del checkpoint['state_dict'][k]
 
 
+def dict_tensor_to_list(dict):
+    if type(dict) == torch.Tensor:
+        return dict.tolist()
+    else:
+        for k,v in dict.items():
+            dict[k] = dict_tensor_to_list(v)
+        return dict
