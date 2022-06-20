@@ -346,9 +346,9 @@ def get_class_weights(dataset):
         numeral_stats = {k:stats[k] for k,v in target_dict.items()}
     elif dataset == 'OISMALL':
         stats = {
-            'Cat': 13936,
-            'Dog': 22885,
-            'Bird': 35586
+            'cat': 13936,
+            'dog': 22885,
+            'bird': 35586
         }
         target_dict = get_class_dictionary(dataset)
         numeral_stats = {k:stats[k] for k,v in target_dict.items()}
