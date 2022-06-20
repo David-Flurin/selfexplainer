@@ -64,8 +64,8 @@ elif args.dataset == "VOC2012":
 elif args.dataset == "OISMALL":
     data_path = main_dir / args.data_base_path / 'OI_SMALL'
     data_module = OISmallDataModule(
-        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, weighted_sampling=args.weighted_sampling
-        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
+        data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, 
+        test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation, weighted_sampling=args.weighted_sampling
     )
     num_classes = 3
 elif args.dataset == "OI":
