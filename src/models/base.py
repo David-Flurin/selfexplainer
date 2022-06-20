@@ -184,7 +184,8 @@ class BaseModel(pl.LightningModule):
         if self.use_similarity_loss:
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
-            if not self.is_testing:
+            if False:
+            #if not self.is_testing:
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -217,7 +218,7 @@ class BaseModel(pl.LightningModule):
                     output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
                 # plt.show()
             else:
-                output['object'] = self._forward(i_mask * image, targets)
+                output['object'] = self._forward(i_mask.unsqueeze(1) * image, targets)
             
         
         if self.use_background_loss:   
@@ -791,7 +792,7 @@ class BaseModel(pl.LightningModule):
         plot_class_metrics(list(get_class_dictionary(self.dataset).keys()), a_m['Class'], Path(self.save_path) / 'plots' / 'class_metrics.png')
         with open(Path(self.save_path) / 'plots' / 'class_metrics.json', 'w') as jsonfile:
             a_m = dict_tensor_to_list(a_m)
-            json.dump(a_m, jsonfile)
+            json.dump({'Classes': list(get_class_dictionary(self.dataset).keys()), "Metrics": a_m}, jsonfile)
 
 
         

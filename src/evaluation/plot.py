@@ -4,7 +4,10 @@ import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
 from matplotlib import pyplot as plt
 import numpy as np
-
+import json
+from utils.helper import get_class_dictionary
+import torch
+from matplotlib.ticker import FormatStrFormatter
 
 def convert_tb_data(root_dir, sort_by=None):
     """Convert local TensorBoard data into Pandas DataFrame.
@@ -99,7 +102,11 @@ def plot_class_metrics(labels, metrics, save_path):
     x = np.arange(len(labels))  # the label locations
     width = 0.15  # the width of the bars
 
+    
     fig, ax = plt.subplots()
+    fig.set_figwidth(15)
+    fig.set_figheight(8)
+
     rect_acc = ax.bar(x - width, metrics['Accuracy'].cpu(), width, label='Accuracy')
     rect_pre = ax.bar(x, metrics['Precision'].cpu(), width, label='Precision')
     rect_rec = ax.bar(x + width, metrics['Recall'].cpu(), width, label='Recall')
@@ -109,12 +116,29 @@ def plot_class_metrics(labels, metrics, save_path):
     ax.set_title('Metrics per class')
     ax.set_xticks(x, labels)
     ax.legend()
+    #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-    ax.bar_label(rect_acc, padding=3)
-    ax.bar_label(rect_pre, padding=3)
-    ax.bar_label(rect_rec, padding=3)
+    ax.bar_label(rect_acc, padding=3, fmt='%.2f')
+    ax.bar_label(rect_pre, padding=3, fmt='%.2f')
+    ax.bar_label(rect_rec, padding=3, fmt='%.2f')
 
     fig.tight_layout()
     plt.savefig(save_path)
     plt.close()
 
+
+def plot_metrics_from_file(jsonfile):
+    with open(jsonfile, 'r') as f:
+        metrics = json.load(f)
+        metrics = dict_list_to_tensor(metrics)
+        plot_class_metrics(list(get_class_dictionary('OI')), metrics['Class'], '../test.png')
+
+def dict_list_to_tensor(dict):
+    if type(dict) == list:
+        return torch.Tensor(dict)
+    elif type(dict) == float:
+        return torch.Tensor([dict])
+    else:
+        for k,v in dict.items():
+            dict[k] = dict_list_to_tensor(v)
+        return dict

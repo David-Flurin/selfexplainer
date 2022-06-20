@@ -19,12 +19,12 @@ from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
 from models.classifier import Classifier
 from models.fcn_16 import FCN16
+from evaluation.plot import plot_metrics_from_file
 
 from models.mlp import MLP
 from utils.image_display import save_all_class_masked_images, save_masked_image
 
 from toy_dataset import generator
-
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
