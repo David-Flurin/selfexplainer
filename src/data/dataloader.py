@@ -148,8 +148,8 @@ class OIDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         self.train = OIDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
-        #self.val = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
-        #self.test = OIDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
+        self.val = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
+        self.test = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
         if self.weighted_sampling:
@@ -161,12 +161,11 @@ class OIDataModule(pl.LightningDataModule):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def val_dataloader(self):
-        #return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-        return None
+        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
+        #return None
     
     def test_dataloader(self):
-        #return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-        return None
+        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def calculate_weights(self):
         oi_classes = get_class_dictionary('OI', include_background_class=False)
