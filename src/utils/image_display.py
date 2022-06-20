@@ -150,6 +150,7 @@ def save_all_class_masks(segmentations, filename, dataset):
 
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='png')
+    plt.close()
 
     im = Image.open(img_buf)
     im.save(filename + '.png', format='png')
@@ -176,6 +177,7 @@ def save_all_class_masked_images(image, segmentations, filename):
 
     img_buf = io.BytesIO()
     plt.savefig(img_buf, format='png')
+    plt.close()
 
     im = Image.open(img_buf)
     im.save(filename, format='png')
@@ -271,3 +273,4 @@ def save_background_logits(logits, path_file):
     plt.plot(x, logits)
     plt.title('Background pass logits')
     plt.savefig(path_file)
+    plt.close()
