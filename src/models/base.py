@@ -130,7 +130,8 @@ class BaseModel(pl.LightningModule):
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.CrossEntropyLoss()
             else:
-                self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+                #self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+                self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes/4)
@@ -147,7 +148,8 @@ class BaseModel(pl.LightningModule):
         if self.weighted_sampling:
             self.similarity_loss_fn = nn.CrossEntropyLoss()
         else:
-            self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+            #self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
+            self.similarity_loss_fn = nn.CrossEntropyLoss()
         #self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
@@ -184,7 +186,8 @@ class BaseModel(pl.LightningModule):
         if self.use_similarity_loss:
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
-            if not self.is_testing:
+            #if not self.is_testing:
+            if False: 
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -195,6 +198,7 @@ class BaseModel(pl.LightningModule):
                 # plt.imshow(image[0].detach().permute(1,2,0))
                 # fig.add_subplot(6,2,8)
                 # plt.imshow(image[1].detach().permute(1,2,0))
+            
                 max_objects = 0
                 for b in range(targets.size()[0]):
                     if targets[b].sum() > max_objects:
@@ -217,7 +221,7 @@ class BaseModel(pl.LightningModule):
                     output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
                 # plt.show()
             else:
-                output['object'] = self._forward(i_mask * image, targets)
+                output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
             
         
         if self.use_background_loss:   
@@ -336,6 +340,7 @@ class BaseModel(pl.LightningModule):
         classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss)   
         
+        '''
         if self.use_similarity_loss:
             self.log('classification_loss_1Pass', classification_loss)  
             max_objects = 0
@@ -352,21 +357,22 @@ class BaseModel(pl.LightningModule):
                 s_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
                 self.sim_losses[f'object_{i}'] =  torch.nn.functional.cross_entropy(output[f'object_{i}'][3].detach(), s_target)
             self.log('classification_loss_2Pass', self.sim_losses)     
-
+        '''
         loss = classification_loss
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            #logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            #similarity_loss = self.similarity_regularizer * similarity_loss_fn(logit_fn(output['image'][3].detach()),  logit_fn(output['object'][3]))
-
+            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), logit_fn(output['image'][3].detach()))
+            '''
             if self.multiclass:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
             else:
                 sim_loss = self.similarity_regularizer * self.similarity_loss_fn(output['object_0'][3], target_vector)            
+            '''
             self.log('similarity_loss', sim_loss)
             obj_back_loss += sim_loss
-
+            
         if self.use_background_loss:
             if self.bg_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
