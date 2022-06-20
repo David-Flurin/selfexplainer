@@ -69,18 +69,18 @@ class OISmallDataset(Dataset):
         
         labels = labels['labels']
         target_classes = {classes.index('Cat'):'cat', classes.index('Dog'):'dog', classes.index('Bird'):'bird'}
-        self.img_to_class = {}
+        self.labels = {}
         for img, l in labels.items():
             if l == None:
                 continue
             for i, c in target_classes.items():
                 if i in l:
-                    self.img_to_class[img] = [c] if img not in self.img_to_class else self.img_to_class[img] + [c]
+                    self.labels[img] = [c] if img not in self.labels else self.labels[img] + [c]
         
-        self.images = list(self.img_to_class.keys())
-        print('Cats:', sum('cat' in value for value in self.img_to_class.values()))
-        print('Dogs:', sum('dog' in value for value in self.img_to_class.values()))
-        print('Sheeps:', sum('bird' in value for value in self.img_to_class.values()))
+        self.images = list(self.labels.keys())
+        print('Cats:', sum('cat' in value for value in self.labels.values()))
+        print('Dogs:', sum('dog' in value for value in self.labels.values()))
+        print('Sheeps:', sum('bird' in value for value in self.labels.values()))
 
         self.transforms = transform_fn
         
@@ -93,7 +93,7 @@ class OISmallDataset(Dataset):
         if self.transforms is not None:
             img = self.transforms(img)
 
-        return img, {'annotation':{'object': [{'name': name} for name in self.img_to_class[self.images[idx]]], 'filename': self.images[idx]}}
+        return img, {'annotation':{'object': [{'name': name} for name in self.labels[self.images[idx]]], 'filename': self.images[idx]}}
 
 
     def __len__(self):
