@@ -110,6 +110,8 @@ class BaseModel(pl.LightningModule):
         self.same_images = {}
         self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0., 'object_5':0., 'object_6':0.}
 
+        self.data_stats = {k:0. for k in range(self.num_classes)}
+
         #self.automatic_optimization = False
         # -------------------------------------------
         self.weighted_sampling = weighted_sampling
@@ -299,6 +301,13 @@ class BaseModel(pl.LightningModule):
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+
+        t_classes = target_vector.sum(0)
+        for i in range(t_classes.size(0)):
+            self.data_stats[i] += t_classes[i].item()
+        if self.i % 10 == 9:
+            self.log(self.datastats)
+
         # from matplotlib import pyplot as plt
         # print(target_vector)
         # plt.imshow(image[0].permute(1,2,0))
