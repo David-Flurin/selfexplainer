@@ -110,7 +110,7 @@ class BaseModel(pl.LightningModule):
         self.same_images = {}
         self.sim_losses = {'object_0': 0., 'object_1': 0., 'object_2':0., 'object_3':0., 'object_4':0., 'object_5':0., 'object_6':0.}
 
-        self.data_stats = {k:0. for k in range(self.num_classes)}
+        self.data_stats = {str(k):0. for k in range(self.num_classes)}
 
         #self.automatic_optimization = False
         # -------------------------------------------
@@ -304,9 +304,9 @@ class BaseModel(pl.LightningModule):
 
         t_classes = target_vector.sum(0)
         for i in range(t_classes.size(0)):
-            self.data_stats[i] += t_classes[i].item()
+            self.data_stats[str(i)] += t_classes[i].item()
         if self.i % 10 == 9:
-            self.log(self.datastats)
+            self.log('Sample statistics', self.data_stats)
 
         # from matplotlib import pyplot as plt
         # print(target_vector)
@@ -372,9 +372,9 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            #detached = output['image'][3].detach()
-            #probs = logit_fn(detached)
-            sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], logit_fn(output['image'][3].detach()))
+            detached = output['image'][3].detach()
+            probs = logit_fn(detached)
+            sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)
             '''
             if self.multiclass:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
@@ -419,7 +419,7 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 5, 0.1)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.8)
                 self.log('weighted_loss', w_obj_back_loss)
                 w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
                 self.log('Weighted mask losses', w_mask_loss)
