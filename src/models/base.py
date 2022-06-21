@@ -363,7 +363,9 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), logit_fn(output['image'][3].detach()))
+            detached = output['image'][3].detach()
+            probs = logit_fn(detached)
+            sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs)
             '''
             if self.multiclass:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
