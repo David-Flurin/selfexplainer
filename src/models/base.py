@@ -706,22 +706,6 @@ class BaseModel(pl.LightningModule):
 
         output = self(image, target_vector)
 
-        
-
-        # from matplotlib import pyplot as plt
-        # plt.imshow(image[0].permute(1,2,0))
-        # plt.show()
-        
-
-        # from matplotlib import pyplot as plt
-        # fig = plt.figure(figsize=(10, 5))
-        # fig.add_subplot(1,3,1)
-        # plt.imshow(image[0])
-        # fig.add_subplot(1,3,2)
-        # plt.imshow(output['image'][0][0][0])
-        # fig.add_subplot(1,3,3)
-        # plt.imshow(output['image'][0][0][1])
-        # plt.show()
 
         if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
@@ -765,13 +749,14 @@ class BaseModel(pl.LightningModule):
                 background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
             loss += background_entropy_loss
 
-        os.makedirs(os.path.dirname(Path(self.save_path) / "test_losses" / filename), exist_ok=True)
-        with open(Path(self.save_path) / "test_losses" / filename, 'w') as f:
-            f.write(f'classification loss: {classification_loss}\n')
-            if self.use_similarity_loss:
-                f.write(f'similarity loss: {similarity_loss}\n')
-            if self.use_background_loss:
-                f.write(f'background loss: {background_entropy_loss}\n')
+        # filename = Path(self.save_path) / "test_losses" / get_filename_from_annotations(annotations, dataset=self.dataset)
+        # os.makedirs(os.path.dirname(Path(self.save_path) / "test_losses" / filename), exist_ok=True)
+        # with open(Path(self.save_path) / "test_losses" / filename, 'w') as f:
+        #     f.write(f'classification loss: {classification_loss}\n')
+        #     if self.use_similarity_loss:
+        #         f.write(f'similarity loss: {similarity_loss}\n')
+        #     if self.use_background_loss:
+        #         f.write(f'background loss: {background_entropy_loss}\n')
 
         '''
         if self.use_mask_variation_loss:
