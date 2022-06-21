@@ -363,9 +363,9 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            detached = output['image'][3].detach()
-            probs = logit_fn(detached)
-            sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs)
+            #detached = output['image'][3].detach()
+            #probs = logit_fn(detached)
+            sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], logit_fn(output['image'][3].detach()))
             '''
             if self.multiclass:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
@@ -410,9 +410,9 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.8)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 5, 0.1)
                 self.log('weighted_loss', w_obj_back_loss)
-                w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.4)
+                w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
                 self.log('Weighted mask losses', w_mask_loss)
                 loss += w_obj_back_loss + w_mask_loss
                 #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
