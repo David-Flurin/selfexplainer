@@ -707,7 +707,7 @@ class BaseModel(pl.LightningModule):
         output = self(image, target_vector)
 
 
-        if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
+        if self.save_masked_images and image.size()[0] == 1 and self.test_i < 200:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_masked_image(image, output['image'][1], filename, self.dataset)
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
@@ -717,7 +717,7 @@ class BaseModel(pl.LightningModule):
             filename = Path(self.save_path) / "images" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_image(image, filename, self.dataset)
 
-        if self.save_masks and image.size()[0] == 1 and self.test_i < 1000:
+        if self.save_masks and image.size()[0] == 1 and self.test_i < 200:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
             for k, v in output.items():
@@ -739,7 +739,7 @@ class BaseModel(pl.LightningModule):
         # print(target_vector)
         loss = classification_loss
         if self.use_similarity_loss:
-            similarity_loss = mask_similarity_loss(output['image'][3], target_vector, output['image'][1], output['object'][1])
+            similarity_loss = mask_similarity_loss(output['image'][3], target_vector, output['image'][1], output['object_0'][1])
             loss += similarity_loss
 
         if self.use_background_loss:
