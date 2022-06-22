@@ -189,7 +189,7 @@ class BaseModel(pl.LightningModule):
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
             #if not self.is_testing:
-            if False: 
+            if self.multiclass: 
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -371,16 +371,15 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            detached = output['image'][3].detach()
-            probs = logit_fn(detached)
-            sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)
-            '''
+            
             if self.multiclass:
-                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
+                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
-                sim_loss = self.similarity_regularizer * self.similarity_loss_fn(output['object_0'][3], target_vector)            
-            '''
+                logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+                detached = output['image'][3].detach()
+                probs = logit_fn(detached)
+                sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)            
+
             self.log('similarity_loss', sim_loss)
             obj_back_loss += sim_loss
             
