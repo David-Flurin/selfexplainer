@@ -186,10 +186,13 @@ class BaseModel(pl.LightningModule):
 
         
         if self.use_similarity_loss:
+            self.frozen = deepcopy(self.model)
+            for _,p in self.frozen.named_parameters():
+                p.requires_grad_(False)
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
             #if not self.is_testing:
-            if False: 
+            if self.multiclass: 
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -220,7 +223,7 @@ class BaseModel(pl.LightningModule):
                     #     fig.add_subplot(6,2,9+(i*2)+1)
                     #     plt.imshow(new_batch_masks[1].detach().permute(1,2,0))
                     new_batch_masked = new_batch_masks * new_batch
-                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
+                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=True)
                 # plt.show()
             else:
                 output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
@@ -244,14 +247,20 @@ class BaseModel(pl.LightningModule):
                 plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             plt.show()
             '''
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
             
         return output
 
     def _forward(self, image, targets, frozen=False):
         if self.aux_classifier:
             if frozen:
-                segmentations, logits = self.frozen(image)
+                if self.training and image.size(0) == 1:
+                    image = image.repeat(2,1,1,1)
+                    segmentations, logits = self.model(image)
+                    segmentations = segmentations[0].unsqueeze(0)
+                    logits = logits[0].unsqueeze(0)
+                else:
+                    segmentations, logits = self.model(image)
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -371,16 +380,16 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
-            detached = output['image'][3].detach()
-            probs = logit_fn(detached)
-            sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)
-            '''
+            
+            
             if self.multiclass:
-                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
+                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
-                sim_loss = self.similarity_regularizer * self.similarity_loss_fn(output['object_0'][3], target_vector)            
-            '''
+                logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+                detached = output['image'][3].detach()
+                probs = logit_fn(detached)
+                sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)           
+            
             self.log('similarity_loss', sim_loss)
             obj_back_loss += sim_loss
             
