@@ -92,6 +92,33 @@ class VOC2012DataModule(VOCDataModule):
         self.val   = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
         self.test  = VOCDetection(self.data_path, year="2012", image_set="val", download=self.download, transform=self.test_transformer)
 
+    def train_dataloader(self):
+        if self.weighted_sampling:
+            weights = self.calculate_weights()
+            generator=torch.Generator(device='cpu')
+            generator.manual_seed(42)
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
+                sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
+        else:
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
+
+    def calculate_weights(self):
+        img_classes = {}
+        voc_classes = get_class_dictionary('VOC2012', include_background_class=False)
+        obj_img_count = [0]*len(voc_classes)
+
+        for target in self.train.targets:
+            annotation = self.train.parse_voc_xml(ETparse(target).getroot())
+            target_indices = [0]*len(voc_classes)
+            for object in annotation['annotation']['object']:
+                target_indices[voc_classes[object['name']]] = 1
+                obj_img_count[voc_classes[object['name']]] += 1
+            img_classes[annotation['annotation']['filename']] = np.array(target_indices)
+        
+        class_weights = np.array([1/c for c in obj_img_count])
+        img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
+        return img_weights
+
 
 class OISmallDataModule(pl.LightningDataModule):
 
