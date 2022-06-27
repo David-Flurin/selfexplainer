@@ -110,7 +110,11 @@ class VOC2012DataModule(VOCDataModule):
         for target in self.train.targets:
             annotation = self.train.parse_voc_xml(ETparse(target).getroot())
             target_indices = [0]*len(voc_classes)
+            counted_objects = []
             for object in annotation['annotation']['object']:
+                if object['name'] in counted_objects:
+                    continue
+                counted_objects.append(object['name'])
                 target_indices[voc_classes[object['name']]] = 1
                 obj_img_count[voc_classes[object['name']]] += 1
             img_classes[annotation['annotation']['filename']] = np.array(target_indices)

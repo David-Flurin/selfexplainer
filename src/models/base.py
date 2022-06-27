@@ -38,7 +38,8 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, 
+                 non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, similarity_loss_scheduling=500, background_loss_scheduling=500, mask_loss_scheduling=1000, use_loss_scheduling=False):
 
         super().__init__()
 
@@ -53,6 +54,17 @@ class BaseModel(pl.LightningModule):
         self.num_classes = num_classes
 
         self.aux_classifier = aux_classifier
+
+        self.use_loss_scheduling = use_loss_scheduling
+        if use_loss_scheduling:
+            self.use_similarity_loss = False
+            self.use_background_loss = False
+            self.use_mask_area_loss = False
+            self.use_mask_variation_loss = False
+            self.use_bounding_loss = False
+        self.background_loss_scheduling = background_loss_scheduling
+        self.similarity_loss_scheduling = similarity_loss_scheduling
+        self.mask_loss_scheduling = mask_loss_scheduling
 
 
         self.use_similarity_loss = use_similarity_loss
@@ -291,9 +303,21 @@ class BaseModel(pl.LightningModule):
 
     def on_train_start(self) -> None:
         self.is_testing = False
+
+    def check_loss_schedulings(self):
+        if self.background_loss_scheduling <= self.i:
+            self.use_background_loss = True
+        if self.similarity_loss_scheduling <= self.i:
+            self.use_similarity_loss = True
+        if self.mask_loss_scheduling <= self.i:
+            self.use_mask_area_loss = True
+
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
+
+        if self.use_loss_scheduling:
+            self.check_loss_schedulings()
         
         if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
             image, annotations = batch
