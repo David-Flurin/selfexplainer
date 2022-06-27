@@ -55,16 +55,7 @@ class BaseModel(pl.LightningModule):
 
         self.aux_classifier = aux_classifier
 
-        self.use_loss_scheduling = use_loss_scheduling
-        if use_loss_scheduling:
-            self.use_similarity_loss = False
-            self.use_background_loss = False
-            self.use_mask_area_loss = False
-            self.use_mask_variation_loss = False
-            self.use_bounding_loss = False
-        self.background_loss_scheduling = background_loss_scheduling
-        self.similarity_loss_scheduling = similarity_loss_scheduling
-        self.mask_loss_scheduling = mask_loss_scheduling
+        
 
 
         self.use_similarity_loss = use_similarity_loss
@@ -135,6 +126,18 @@ class BaseModel(pl.LightningModule):
 
         self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area, target_threshold=target_threshold, non_target_threshold=non_target_threshold)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
+
+        self.use_loss_scheduling = use_loss_scheduling
+        if use_loss_scheduling:
+            self.use_similarity_loss = False
+            self.use_background_loss = False
+            self.use_mask_area_loss = False
+            self.use_mask_variation_loss = False
+            self.use_bounding_loss = False
+        self.background_loss_scheduling = background_loss_scheduling
+        self.similarity_loss_scheduling = similarity_loss_scheduling
+        self.mask_loss_scheduling = mask_loss_scheduling
+
 
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
