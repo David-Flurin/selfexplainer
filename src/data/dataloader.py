@@ -210,7 +210,7 @@ class OIDataModule(pl.LightningDataModule):
         if self.weighted_sampling:
             weights = self.calculate_weights()
             generator=torch.Generator(device='cpu')
-            generator.manual_seed(422983473)
+            generator.manual_seed(23098471209)
             return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
                 sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
