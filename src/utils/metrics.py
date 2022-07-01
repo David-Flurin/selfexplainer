@@ -119,6 +119,8 @@ class ClassificationMultiLabelMetrics():
     def __call__(self, activations, targets):
         loss_fn = torch.sigmoid if self.loss == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
         logits = loss_fn(activations)
+        if self.loss == 'ce':
+            targets = targets.nonzero(as_tuple=True)[1]
         self.accuracy(logits, targets)
         self.precision(logits, targets)
         self.recall(logits, targets)
