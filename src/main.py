@@ -14,6 +14,7 @@ import pickle
 import hashlib
 
 from data.dataloader import ColorDataModule, MNISTDataModule, OIDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module, VOC2012DataModule
+from models.resnet50 import Resnet50
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
@@ -218,6 +219,11 @@ elif args.model_to_train == "mlp":
          rgb=args.rgb, frozen=args.frozen, freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, target_threshold=args.target_threshold, 
          non_target_threshold=args.non_target_threshold, background_loss=args.background_loss, save_all_class_masks=args.save_all_class_masks,  weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, similarity_loss_mode=args.similarity_loss_mode,
         )
+elif args.model_to_train == "resnet50":
+    model = Resnet50(
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, 
+       gpu=args.gpu, metrics_threshold=args.metrics_threshold, multiclass=args.multiclass, weighted_sampling=args.weighted_sampling
+    )
 elif args.model_to_train == "classifier":
     model = Classifier(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
