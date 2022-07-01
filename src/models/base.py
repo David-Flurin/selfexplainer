@@ -134,25 +134,19 @@ class BaseModel(pl.LightningModule):
             else:
                 #self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
                 self.classification_loss_fn = nn.CrossEntropyLoss()
+
+            self.similarity_loss_fn = nn.CrossEntropyLoss()
         else:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes/4)
             else:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
-            # elif self.class_loss == 'threshold':
-        #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
-        # else:
-        #     raise ValueError(f'Classification loss argument {self.class_loss} not known')
+
+            self.similarity_loss_fn = nn.BCEWithLogitsLoss()
 
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
-        if self.weighted_sampling:
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
-        else:
-            #self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
-        #self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
