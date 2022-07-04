@@ -240,6 +240,7 @@ class BaseModel(pl.LightningModule):
                 fig.add_subplot(b+1,3,b*3+3)
                 plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             plt.show()
+            a
             '''
             output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
             
