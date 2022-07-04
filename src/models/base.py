@@ -341,7 +341,7 @@ class BaseModel(pl.LightningModule):
 
         if self.frozen and (self.use_similarity_loss or self.use_background_loss):
            self.frozen_model = deepcopy(self.model)
-           for _,p in self.frozen.named_parameters():
+           for _,p in self.frozen_model.named_parameters():
                p.requires_grad_(False)
 
         if self.use_perfect_mask:
