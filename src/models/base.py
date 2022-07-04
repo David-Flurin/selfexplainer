@@ -134,26 +134,19 @@ class BaseModel(pl.LightningModule):
             else:
                 #self.classification_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
                 self.classification_loss_fn = nn.CrossEntropyLoss()
+
+            self.similarity_loss_fn = nn.CrossEntropyLoss()
         else:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.ones(self.num_classes, device=self.device)*self.num_classes/4)
             else:
-                #self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
-                self.classification_loss_fn = nn.BCEWithLogitsLoss()
-            # elif self.class_loss == 'threshold':
-        #     self.classification_loss_fn = lambda logits, targets: relu_classification(logits, targets, target_threshold, non_target_threshold)
-        # else:
-        #     raise ValueError(f'Classification loss argument {self.class_loss} not known')
+                self.classification_loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weights*class_weights)
+
+            self.similarity_loss_fn = nn.BCEWithLogitsLoss()
 
         if self.objective == 'segmentation':
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
         
-        if self.weighted_sampling:
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
-        else:
-            #self.similarity_loss_fn = nn.CrossEntropyLoss(weight = class_weights)
-            self.similarity_loss_fn = nn.CrossEntropyLoss()
-        #self.similarity_loss_fn = nn.CrossEntropyLoss()
 
         self.total_variation_conv = TotalVariationConv()
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area, gpu=self.gpu)
@@ -244,6 +237,7 @@ class BaseModel(pl.LightningModule):
                 fig.add_subplot(b+1,3,b*3+3)
                 plt.imshow(inverted_masked_image[b].detach().transpose(0,2))
             plt.show()
+            a
             '''
             output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
@@ -252,7 +246,13 @@ class BaseModel(pl.LightningModule):
     def _forward(self, image, targets, frozen=False):
         if self.aux_classifier:
             if frozen:
-                segmentations, logits = self.frozen(image)
+                if self.training and image.size(0) == 1:
+                    image = image.repeat(2,1,1,1)
+                    segmentations, logits = self.frozen_model(image)
+                    segmentations = segmentations[0].unsqueeze(0)
+                    logits = logits[0].unsqueeze(0)
+                else:
+                    segmentations, logits = self.frozen_model(image)
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -263,7 +263,7 @@ class BaseModel(pl.LightningModule):
                     segmentations, logits = self.model(image)
         else:
             if frozen:
-                segmentations = self.frozen(image)
+                segmentations = self.frozen_model(image)
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -277,10 +277,10 @@ class BaseModel(pl.LightningModule):
             weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
             logits = weighted_segmentations.sum(dim=(2,3))
         
-        # logits = segmentations.mean((2,3))
+        mask_logits = segmentations.mean((2,3))
         
 
-        return segmentations, target_mask, non_target_mask, logits
+        return segmentations, target_mask, non_target_mask, logits, mask_logits
 
 
 
@@ -309,8 +309,8 @@ class BaseModel(pl.LightningModule):
         if self.i % 10 == 9:
             self.log('Sample statistics', self.data_stats)
 
-        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
-           self.frozen = deepcopy(self.model)
+        if self.frozen and (self.use_similarity_loss or self.use_background_loss):
+           self.frozen_model = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
 
@@ -403,6 +403,11 @@ class BaseModel(pl.LightningModule):
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
+
+        
+        mask_logit_loss = self.classification_loss_fn(output['image'][4], target_vector)
+        self.log('Mask logit loss', mask_logit_loss)
+        loss += mask_logit_loss
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
