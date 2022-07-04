@@ -110,7 +110,11 @@ class VOC2012DataModule(VOCDataModule):
         for target in self.train.targets:
             annotation = self.train.parse_voc_xml(ETparse(target).getroot())
             target_indices = [0]*len(voc_classes)
+            counted_objects = []
             for object in annotation['annotation']['object']:
+                if object['name'] in counted_objects:
+                    continue
+                counted_objects.append(object['name'])
                 target_indices[voc_classes[object['name']]] = 1
                 obj_img_count[voc_classes[object['name']]] += 1
             img_classes[annotation['annotation']['filename']] = np.array(target_indices)
@@ -205,7 +209,7 @@ class OIDataModule(pl.LightningDataModule):
         if self.weighted_sampling:
             weights = self.calculate_weights()
             generator=torch.Generator(device='cpu')
-            generator.manual_seed(1098471)
+            generator.manual_seed(23098471209)
             return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
                 sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
