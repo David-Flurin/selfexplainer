@@ -279,10 +279,10 @@ class BaseModel(pl.LightningModule):
             weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
             logits = weighted_segmentations.sum(dim=(2,3))
         
-        # logits = segmentations.mean((2,3))
+        mask_logits = segmentations.mean((2,3))
         
 
-        return segmentations, target_mask, non_target_mask, logits
+        return segmentations, target_mask, non_target_mask, logits, mask_logits
 
 
 
@@ -419,6 +419,11 @@ class BaseModel(pl.LightningModule):
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
+
+        
+        mask_logit_loss = self.classification_loss_fn(output['image'][4], target_vector)
+        self.log('Mask logit loss', mask_logit_loss)
+        loss += mask_logit_loss
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
