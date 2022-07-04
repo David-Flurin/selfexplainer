@@ -211,13 +211,13 @@ class Generator:
         for i, shape in enumerate(shapes):
             radius, center_x, center_y, rotation, f_tex_idx, b_tex_idx = specs[i]
             s = shape(radius, (center_x, center_y), self.img_size, rotation)
-            shape_obj.append((s, f_tex_idx))
+            shape_obj.append((s, f_tex_idx, radius))
         img, seg_tex, seg_shape = self.__assemble(shape_obj, self.b_textures[b_tex_idx])
 
         objects = []
         for shape in shape_obj:
             shape_name = (str(shape[0].__class__).split('.')[-1]).split('\'')[0].lower()
-            objects.append((shape_name, self.f_texture_names[shape[1]]))
+            objects.append((shape_name, self.f_texture_names[shape[1]], shape[2]))
         return {'image': img, 'seg_tex': seg_tex, 'seg_shape': seg_shape, 'objects': objects, 'background': self.b_texture_names[b_tex_idx]}
 
 

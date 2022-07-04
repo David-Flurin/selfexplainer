@@ -97,7 +97,7 @@ class VOC2012DataModule(VOCDataModule):
             weights = self.calculate_weights()
             generator=torch.Generator(device='cpu')
             generator.manual_seed(42)
-            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
+            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(),
                 sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
         else:
             return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
@@ -118,11 +118,10 @@ class VOC2012DataModule(VOCDataModule):
                 target_indices[voc_classes[object['name']]] = 1
                 obj_img_count[voc_classes[object['name']]] += 1
             img_classes[annotation['annotation']['filename']] = np.array(target_indices)
-        
+
         class_weights = np.array([1/c for c in obj_img_count])
         img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
         return img_weights
-
 
 class OISmallDataModule(pl.LightningDataModule):
 
