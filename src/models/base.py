@@ -566,6 +566,10 @@ class BaseModel(pl.LightningModule):
         #    if v > 1:
         #        print(k, v)
 
+    def on_validation_epoch_start(self) -> None:
+        self.frozen_inter = self.frozen
+        self.frozen = False
+
     def validation_step(self, batch, batch_idx):
         if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
@@ -713,6 +717,8 @@ class BaseModel(pl.LightningModule):
         for k,v in m.items():
             self.log(f'{k}', v, prog_bar=True, logger=False)
         self.valid_metrics.reset()
+
+        self.frozen = self.frozen_inter
 
     def on_test_epoch_start(self) -> None:
         self.is_testing = True
