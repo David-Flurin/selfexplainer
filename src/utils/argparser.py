@@ -92,6 +92,9 @@ def get_parser():
     parser.add_argument('--non_target_threshold', default='0.2', type=float, help='Threshold to define probability as correct classification.')
     parser.add_argument('--background_loss', default='logits_ce', type=str, help='Which background loss to use')
     parser.add_argument('--class_only', default='False', type=str2bool, help='Train Steven like selfexplainer only on classification.')
+    parser.add_argument('--top_k', default='1', type=int, help='Top k classes considered for metrics')
+
+
 
 
 
@@ -110,7 +113,7 @@ def get_parser():
     parser.add_argument('--save_path', default='./results/', type=str, help='Path to where masks and/or masked images are saved if corresponding options are set to true.')
 
     # Metrics parameters
-    parser.add_argument('--metrics_threshold', default=-1.0, type=float, help='Threshold for logit to count as positive vs. negative prediction. Use -1.0 for Explainer and 0.0 for classifier.')
+    parser.add_argument('--metrics_threshold', default=0.5, type=float, help='Threshold for logit to count as positive vs. negative prediction. Use -1.0 for Explainer and 0.0 for classifier.')
 
     return parser
 

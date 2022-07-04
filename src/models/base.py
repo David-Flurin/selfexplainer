@@ -38,7 +38,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, top_k=1):
 
         super().__init__()
 
@@ -122,7 +122,7 @@ class BaseModel(pl.LightningModule):
             self.shapes_dist = Distribution()
 
         self.setup_losses(class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area, target_threshold=target_threshold, non_target_threshold=non_target_threshold)
-        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
+        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold, top_k=top_k)
 
 
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
@@ -153,7 +153,7 @@ class BaseModel(pl.LightningModule):
 
 
 
-    def setup_metrics(self, num_classes, metrics_threshold):
+    def setup_metrics(self, num_classes, metrics_threshold, top_k):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
@@ -180,9 +180,6 @@ class BaseModel(pl.LightningModule):
 
         
         if self.use_similarity_loss:
-            self.frozen = deepcopy(self.model)
-            for _,p in self.frozen.named_parameters():
-                p.requires_grad_(False)
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
             #if not self.is_testing:
@@ -217,7 +214,7 @@ class BaseModel(pl.LightningModule):
                     #     fig.add_subplot(6,2,9+(i*2)+1)
                     #     plt.imshow(new_batch_masks[1].detach().permute(1,2,0))
                     new_batch_masked = new_batch_masks * new_batch
-                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=True)
+                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
                 # plt.show()
             else:
                 output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
@@ -242,7 +239,7 @@ class BaseModel(pl.LightningModule):
             plt.show()
             a
             '''
-            output['background'] = self._forward(inverted_masked_image, targets, frozen=True)
+            output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
         return output
 
@@ -251,11 +248,11 @@ class BaseModel(pl.LightningModule):
             if frozen:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
-                    segmentations, logits = self.model(image)
+                    segmentations, logits = self.frozen_model(image)
                     segmentations = segmentations[0].unsqueeze(0)
                     logits = logits[0].unsqueeze(0)
                 else:
-                    segmentations, logits = self.model(image)
+                    segmentations, logits = self.frozen_model(image)
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -266,7 +263,7 @@ class BaseModel(pl.LightningModule):
                     segmentations, logits = self.model(image)
         else:
             if frozen:
-                segmentations = self.frozen(image)
+                segmentations = self.frozen_model(image)
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -312,13 +309,8 @@ class BaseModel(pl.LightningModule):
         if self.i % 10 == 9:
             self.log('Sample statistics', self.data_stats)
 
-        # from matplotlib import pyplot as plt
-        # print(target_vector)
-        # plt.imshow(image[0].permute(1,2,0))
-        # plt.show()
-
-        if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
-           self.frozen = deepcopy(self.model)
+        if self.frozen and (self.use_similarity_loss or self.use_background_loss):
+           self.frozen_model = deepcopy(self.model)
            for _,p in self.frozen.named_parameters():
                p.requires_grad_(False)
 
@@ -327,21 +319,13 @@ class BaseModel(pl.LightningModule):
         else:
             output = self(image, target_vector)
 
-        
-        #print(output['image'][3])
-        #print(target_vector)
-
         if self.use_background_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
-
- 
 
 
         if self.objective == 'classification':
                 classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
-            
-            #classification_loss_object = self.classification_loss_fn(o_logits, targets)
-            #classification_loss_background = self.classification_loss_fn(b_logits, targets)
+
         elif self.objective == 'segmentation':
             targets = targets.to(torch.float64)
             classification_loss_initial = self.classification_loss_fn(output['image'][0], targets)
@@ -376,15 +360,14 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             
-            
             if self.multiclass:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
                 logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
                 detached = output['image'][3].detach()
                 probs = logit_fn(detached)
-                sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)           
-            
+                sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs)            
+
             self.log('similarity_loss', sim_loss)
             obj_back_loss += sim_loss
             
