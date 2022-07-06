@@ -460,7 +460,7 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 1.)
                 self.log('weighted_loss', w_obj_back_loss)
                 w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
                 self.log('Weighted mask losses', w_mask_loss)
@@ -834,7 +834,8 @@ class BaseModel(pl.LightningModule):
         
 
 
-
+        print(output['image'][3].size())
+        print(target_vector.size())
         self.test_metrics(output['image'][3], target_vector.int())
 
     def test_epoch_end(self, outs):
