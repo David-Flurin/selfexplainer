@@ -39,7 +39,7 @@ class BaseModel(pl.LightningModule):
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
                  non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, similarity_loss_scheduling=500, background_loss_scheduling=500, mask_loss_scheduling=1000, use_loss_scheduling=False,
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, top_k=1):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, use_mask_logit_loss=False, mask_logit_loss_regularizer=1.0):
 
         super().__init__()
 
@@ -72,6 +72,8 @@ class BaseModel(pl.LightningModule):
         self.use_bounding_loss = use_bounding_loss
         self.use_mask_variation_loss = use_mask_variation_loss
         self.mask_variation_regularizer = mask_variation_regularizer
+        self.use_mask_logit_loss = use_mask_logit_loss
+        self.mask_logit_loss_regularizer = mask_logit_loss_regularizer
 
 
         self.use_background_activation_loss = background_activation_loss
@@ -319,19 +321,19 @@ class BaseModel(pl.LightningModule):
         if self.mask_loss_scheduling <= self.i:
             self.use_mask_area_loss = True
 
-    def on_after_backward(self):
-    # example to inspect gradient information in tensorboard
-        #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
-        print('After backwards CLASSIFIER:')
-        print(self.model.model.aux_classifier.fc.weight.requires_grad)
-        print(torch.max(self.model.model.aux_classifier.fc.weight.grad))
+    # def on_after_backward(self):
+    # # example to inspect gradient information in tensorboard
+    #     #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
+    #     print('After backwards CLASSIFIER:')
+    #     print(self.model.model.aux_classifier.fc.weight.requires_grad)
+    #     print(torch.max(self.model.model.aux_classifier.fc.weight.grad))
 
 
-        print('After backwards SEGMENTATIONS:')
-        print(self.model.model.classifier[4].weight.requires_grad)
-        print(torch.max(self.model.model.classifier[4].weight.grad))
-            # self.logger.experiment.add_histogram(tag=name, values=grads,
-            #                                     global_step=self.trainer.global_step)
+    #     print('After backwards SEGMENTATIONS:')
+    #     print(self.model.model.classifier[4].weight.requires_grad)
+    #     print(torch.max(self.model.model.classifier[4].weight.grad))
+    #         # self.logger.experiment.add_histogram(tag=name, values=grads,
+    #         #                                     global_step=self.trainer.global_step)
 
    
 
@@ -451,14 +453,14 @@ class BaseModel(pl.LightningModule):
             mask_loss += mask_area_loss
 
 
-        
-        #mask_logit_loss = self.classification_loss_fn(output['image'][4], target_vector)
-        #self.log('Mask logit loss', mask_logit_loss)
-        #loss += mask_logit_loss
+        if self.use_mask_logit_loss:
+            mask_logit_loss = self.mask_logit_loss_regularizer * self.classification_loss_fn(output['image'][4], target_vector)
+            self.log('Mask logit loss', mask_logit_loss)
+            loss += mask_logit_loss
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.2.)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.2)
                 self.log('weighted_loss', w_obj_back_loss)
                 w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
                 self.log('Weighted mask losses', w_mask_loss)
