@@ -42,7 +42,7 @@ def save_mask(mask, filename, dataset):
     plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
     np.savez_compressed(path_file + ".npz", img)
 
-def save_masked_image(image, mask, filename, dataset):
+def save_masked_image(image, mask, filename, dataset, probs=None):
         
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     path_file = os.path.splitext(filename)[0]
@@ -53,10 +53,30 @@ def save_masked_image(image, mask, filename, dataset):
 
 
     
-
+    target_labels = get_target_labels(dataset, include_background_class=False)
     if dataset != 'COLOR':
         if dataset != 'MNIST':
-            plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
+            if probs != None:
+                fig = plt.figure(figsize=(10,5))
+                axis = fig.add_subplot(1, 2, 1)
+                axis.get_xaxis().set_visible(False)
+                axis.get_yaxis().set_visible(False)
+                show_image(masked_nat_im)
+                axis = fig.add_subplot(1, 2, 2)
+                axis.axis('off')
+                sorted_probs, indices = torch.sort(probs, descending=True)
+                for i in range(5):
+                    plt.text(0.1, 0.9-i*0.1, f'{target_labels[indices[i]]}: {sorted_probs[i].item():.2f}')
+
+                img_buf = io.BytesIO()
+                plt.savefig(img_buf, format='png')
+                plt.close()
+                im = Image.open(img_buf)
+                im.save(path_file + ".png", format='png')
+                img_buf.close()
+
+            else:
+                plt.imsave(path_file + ".png", np.stack(masked_nat_im.detach().cpu().squeeze(), axis=2), format="png")
         else:
             plt.imsave(path_file + ".png", masked_nat_im.detach().cpu().squeeze() /255., format='png', cmap='gray', vmin=0, vmax=1)
     else:
@@ -80,6 +100,8 @@ def save_masked_image(image, mask, filename, dataset):
         for i in range(h):
             for j in range(w):
                 t[s*i:i*s+s, s*j:j*s+s] = torch.ones(dims, device=masked_nat_im.device) * masked_nat_im[0,0 if c == 1 else 0:3, i,j]
+
+        
 
         plt.imsave(path_file + ".png", t.detach().cpu().squeeze().numpy() / 255., format="png", **kwargs)
 

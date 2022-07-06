@@ -760,9 +760,9 @@ class BaseModel(pl.LightningModule):
         output = self(image, target_vector)
 
 
-        if self.save_masked_images and image.size()[0] == 1 and self.test_i < 200:
+        if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, output['image'][1], filename, self.dataset)
+            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0])
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
@@ -770,14 +770,14 @@ class BaseModel(pl.LightningModule):
             filename = Path(self.save_path) / "images" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_image(image, filename, self.dataset)
 
-        if self.save_masks and image.size()[0] == 1 and self.test_i < 200:
+        if self.save_masks and image.size()[0] == 1 and self.test_i < 1000:
             filename = get_filename_from_annotations(annotations, dataset=self.dataset)
 
             for k, v in output.items():
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        if self.dataset != 'COLOR' and self.save_all_class_masks and image.size()[0] == 1:
+        if self.dataset != 'COLOR' and self.test_i < 1000 and self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
             # if self.use_background_loss:
