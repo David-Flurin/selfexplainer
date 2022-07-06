@@ -291,11 +291,11 @@ class BaseModel(pl.LightningModule):
         
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
-        if not self.aux_classifier:
-            weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
-            logits = weighted_segmentations.sum(dim=(2,3))
+        #if not self.aux_classifier:
+        weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
+        mask_logits = weighted_segmentations.sum(dim=(2,3))
         
-        mask_logits = segmentations.mean((2,3))
+        #mask_logits = segmentations.mean((2,3))
         
 
         return segmentations, target_mask, non_target_mask, logits, mask_logits
