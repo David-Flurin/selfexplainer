@@ -61,7 +61,7 @@ def save_masked_image(image, mask, filename, dataset, probs=None):
                 axis = fig.add_subplot(1, 2, 1)
                 axis.get_xaxis().set_visible(False)
                 axis.get_yaxis().set_visible(False)
-                show_image(masked_nat_im)
+                show_image(masked_nat_im.cpu())
                 axis = fig.add_subplot(1, 2, 2)
                 axis.axis('off')
                 sorted_probs, indices = torch.sort(probs, descending=True)
@@ -216,7 +216,7 @@ def save_all_class_masked_images(image, segmentations, filename, dataset, target
     plt.close()
 
     im = Image.open(img_buf)
-    im.save(filename, format='png')
+    im.save(filename+'.png', format='png')
 
     img_buf.close()
 

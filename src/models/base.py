@@ -460,13 +460,13 @@ class BaseModel(pl.LightningModule):
 
 
         
-        mask_logit_loss = self.classification_loss_fn(output['image'][4], target_vector)
-        self.log('Mask logit loss', mask_logit_loss)
-        loss += mask_logit_loss
+        #mask_logit_loss = self.classification_loss_fn(output['image'][4], target_vector)
+        #self.log('Mask logit loss', mask_logit_loss)
+        #loss += mask_logit_loss
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.4)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 0.2.)
                 self.log('weighted_loss', w_obj_back_loss)
                 w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
                 self.log('Weighted mask losses', w_mask_loss)
@@ -762,7 +762,7 @@ class BaseModel(pl.LightningModule):
 
         if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0])
+            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid())
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
