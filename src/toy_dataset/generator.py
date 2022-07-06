@@ -313,7 +313,7 @@ class Generator:
         img = b_tex.copy()
         seg_shape = np.zeros((self.img_size[0], self.img_size[1], 3))
         seg_tex = np.zeros((self.img_size[0], self.img_size[1], 3))
-        for s, f_tex_idx in shapes:
+        for s, f_tex_idx,_ in shapes:
             f_tex = self.__crop_texture(self.f_textures[f_tex_idx], (224, 224))
             img[np.where(s.mask)] = f_tex[np.where(s.mask)]
             seg_tex[np.where(s.mask)] = string_to_rgb(self.f_texture_names[f_tex_idx])

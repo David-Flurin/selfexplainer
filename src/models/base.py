@@ -24,7 +24,7 @@ from utils.image_display import save_all_class_masked_images, save_mask, save_ma
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
-from evaluation.plot import plot_class_metrics
+from plot import plot_class_metrics
 from evaluation.compute_scores import selfexplainer_compute_numbers
 
 import GPUtil
@@ -318,6 +318,31 @@ class BaseModel(pl.LightningModule):
             self.use_similarity_loss = True
         if self.mask_loss_scheduling <= self.i:
             self.use_mask_area_loss = True
+
+    def on_after_backward(self):
+    # example to inspect gradient information in tensorboard
+        #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
+        params = self.state_dict()
+        for k, v in params.items():
+            grads = v.grad
+            name = k
+            if v.grad:
+                print(f'{k}: {grads}')
+            # self.logger.experiment.add_histogram(tag=name, values=grads,
+            #                                     global_step=self.trainer.global_step)
+
+    def on_before_backward(self, loss):
+    # example to inspect gradient information in tensorboard
+        #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
+        params = self.state_dict()
+        for k, v in params.items():
+            grads = v.grad
+            name = k
+            if v.grad:
+                print(f'{k}: {grads}')
+            # self.logger.experiment.add_histogram(tag=name, values=grads,
+            #                                     global_step=self.trainer.global_step)
+
 
         
     def training_step(self, batch, batch_idx):
@@ -752,12 +777,19 @@ class BaseModel(pl.LightningModule):
                 save_mask(v[1], Path(self.save_path) / f'masks_{k}_pass' / filename, self.dataset)
 
 
-        if self.dataset != 'COLOR' and self.test_i < 21 and self.save_all_class_masks and image.size()[0] == 1:
+        if self.dataset != 'COLOR' and self.save_all_class_masks and image.size()[0] == 1:
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
             save_all_class_masks(output['image'][0], filename, dataset=self.dataset)
-            if self.use_background_loss:
-                filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
-                save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
+            # if self.use_background_loss:
+            #     filename = Path(self.save_path) / "all_class_masks_background" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            #     save_all_class_masks(output['background'][0], filename, dataset=self.dataset)
+             
+            filename = Path(self.save_path) / "class_masked_images" / get_filename_from_annotations(annotations, dataset=self.dataset)
+            save_all_class_masked_images(image, output['image'][0], filename, self.dataset, target_vector)
+        
+
+           
+            
 
 
 

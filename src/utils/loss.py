@@ -250,9 +250,6 @@ def background_activation_loss(mask):
     return t.mean()
 
 
-t = torch.tensor([[.16, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12, 0.12]])
-tt = torch.tensor([[1., 0., 0.], [0., 1., 0.]])
-print(entropy_loss(t))
 
 
 

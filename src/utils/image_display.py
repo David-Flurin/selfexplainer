@@ -162,17 +162,31 @@ def save_all_class_masks(segmentations, filename, dataset):
 
     img_buf.close()
 
-def save_all_class_masked_images(image, segmentations, filename):
+
+
+def save_all_class_masked_images(image, segmentations, filename, dataset, target_vector):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     filename = os.path.splitext(filename)[0]
 
     nat_image = get_unnormalized_image(image)
     all_class_masks = segmentations.transpose(0, 1).sigmoid()
 
-    fig = get_fullscreen_figure_canvas("All class masks")
+    target_labels = get_target_labels(dataset, include_background_class=False)
+    max_objects = int(target_vector[0].sum().item())
+
+    fig = plt.figure("All class masks", figsize=(10, 5))
+    j = 0
     for i in range(all_class_masks.size()[0]): #loop over all classes
+        if target_vector[0][i] != 1.0:
+            continue
+        j += 1
         masked_nat_im = get_masked_image(nat_image, all_class_masks[i]).detach().cpu()
-        add_subplot_with_class_mask(fig, i)
+
+        axis = fig.add_subplot(1, max_objects, j)
+        axis.get_xaxis().set_visible(False)
+        axis.get_yaxis().set_visible(False)
+        axis.set_title(target_labels[i], fontsize=20)
+
         show_image(masked_nat_im)
 
     img_buf = io.BytesIO()

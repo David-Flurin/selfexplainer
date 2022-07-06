@@ -11,5 +11,4 @@ Cobblestone.jpg
 Woodchips.jpg
 Rust.jpg
 Plaster.jpg
-Mud2.jpg
 Planks.jpg

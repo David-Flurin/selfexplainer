@@ -1,5 +1,5 @@
 from cgi import test
-from evaluation.plot import plot_losses
+from plot import plot_losses
 import cProfile 
 import torch
 import os

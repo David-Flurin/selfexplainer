@@ -13,7 +13,7 @@ from torchvision.models.resnet import resnet50
 
 from utils.helper import get_class_dictionary, get_targets_from_annotations, get_targets_from_segmentations, LogitStats, get_class_weights
 from utils.metrics import MultiLabelMetrics, ClassificationMultiLabelMetrics
-from evaluation.plot import plot_class_metrics
+from plot import plot_class_metrics
 
 import GPUtil
 from matplotlib import pyplot as plt
