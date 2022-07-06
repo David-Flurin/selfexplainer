@@ -96,6 +96,11 @@ def get_parser():
     parser.add_argument('--background_loss_scheduling', default='500', type=float, help='Scheduling')
     parser.add_argument('--mask_loss_scheduling', default='1000', type=float, help='Scheduling')
     parser.add_argument('--use_loss_scheduling', default='False', type=str2bool, help='Scheduling')
+    parser.add_argument('--use_mask_logit_loss', default='False', type=str2bool, help='Mask Logit loss')
+    parser.add_argument('--mask_logit_loss_regularizer', default='1.0', type=float, help='Mask Logit loss regularizer')
+
+
+    
 
     
 
