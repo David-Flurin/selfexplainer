@@ -322,26 +322,18 @@ class BaseModel(pl.LightningModule):
     def on_after_backward(self):
     # example to inspect gradient information in tensorboard
         #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
-        params = self.state_dict()
-        for k, v in params.items():
-            grads = v.grad
-            name = k
-            if v.grad:
-                print(f'{k}: {grads}')
+        print('After backwards CLASSIFIER:')
+        print(self.model.model.aux_classifier.fc.weight.requires_grad)
+        print(torch.max(self.model.model.aux_classifier.fc.weight.grad))
+
+
+        print('After backwards SEGMENTATIONS:')
+        print(self.model.model.classifier[4].weight.requires_grad)
+        print(torch.max(self.model.model.classifier[4].weight.grad))
             # self.logger.experiment.add_histogram(tag=name, values=grads,
             #                                     global_step=self.trainer.global_step)
 
-    def on_before_backward(self, loss):
-    # example to inspect gradient information in tensorboard
-        #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
-        params = self.state_dict()
-        for k, v in params.items():
-            grads = v.grad
-            name = k
-            if v.grad:
-                print(f'{k}: {grads}')
-            # self.logger.experiment.add_histogram(tag=name, values=grads,
-            #                                     global_step=self.trainer.global_step)
+   
 
 
         
@@ -412,7 +404,7 @@ class BaseModel(pl.LightningModule):
         '''
         loss = classification_loss
         
-        obj_back_loss = torch.zeros((1), device=loss.device)
+        obj_back_loss = torch.zeros((1), device=image.device)
         if self.use_similarity_loss:
             
             if self.multiclass:
@@ -440,7 +432,7 @@ class BaseModel(pl.LightningModule):
 
         
 
-        mask_loss = torch.zeros((1), device=loss.device)
+        mask_loss = torch.zeros((1), device=image.device)
         mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
         self.log('TV mask loss', mask_variation_loss)
         if self.use_mask_variation_loss:
@@ -544,6 +536,7 @@ class BaseModel(pl.LightningModule):
         self.log('loss', float(loss))
         
         self.train_metrics(output['image'][3], target_vector.int())
+
 
         #DEBUG
 
