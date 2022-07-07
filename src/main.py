@@ -154,7 +154,7 @@ if args.model_to_train == "selfexplainer":
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, save_path=args.save_path, save_masked_images=args.save_masked_images,
          save_masks=args.save_masks, gpu=args.gpu, use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
          weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode, class_mask_max_area=args.class_mask_max_area, class_mask_min_area=args.class_mask_min_area, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer,
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -165,7 +165,7 @@ if args.model_to_train == "selfexplainer":
          save_masks=args.save_masks, gpu=args.gpu,  use_perfect_mask=args.use_perfect_mask, count_logits=args.count_logits, class_loss=args.class_loss, frozen=args.frozen, 
          weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss, 
          similarity_loss_mode=args.similarity_loss_mode, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer,
+         freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
         )
 
 elif args.model_to_train == "slike_selfexplainer":
@@ -259,6 +259,11 @@ checkpoint_callback = ModelCheckpoint(
     every_n_train_steps = 100
 )
 
+k_checkpoint_callback = ModelCheckpoint(
+    monitor='loss',
+    save_top_k=10
+)
+
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
 if args.dataset in ['OISMALL', 'OI']:
     trainer = pl.Trainer(
@@ -278,7 +283,7 @@ if args.dataset in ['OISMALL', 'OI']:
 else:
     trainer = pl.Trainer(
         logger = logger,
-        callbacks = [early_stop_callback],
+        callbacks = [early_stop_callback, k_checkpoint_callback],
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,

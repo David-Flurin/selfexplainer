@@ -39,7 +39,7 @@ class BaseModel(pl.LightningModule):
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
                  non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, similarity_loss_scheduling=500, background_loss_scheduling=500, mask_loss_scheduling=1000, use_loss_scheduling=False,
-                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, use_mask_logit_loss=False, mask_logit_loss_regularizer=1.0):
+                 gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, use_mask_logit_loss=False, mask_logit_loss_regularizer=1.0, mask_loss_weighting_params=[5, 0.1], object_loss_weighting_params=[2, 0.2]):
 
         super().__init__()
 
@@ -74,6 +74,8 @@ class BaseModel(pl.LightningModule):
         self.mask_variation_regularizer = mask_variation_regularizer
         self.use_mask_logit_loss = use_mask_logit_loss
         self.mask_logit_loss_regularizer = mask_logit_loss_regularizer
+        self.object_loss_weighting_params = object_loss_weighting_params
+        self.mask_loss_weighting_params = mask_loss_weighting_params
 
 
         self.use_background_activation_loss = background_activation_loss
@@ -271,8 +273,11 @@ class BaseModel(pl.LightningModule):
                     segmentations, logits = self.frozen_model(image)
                     segmentations = segmentations[0].unsqueeze(0)
                     logits = logits[0].unsqueeze(0)
-                else:
+                elif self.training:
                     segmentations, logits = self.frozen_model(image)
+                else:
+                    segmentations, logits = self.model(image)
+
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
@@ -460,9 +465,9 @@ class BaseModel(pl.LightningModule):
 
         if self.use_similarity_loss or self.use_background_loss:
             if self.use_weighted_loss:
-                w_obj_back_loss = weighted_loss(loss, obj_back_loss, 2, 1.)
+                w_obj_back_loss = weighted_loss(loss, obj_back_loss, self.object_loss_weighting_params[0], self.object_loss_weighting_params[1])
                 self.log('weighted_loss', w_obj_back_loss)
-                w_mask_loss = weighted_loss(loss, mask_loss, 5, 0.1)
+                w_mask_loss = weighted_loss(loss, mask_loss, self.mask_loss_weighting_params[0], self.mask_loss_weighting_params[1])
                 self.log('Weighted mask losses', w_mask_loss)
                 loss += w_obj_back_loss + w_mask_loss
                 #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
@@ -757,7 +762,7 @@ class BaseModel(pl.LightningModule):
 
         if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid())
+            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid() if self.multiclass else torch.nn.functional.softmax(output['image'][3][0], dim=-1))
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
