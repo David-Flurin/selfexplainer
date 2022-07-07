@@ -259,6 +259,11 @@ checkpoint_callback = ModelCheckpoint(
     every_n_train_steps = 100
 )
 
+k_checkpoint_callback = ModelCheckpoint(
+    monitor='loss',
+    save_top_k=10
+)
+
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
 if args.dataset in ['OISMALL', 'OI']:
     trainer = pl.Trainer(
@@ -278,7 +283,7 @@ if args.dataset in ['OISMALL', 'OI']:
 else:
     trainer = pl.Trainer(
         logger = logger,
-        callbacks = [early_stop_callback],
+        callbacks = [early_stop_callback, k_checkpoint_callback],
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
         #detect_anomaly = True,
         #log_every_n_steps = 80//args.train_batch_size,

@@ -288,23 +288,33 @@ class BaseModel(pl.LightningModule):
                     segmentations, logits = self.model(image)
         else:
             if frozen:
-                segmentations = self.frozen_model(image)
+                if self.training and image.size(0) == 1:
+                    image = image.repeat(2,1,1,1)
+                    segmentations = self.frozen_model(image)
+                    segmentations = segmentations[0].unsqueeze(0)
+                    logits = logits[0].unsqueeze(0)
+                elif self.training:
+                    segmentations = self.frozen_model(image)
+                else:
+                    segmentations = self.model(image)
+
             else:
                 if self.training and image.size(0) == 1:
                     image = image.repeat(2,1,1,1)
-                    segmentations = self.model(image)[0].unsqueeze(0)
+                    segmentations = self.model(image)
+                    segmentations = segmentations[0].unsqueeze(0)
                 else:
                     segmentations = self.model(image)
         
         target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
 
-        #if not self.aux_classifier:
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
         mask_logits = weighted_segmentations.sum(dim=(2,3))
+        if not self.aux_classifier:
+            logits = mask_logits
+
         
         #mask_logits = segmentations.mean((2,3))
-        
-
         return segmentations, target_mask, non_target_mask, logits, mask_logits
 
 
@@ -636,13 +646,15 @@ class BaseModel(pl.LightningModule):
         
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
-            #similarity_loss = self.similarity_regularizer * mask_similarity_loss(output['object'][3], target_vector, output['image'][1], output['object'][1])
-            #logit_fn = torch.sigmoid if self.multiclass == 'bce' else lambda x: torch.nn.functional.softmax(x, dim=-1)
             
             if self.multiclass:
-                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode='rel')
+                sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
-                sim_loss = self.similarity_regularizer * self.similarity_loss_fn(output['object_0'][3], target_vector)
+                logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+                detached = output['image'][3].detach()
+                probs = logit_fn(detached)
+                sim_loss = self.similarity_regularizer * self.classification_loss_fn(logit_fn(output['object_0'][3]), probs) 
+                
             self.log('val_similarity_loss', sim_loss)
             
             obj_back_loss += sim_loss
@@ -762,7 +774,7 @@ class BaseModel(pl.LightningModule):
 
         if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid())
+            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid() if self.multiclass else torch.nn.functional.softmax(output['image'][3][0], dim=-1))
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
