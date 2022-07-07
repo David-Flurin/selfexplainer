@@ -436,10 +436,9 @@ class BaseModel(pl.LightningModule):
             obj_back_loss += sim_loss
             
         if self.use_background_loss:
-            if self.bg_loss == 'entropy':
+            if self.background_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
-                #background_entropy_loss += self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
-            elif self.bg_loss == 'distance':
+            else:
                 background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
             
@@ -660,10 +659,10 @@ class BaseModel(pl.LightningModule):
             obj_back_loss += sim_loss
 
         if self.use_background_loss:
-            if self.bg_loss == 'entropy':
+            if self.background_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
-            elif self.bg_loss == 'distance':
-                    background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
+            else:
+                background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
             self.log('val_background_loss', background_entropy_loss)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
@@ -815,9 +814,9 @@ class BaseModel(pl.LightningModule):
             loss += similarity_loss
 
         if self.use_background_loss:
-            if self.bg_loss == 'entropy':
+            if self.background_loss == 'entropy':
                 background_entropy_loss = self.bg_loss_regularizer * entropy_loss(output['background'][3])
-            elif self.bg_loss == 'distance':
+            else:
                 background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
             loss += background_entropy_loss
 

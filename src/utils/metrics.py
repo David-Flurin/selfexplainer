@@ -218,3 +218,14 @@ class MultiLabelRecall(torchmetrics.Metric):
                         else:
                             self.false_negatives += 1.0
 
+
+
+
+def IoU():
+    def __init__(self):
+        self.iou = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
+
+    def update(self, mask, seg):
+        pass
+
+
