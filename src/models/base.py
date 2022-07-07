@@ -851,7 +851,8 @@ class BaseModel(pl.LightningModule):
         
 
 
-
+        print(output['image'][3].size())
+        print(target_vector.size())
         self.test_metrics(output['image'][3], target_vector.int())
 
     def test_epoch_end(self, outs):

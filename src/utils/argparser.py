@@ -99,7 +99,11 @@ def get_parser():
     parser.add_argument('--use_mask_logit_loss', default='False', type=str2bool, help='Mask Logit loss')
     parser.add_argument('--mask_logit_loss_regularizer', default='1.0', type=float, help='Mask Logit loss regularizer')
     parser.add_argument('--object_loss_weighting_params', default=[2, 0.2], type=float, nargs=2, help='Mask Logit loss regularizer')
+<<<<<<< HEAD
     parser.add_argument('--mask_loss_weighting_params', default='[5, 0.1]', type=float, nargs=2, help='Mask Logit loss regularizer')
+=======
+    parser.add_argument('--mask_loss_weighting_params', default=[5, 0.1], type=float, nargs=2, help='Mask Logit loss regularizer')
+>>>>>>> 0f302beeb9043058a4bbca2c87f625191515a518
 
 
 
