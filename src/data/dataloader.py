@@ -377,7 +377,7 @@ class ToyDataModule(pl.LightningDataModule):
 
 class ToyData_Saved_Module(pl.LightningDataModule):
 
-    def __init__(self, data_path, segmentation=False, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
+    def __init__(self, data_path, segmentation=False, train_batch_size=16, val_batch_size=16, test_batch_size=1, use_data_augmentation=False):
         super().__init__()
 
         self.data_path = data_path

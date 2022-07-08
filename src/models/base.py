@@ -22,10 +22,9 @@ import pickle
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_target_dictionary, get_class_weights
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
-from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
+from utils.metrics import IoU, MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
 from plot import plot_class_metrics
-from evaluation.compute_scores import selfexplainer_compute_numbers
 
 import GPUtil
 from matplotlib import pyplot as plt
@@ -185,6 +184,8 @@ class BaseModel(pl.LightningModule):
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
+        self.iou = IoU()
+
         if self.count_logits:
             self.logit_stats = {'image': LogitStats(self.num_classes)}
             if self.use_similarity_loss:
@@ -192,7 +193,7 @@ class BaseModel(pl.LightningModule):
             if self.use_background_loss:
                 self.logit_stats['background'] = LogitStats(self.num_classes)
 
-    def forward(self, image, targets, perfect_mask = None):
+    def forward(self, image, targets=None, perfect_mask = None):
         output = {}
         output['image'] = self._forward(image, targets)
 
@@ -306,7 +307,10 @@ class BaseModel(pl.LightningModule):
                 else:
                     segmentations = self.model(image)
         
-        target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
+        if targets != None:
+            target_mask, non_target_mask = extract_masks(segmentations, targets, gpu=self.gpu) # [batch_size, height, width]
+        else:
+            target_mask = non_target_mask = None
 
         weighted_segmentations = softmax_weighting(segmentations, self.weighting_koeff)
         mask_logits = weighted_segmentations.sum(dim=(2,3))
@@ -336,19 +340,19 @@ class BaseModel(pl.LightningModule):
         if self.mask_loss_scheduling <= self.i:
             self.use_mask_area_loss = True
 
-    # def on_after_backward(self):
-    # # example to inspect gradient information in tensorboard
-    #     #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
-    #     print('After backwards CLASSIFIER:')
-    #     print(self.model.model.aux_classifier.fc.weight.requires_grad)
-    #     print(torch.max(self.model.model.aux_classifier.fc.weight.grad))
+    def on_after_backward(self):
+    # example to inspect gradient information in tensorboard
+        #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
+        # print('After backwards CLASSIFIER:')
+        # print(self.model.model.aux_classifier.fc.weight.requires_grad)
+        # print(torch.max(self.model.model.aux_classifier.fc.weight.grad))
 
 
-    #     print('After backwards SEGMENTATIONS:')
-    #     print(self.model.model.classifier[4].weight.requires_grad)
-    #     print(torch.max(self.model.model.classifier[4].weight.grad))
-    #         # self.logger.experiment.add_histogram(tag=name, values=grads,
-    #         #                                     global_step=self.trainer.global_step)
+        print('After backwards SEGMENTATIONS:')
+        print(self.model.model.classifier[4].weight.requires_grad)
+        print(self.model.model.classifier[4].weight.grad.abs().sum())
+            # self.logger.experiment.add_histogram(tag=name, values=grads,
+            #                                     global_step=self.trainer.global_step)
 
    
 
@@ -360,13 +364,14 @@ class BaseModel(pl.LightningModule):
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+        
         t_classes = target_vector.sum(0)
         for i in range(t_classes.size(0)):
             self.data_stats[str(i)] += t_classes[i].item()
@@ -382,6 +387,10 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
+
+        # if self.dataset == 'TOY':
+        #     self.iou(output['image'][1], seg, output['image'][3], target_vector)
+
 
         if self.use_background_loss:
             self.test_background_logits.append(output['background'][3].sum().item())
@@ -483,7 +492,8 @@ class BaseModel(pl.LightningModule):
                 #self.log('weighted mask loss', w_m_loss)
                 #loss += w_m_loss
             else:
-                loss = loss + obj_back_loss + mask_loss
+                loss = obj_back_loss + mask_loss
+                
 
         if self.use_background_activation_loss:
             bg_logits_loss = self.bg_activation_regularizer * background_activation_loss(output['image'][1])
@@ -612,6 +622,7 @@ class BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
+
         
         # if self.frozen and self.i % self.freeze_every == 0 and (self.use_similarity_loss or self.use_background_loss):
         #    self.frozen = deepcopy(self.model)
@@ -622,6 +633,8 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
+
+        self.iou(output['image'][1], targets)
 
 
         if self.use_background_loss:
@@ -652,7 +665,7 @@ class BaseModel(pl.LightningModule):
                 logit_fn = lambda x: torch.nn.functional.softmax(x, dim=-1)
                 detached = output['image'][3].detach()
                 probs = logit_fn(detached)
-                sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3]), probs) 
+                sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs) 
                 
             self.log('val_similarity_loss', sim_loss)
             
@@ -761,7 +774,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

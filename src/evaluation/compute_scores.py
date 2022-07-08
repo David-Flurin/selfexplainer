@@ -1,6 +1,8 @@
 import sys
 import os
 
+from models.selfexplainer import SelfExplainer
+
 sys.path.insert(0, os.path.abspath(".."))
 
 import numpy as np
@@ -9,9 +11,9 @@ from pathlib import Path
 
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
-from data.dataloader import VOCDataModule, COCODataModule, ToyDataModule
+from data.dataloader import ToyData_Saved_Module, VOCDataModule, COCODataModule, ToyDataModule
 #from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
-from utils.helper import get_target_dictionary
+from utils.helper import get_class_dictionary
 
 from torchray.utils import get_device
 import torch
@@ -40,6 +42,20 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
 
     return model, data_module
 
+
+def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, aux_classifier):
+    if dataset_name == "VOC":
+        data_module = VOCDataModule(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, pretrained=False, aux_classifier=aux_classifier)
+    elif dataset_name == "TOY":
+        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, aux_classifier=aux_classifier)
+
+
+    data_module.setup()
+
+    return model, data_module
+
 def segmented_generator(data_module, segmentations_path):
     """Generator that return all the segmented images"""
     for s in tqdm(data_module.test_dataloader()):
@@ -47,11 +63,13 @@ def segmented_generator(data_module, segmentations_path):
         x = img
         assert(len(x)==1)
         try:
-            category_id = meta[0]["targets"]
-            filename = Path(meta[0]["filename"])
+            filename = Path(meta[0]["filename"]+".png")
+            target_dict = get_class_dictionary('TOY', include_background_class=False)
+            objects = [object[1] for object in meta[0]['objects']]
+            category_id = [target_dict[e] for e in objects]
         except:
             filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
-            target_dict = get_target_dictionary(include_background_class=False)
+            target_dict = get_class_dictionary('VOC', include_background_class=False)
             objects = meta[0]['annotation']['object']
             category_id = [target_dict[e["name"]] for e in objects]
         segmentation_filename =  segmentations_path / filename
@@ -72,7 +90,7 @@ def open_segmentation_mask(segmentation_filename, dataset_name):
 def get_path_mask(masks_path, dataset_name, model_name, method):
     return masks_path / Path('{}_{}_{}/'.format(dataset_name, model_name, method))
 
-def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True):
+def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, **kwargs):
     # Load the model and data
     model, data_module = get_model_and_data(data_path, dataset_name, model_name, model_path)
     # Path of the masks
@@ -123,33 +141,56 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             p_background = None
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 
-def selfexplainer_evaluation(masks_path, segmentations_path, dataset_name, model, data_module, compute_p=True):
+def selfexplainer_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, aux_classifier=False):
+
+    model, data_module = get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, aux_classifier)
+    # Path of the masks
+    if method in ["0.5", "0", "1", "perfect"]:
+        masks_path_method = None
+    else:
+        masks_path_method = get_path_mask(masks_path, dataset_name, model_name, method)
+    
+    if compute_p:
+        device = get_device()
+        model = model.to(device)
 
     for x, category_id, filename in segmented_generator(data_module, segmentations_path):
         seg_mask = open_segmentation_mask(segmentations_path / filename, dataset_name)
+        if method in ["0.5", "0", "1", "perfect"]:
+            if method=="0":
+                mask = np.zeros(seg_mask.shape, dtype=np.float32)
+            elif method=="0.5":
+                mask = 0.5*np.ones(seg_mask.shape, dtype=np.float32)
+            elif method=="1":
+                mask = np.ones(seg_mask.shape, dtype=np.float32)
+            elif method=="perfect":
+                mask = seg_mask.copy().astype(np.float32)
+            else:
+                raise ValueError("Something went wrong!")
 
-        try:
-            npz_name = Path(str(filename)[:-4] + ".npz")
-            mask = np.load(masks_path / npz_name, dataset_name)["arr_0"]
-        except:
-            continue
+        else:
+            try:
+                npz_name = Path(str(filename)[:-4] + ".npz")
+                mask = np.load(masks_path_method / npz_name, dataset_name)["arr_0"]
+            except:
+                continue
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
         if compute_p:
-            x = x.to(model.device)
-            logits = model(x)
+            x = x.to(device)
+            logits = model.forward(x)['image'][3]
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
             x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
-            logits_mask = model.forward(x_masked)
+            logits_mask = model.forward(x_masked)['image'][3]
             p_mask = torch.nn.functional.softmax(logits_mask, dim=1).detach().cpu().numpy().squeeze()
             x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(device) * x
-            logits_background = model.forward(x_background)
+            logits_background = model.forward(x_background)['image'][3]
             p_background = torch.nn.functional.softmax(logits_background, dim=1).detach().cpu().numpy().squeeze()
         else:
             p = None
             p_mask = None
             p_background = None
-        yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()    
+        yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 
 def selfexplainer_compute_numbers(masks_path, segmentations_path, dataset_name, model, data_module, method, compute_p=True):
 #     sparsity = []
@@ -209,7 +250,7 @@ def selfexplainer_compute_numbers(masks_path, segmentations_path, dataset_name, 
     return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr
 
         
-def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True):
+def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, aux_classifier=False):
 #     sparsity = []
 #     sparsity_masked = []
 #     sparsity_background = []
@@ -235,9 +276,13 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
     sr = []
 
 
+    if method == 'selfexplainer' or model_name == 'selfexplainer':
+        eval_func = selfexplainer_evaluation
+    else:
+        eval_func = gen_evaluation
 
 
-    for mask, seg_mask, p, p_mask, p_background, category_id, x in gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p):
+    for mask, seg_mask, p, p_mask, p_background, category_id, x in eval_func(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, aux_classifier=aux_classifier):
 
 #         sparsity.append(prob_sparsity(p))
 #         sparsity_masked.append(prob_sparsity(p_mask))

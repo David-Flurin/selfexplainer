@@ -8,23 +8,25 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import pandas as pd
 
-from compute_scores import gen_evaluation, compute_numbers
+from compute_scores import compute_numbers
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
 data_base_path = Path("../../datasets/")
 VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-COCO_segmentations_path = Path("./coco_segmentations/")
+TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
-datasets = ["VOC", "COCO"]
-classifiers = ["vgg16", "resnet50"]
+datasets = ["TOY"]
+classifiers = ["resnet50"]
 vgg16_voc_checkpoint = "../checkpoints/pretrained_classifiers/vgg16_voc.ckpt"
 vgg16_coco_checkpoint = "../checkpoints/pretrained_classifiers/vgg16_coco.ckpt"
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
+selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
+selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
-methods = ["extremal_perturbations",  "grad_cam", "rise", "explainer", 
-          "rt_saliency", "guided_backprop", "0.5", "0", "1", "perfect"]
+
+methods = ["selfexplainer"]
 #################################################################################################################################
 
 try:
@@ -41,7 +43,17 @@ for dataset in datasets:
         for method in methods:
             if not(method in results[dataset][classifier]):
                 results[dataset][classifier][method] = {}            
-            try:
+            # try:
+            if method == 'selfexplainer':
+                if dataset == 'VOC':
+                    data_path = data_base_path / "VOC2007"
+                    model_path = selfexplainer_voc_checkpoint
+                    segmentations_path = VOC_segmentations_path
+                elif dataset == 'TOY':
+                    data_path = data_base_path / "TOY"
+                    model_path = selfexplainer_toy_checkpoint
+                    segmentations_path = TOY_segmentations_path
+            else:      
                 if dataset == "VOC":
                     data_path = data_base_path / "VOC2007"
                     segmentations_path = VOC_segmentations_path
@@ -49,41 +61,41 @@ for dataset in datasets:
                         model_path = vgg16_voc_checkpoint
                     elif classifier == "resnet50":
                         model_path = resnet50_voc_checkpoint
-                elif dataset == "COCO":
-                    data_path = data_base_path / "COCO2014"
-                    segmentations_path = COCO_segmentations_path
+                elif dataset == "TOY":
+                    data_path = data_base_path / "TOY"
+                    segmentations_path = TOY_segmentations_path
                     if classifier == "vgg16":
                         model_path = vgg16_coco_checkpoint
                     elif classifier == "resnet50":
                         model_path = resnet50_coco_checkpoint
 
-                d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
-                                                                                                                              masks_path=masks_path, 
-                                                                                                                              segmentations_path=segmentations_path, 
-                                                                                                                              dataset_name=dataset, 
-                                                                                                                              model_name=classifier, 
-                                                                                                                              model_path=model_path, 
-                                                                                                                              method=method)
+            d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
+                                                                                                                            masks_path=masks_path, 
+                                                                                                                            segmentations_path=segmentations_path, 
+                                                                                                                            dataset_name=dataset, 
+                                                                                                                            model_name=classifier, 
+                                                                                                                            model_path=model_path, 
+                                                                                                                            method=method)
 
 
-                d = {}
-                d["d_f1_25"] = d_f1_25
-                d["d_f1_50"] = d_f1_50
-                d["d_f1_75"] = d_f1_75
-                d["d_f1"] = ((np.array(d_f1_25) + np.array(d_f1_50) + np.array(d_f1_75)) /3).tolist()
-                d["c_f1"] = c_f1
-                d["a_f1s"] = a_f1s
-                d["aucs"] = aucs
-                d["d_IOU"] = d_IOU
-                d["c_IOU"] = c_IOU
-                d["sal"] = sal
-                d["over"] = over
-                d["background_c"] = background_c
-                d["mask_c"] = mask_c
-                d["sr"] = sr
-                results[dataset][classifier][method] = d
-                print("Scores computed for: {} - {} - {}".format(dataset, classifier, method))
-            except:
-                print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
+            d = {}
+            d["d_f1_25"] = d_f1_25
+            d["d_f1_50"] = d_f1_50
+            d["d_f1_75"] = d_f1_75
+            d["d_f1"] = ((np.array(d_f1_25) + np.array(d_f1_50) + np.array(d_f1_75)) /3).tolist()
+            d["c_f1"] = c_f1
+            d["a_f1s"] = a_f1s
+            d["aucs"] = aucs
+            d["d_IOU"] = d_IOU
+            d["c_IOU"] = c_IOU
+            d["sal"] = sal
+            d["over"] = over
+            d["background_c"] = background_c
+            d["mask_c"] = mask_c
+            d["sr"] = sr
+            results[dataset][classifier][method] = d
+            print("Scores computed for: {} - {} - {}".format(dataset, classifier, method))
+            # except:
+            #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
 
 np.savez("results.npz", results=results)

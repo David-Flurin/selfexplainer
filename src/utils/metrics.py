@@ -2,6 +2,8 @@ import torch
 import torchmetrics
 import numpy as np
 
+from torchmetrics.detection.mean_ap import MeanAveragePrecision
+
 from .helper import get_class_dictionary
 
 class SingleLabelMetrics(torchmetrics.Metric):
@@ -98,7 +100,7 @@ class ClassificationMultiLabelMetrics():
         self.accuracy = torchmetrics.Accuracy(num_classes=num_classes, threshold=threshold).to(device)
         self.precision = torchmetrics.Precision(num_classes=num_classes, threshold=threshold).to(device)
         self.recall = torchmetrics.Recall(num_classes=num_classes, threshold=threshold).to(device)
-        self.f1 = torchmetrics.F1(num_classes=num_classes, threshold=threshold).to(device)
+        self.f1 = torchmetrics.F1Score(num_classes=num_classes, threshold=threshold).to(device)
         if loss not in ['bce', 'ce']:
             raise ValueError('Unknown loss for metrics')
         self.loss = loss
@@ -111,7 +113,7 @@ class ClassificationMultiLabelMetrics():
             self.class_list = list(get_class_dictionary(dataset).keys())
             self.class_accuracy = torchmetrics.Accuracy(num_classes=num_classes, threshold=threshold, average=None).to(device)
             self.class_precision = torchmetrics.Precision(num_classes=num_classes, threshold=threshold, average=None).to(device)
-            self.class_recall = torchmetrics.F1(num_classes=num_classes, threshold=threshold, average=None).to(device)
+            self.class_recall = torchmetrics.F1Score(num_classes=num_classes, threshold=threshold, average=None).to(device)
             self.class_f1 = torchmetrics.Recall(num_classes=num_classes, threshold=threshold, average=None).to(device)
         
             
@@ -221,11 +223,35 @@ class MultiLabelRecall(torchmetrics.Metric):
 
 
 
-def IoU():
+class IoU():
     def __init__(self):
-        self.iou = torchmetrics.detection.mean_ap.MeanAveragePrecision(iou_type='segm')
+        self.iou = MeanAveragePrecision(iou_type="segm")
 
-    def update(self, mask, seg):
-        pass
+    def __call__(self, mask, seg, logits, target_vector):
+        targets = []
+        preds = []
+        for b in range(mask.size(0)):
+            target_dict = {}
+            target_dict['labels'] = target_vector[b].nonzero()
+            target_dict['masks'] = seg[b]
+            targets.append(target_dict)
+
+            objects = int(target_vector[b].sum().item())
+            highest_idx = torch.sort(logits[b])[1][0:objects]
+            pred_dict = {}
+            pred_dict['labels'] = highest_idx
+            pred_dict['masks'] = mask[b]
+            preds.append(pred_dict)
+
+        self.iou(preds, targets)
+        
+        
+    
+    def compute(self):
+        return self.iou.compute
+
+    def reset(self):
+        self.iou.reset()
+
 
 
