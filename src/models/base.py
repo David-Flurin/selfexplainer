@@ -480,18 +480,20 @@ class BaseModel(pl.LightningModule):
             self.log('Mask logit loss', mask_logit_loss)
             loss += mask_logit_loss
 
-        if self.use_similarity_loss or self.use_background_loss:
-            if self.use_weighted_loss:
+        
+        if self.use_weighted_loss:
+            if self.use_similarity_loss or self.use_background_loss:
                 w_obj_back_loss = weighted_loss(loss, obj_back_loss, self.object_loss_weighting_params[0], self.object_loss_weighting_params[1])
                 self.log('weighted_loss', w_obj_back_loss)
-                w_mask_loss = weighted_loss(loss, mask_loss, self.mask_loss_weighting_params[0], self.mask_loss_weighting_params[1])
-                self.log('Weighted mask losses', w_mask_loss)
-                loss += w_obj_back_loss + w_mask_loss
-                #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
-                #self.log('weighted mask loss', w_m_loss)
-                #loss += w_m_loss
-            else:
-                loss = loss + obj_back_loss + mask_loss
+                loss += w_obj_back_loss
+            w_mask_loss = weighted_loss(loss, mask_loss, self.mask_loss_weighting_params[0], self.mask_loss_weighting_params[1])
+            self.log('Weighted mask losses', w_mask_loss)
+            loss += w_mask_loss
+            #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
+            #self.log('weighted mask loss', w_m_loss)
+            #loss += w_m_loss
+        else:
+            loss = obj_back_loss + mask_loss
                 
 
         if self.use_background_activation_loss:
