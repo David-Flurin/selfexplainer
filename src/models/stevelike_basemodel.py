@@ -23,7 +23,6 @@ from utils.image_display import save_all_class_masked_images, save_mask, save_ma
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification
 from utils.metrics import MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
-from evaluation.compute_scores import selfexplainer_compute_numbers
 
 import GPUtil
 

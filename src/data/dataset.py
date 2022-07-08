@@ -137,7 +137,7 @@ class OIDataset(Dataset):
     
 
 class ToyDataset(Dataset):
-    def __init__(self, epoch_length, transform_fn=None, segmentation=False, multiclass=False, target='texture'):
+    def __init__(self, epoch_length, transform_fn=None, segmentation=True, multiclass=False, target='texture'):
         self.ids = range(0, epoch_length)
         self.transform = transform_fn
         self.segmentation = segmentation
