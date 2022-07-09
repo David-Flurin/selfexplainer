@@ -95,7 +95,7 @@ except:
 
 for checkpoint in checkpoints:
     if not(checkpoint in results):
-        results[dataset] = {}
+        results[checkpoint] = {}
         # try:
         if dataset == 'VOC':
             data_path = data_base_path / "VOC2007"
@@ -134,7 +134,7 @@ for checkpoint in checkpoints:
         d["background_c"] = background_c
         d["mask_c"] = mask_c
         d["sr"] = sr
-        results[dataset][checkpoint] = d
+        results[checkpoint] = d
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
