@@ -47,7 +47,6 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
 
     total_time = 0.0
 
-    i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
 
@@ -68,23 +67,20 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
         save_mask(mask, save_path / filename, dataset)
         save_masked_image(image, mask, save_path / "images" / filename, dataset)
 
-        i += 1
-        if i == 10:
-            break
 
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
 
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
-data_base_path = Path("../../datasets/")
-VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
 
 dataset = "TOY"
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/selfexplainer/"
-checkpoints = ["toy"]
+checkpoints_base_path = "../checkpoints/TOY/"
+checkpoints = ["3_passes_frozen_final",  "3_passes_frozen_first",  "3_passes_unfrozen"]
 
 #################################################################################################################################
 

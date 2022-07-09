@@ -364,7 +364,7 @@ class BaseModel(pl.LightningModule):
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -616,7 +616,7 @@ class BaseModel(pl.LightningModule):
         self.frozen = False
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -774,7 +774,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
