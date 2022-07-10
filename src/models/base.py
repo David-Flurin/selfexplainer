@@ -184,7 +184,6 @@ class BaseModel(pl.LightningModule):
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
-        self.iou = IoU()
 
         if self.count_logits:
             self.logit_stats = {'image': LogitStats(self.num_classes)}
@@ -634,8 +633,6 @@ class BaseModel(pl.LightningModule):
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
-
-        self.iou(output['image'][1], targets)
 
 
         if self.use_background_loss:
