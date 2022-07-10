@@ -103,7 +103,7 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        compute_masks(dataset, checkpoint, checkpoints_base_path, segmentations_path)
+        #compute_masks(dataset, checkpoint, checkpoints_base_path, segmentations_path)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
