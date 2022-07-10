@@ -358,7 +358,7 @@ class BaseModel(pl.LightningModule):
 
         
     def training_step(self, batch, batch_idx):
-        GPUtil.showUtilization()
+        #GPUtil.showUtilization()
 
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
@@ -501,14 +501,14 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
-        '''
+    
         if self.i % 5 == 4:
             masked_image = output['image'][1].detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
-            if self.use_similarity_loss:
-                self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
+            #if self.use_similarity_loss:
+            #    self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
             logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
@@ -558,7 +558,7 @@ class BaseModel(pl.LightningModule):
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
 
-        '''
+        
             
 
         self.log('loss', float(loss.item()), on_epoch=False)
@@ -576,7 +576,7 @@ class BaseModel(pl.LightningModule):
         # self.global_image_mask = output['image'][1]
         # self.global_object_mask = output['object'][1]
                 
-        GPUtil.showUtilization()  
+        #GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
         #d.render('backward_graph_unfrozen', format='png')  
         # output['image'][1].retain_grad()
