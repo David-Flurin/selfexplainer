@@ -407,7 +407,7 @@ class BaseModel(pl.LightningModule):
         #print(classification_loss_initial)
 
         classification_loss = classification_loss_initial
-        self.log('classification_loss', classification_loss.item())   
+        self.log('classification_loss', classification_loss.item(), on_epoch=False)   
         
         '''
         if self.use_similarity_loss:
@@ -439,7 +439,7 @@ class BaseModel(pl.LightningModule):
                 probs = torch.nn.functional.softmax(detached, dim=-1)
                 sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs)            
 
-            self.log('similarity_loss', sim_loss.item())
+            self.log('similarity_loss', sim_loss.item(), on_epoch=False)
             obj_back_loss += sim_loss
             
         if self.use_background_loss:
@@ -449,7 +449,7 @@ class BaseModel(pl.LightningModule):
                 background_entropy_loss = self.bg_loss_regularizer * bg_loss(output['background'][0], target_vector, self.background_loss)
 
             
-            self.log('background_loss', background_entropy_loss.item())
+            self.log('background_loss', background_entropy_loss.item(), on_epoch=False)
             obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
 
 
@@ -457,36 +457,36 @@ class BaseModel(pl.LightningModule):
 
         mask_loss = torch.zeros((1), device=image.device)
         mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
-        self.log('TV mask loss', mask_variation_loss.item())
+        self.log('TV mask loss', mask_variation_loss.item(), on_epoch=False)
         if self.use_mask_variation_loss:
             mask_loss += mask_variation_loss
 
 
         bounding_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
-        self.log('Bounding area loss', bounding_area_loss.item())
+        self.log('Bounding area loss', bounding_area_loss.item(), on_epoch=False)
         if self.use_bounding_loss:
             mask_loss += bounding_area_loss
 
         mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
         mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
-        self.log('Mean area loss', mask_area_loss.item())
+        self.log('Mean area loss', mask_area_loss.item(), on_epoch=False)
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
 
         if self.use_mask_logit_loss:
             mask_logit_loss = self.mask_logit_loss_regularizer * self.classification_loss_fn(output['image'][4], target_vector)
-            self.log('Mask logit loss', mask_logit_loss.item())
+            self.log('Mask logit loss', mask_logit_loss.item(), on_epoch=False)
             loss += mask_logit_loss
 
         
         if self.use_weighted_loss:
             if self.use_similarity_loss or self.use_background_loss:
                 w_obj_back_loss = weighted_loss(loss, obj_back_loss, self.object_loss_weighting_params[0], self.object_loss_weighting_params[1])
-                self.log('weighted_loss', w_obj_back_loss.item())
+                self.log('weighted_loss', w_obj_back_loss.item(), on_epoch=False)
                 loss += w_obj_back_loss
             w_mask_loss = weighted_loss(loss, mask_loss, self.mask_loss_weighting_params[0], self.mask_loss_weighting_params[1])
-            self.log('Weighted mask losses', w_mask_loss.item())
+            self.log('Weighted mask losses', w_mask_loss.item(), on_epoch=False)
             loss += w_mask_loss
             #w_m_loss = weighted_loss(loss, mask_loss, 10, 0.1)
             #self.log('weighted mask loss', w_m_loss)
@@ -497,11 +497,11 @@ class BaseModel(pl.LightningModule):
 
         if self.use_background_activation_loss:
             bg_logits_loss = self.bg_activation_regularizer * background_activation_loss(output['image'][1])
-            self.log('bg_logits_loss', bg_logits_loss.item())
+            self.log('bg_logits_loss', bg_logits_loss.item(), on_epoch=False)
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
-
+        '''
         if self.i % 5 == 4:
             masked_image = output['image'][1].detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
@@ -557,9 +557,11 @@ class BaseModel(pl.LightningModule):
 
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
+
+        '''
             
 
-        self.log('loss', float(loss.item()))
+        self.log('loss', float(loss.item()), on_epoch=False)
         
         self.train_metrics(output['image'][3].detach(), target_vector.int())
 
