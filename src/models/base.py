@@ -292,7 +292,6 @@ class BaseModel(pl.LightningModule):
                     image = image.repeat(2,1,1,1)
                     segmentations = self.frozen_model(image)
                     segmentations = segmentations[0].unsqueeze(0)
-                    logits = logits[0].unsqueeze(0)
                 elif self.training:
                     segmentations = self.frozen_model(image)
                 else:
@@ -339,6 +338,7 @@ class BaseModel(pl.LightningModule):
         if self.mask_loss_scheduling <= self.i:
             self.use_mask_area_loss = True
 
+    '''
     def on_after_backward(self):
     # example to inspect gradient information in tensorboard
         #if self.trainer.global_step % 25 == 0:  # don't make the tf file huge
@@ -353,7 +353,7 @@ class BaseModel(pl.LightningModule):
             # self.logger.experiment.add_histogram(tag=name, values=grads,
             #                                     global_step=self.trainer.global_step)
 
-   
+    '''
 
 
         
