@@ -8,7 +8,7 @@ import random
 
 from matplotlib import pyplot as plt 
 
-
+import pytorch_lightning
 from torch import device, nn, softmax
 from torch.optim import Adam
 from pathlib import Path
@@ -559,6 +559,7 @@ class BaseModel(pl.LightningModule):
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
 
         
+        pytorch_lightning.utilities.memory.garbage_collection_cuda()
             
 
         self.log('loss', float(loss.item()), on_epoch=False)

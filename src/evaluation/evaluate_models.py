@@ -79,13 +79,16 @@ TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentati
 
 dataset = "TOY"
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/"
-checkpoints = ["3_passes_frozen_final",  "3_passes_frozen_first",  "3_passes_unfrozen"]
+checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
+checkpoints = ["3_passes_unfrozen", "3_passes_frozen_first", "3_passes_frozen_final"]
+
+load_file = 'results.npz'
+save_file = 'results_toy_singlelabel.npz'
 
 #################################################################################################################################
 
 try:
-    results = np.load("results_models.npz", allow_pickle=True)["results"].item()
+    results = np.load(load_file, allow_pickle=True)["results"].item()
 except:
     results = {}
 
@@ -135,6 +138,6 @@ for checkpoint in checkpoints:
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
 
-np.savez("results.npz", results=results)
+np.savez(save_file, results=results)
 
 
