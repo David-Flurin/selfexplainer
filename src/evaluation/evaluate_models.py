@@ -18,10 +18,12 @@ from data.dataloader import *
 from utils.helper import *
 from utils.image_display import *
 
-from compute_scores import compute_numbers
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+
+from compute_scores import compute_numbers, selfexplainer_compute_numbers
 
 
-def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_directory):
+def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentations_directory, multilabel):
     # Set up data module
     if dataset == "VOC":
         num_classes = 20
@@ -46,9 +48,19 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
     data_module.setup()
 
     total_time = 0.0
+    print(checkpoint_base_path+checkpoint+".ckpt")
 
+    logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
+    thresh_preds = []
+    preds = []
+    trues = []
+    #trues_roc = []
+
+    i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
+
+
 
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
@@ -60,12 +72,41 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
         targets = get_targets_from_annotations(annotations, dataset=dataset, num_classes=num_classes)
 
         start_time = default_timer()
-        mask = model(image, targets)['image'][1]
+        output = model(image, targets)
+        mask = output['image'][1]
+        logits = (output['image'][3])
+        pred = logits_fn(logits)
+        preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
+        #thresh_preds.append(pred.detach().cpu().squeeze().numpy() > 0.5)
+        trues.append(targets.int().cpu().squeeze().numpy())
+        # if multilabel:
+        #     trues_roc.append(targets.int().cpu().squeeze().numpy())
+        # else:
+        #     trues_roc.append(np.where(targets.int().cpu().squeeze().numpy() == 1)[0])
+
+
         end_time = default_timer()
         total_time += end_time - start_time
 
         save_mask(mask, save_path / filename, dataset)
         save_masked_image(image, mask, save_path / "images" / filename, dataset)
+
+        i += 1
+        if i == 6:
+            break
+
+    averages = ['micro', 'weighted']
+    classification_metrics = dict.fromkeys(['f1', 'precision', 'recall', 'roc_auc'], {})
+    #trues = np.stack(trues, axis=0)
+    #trues_roc = np.stack(trues_roc, axis=0)
+    for avg in averages:
+        classification_metrics['f1'][avg] = f1_score(trues, preds, average=avg)
+        classification_metrics['precision'][avg] = precision_score(trues, preds, average=avg)
+        classification_metrics['recall'][avg] = recall_score(trues, preds, average=avg)
+       # classification_metrics['roc_auc'][avg] = roc_auc_score(trues_roc, preds, average=avg, multi_class='ovr')
+
+    np.savez(save_path / "classification_metrics.npz", classification_metrics=classification_metrics)
+
 
 
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
@@ -73,14 +114,15 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
+data_base_path = Path("../../datasets/")
+VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
 dataset = "TOY"
+multilabel = False
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/"
-checkpoints = ["3_passes_frozen_final",  "3_passes_frozen_first",  "3_passes_unfrozen"]
+checkpoints_base_path = "../checkpoints/"
+checkpoints = ["1_pass"]
 
 #################################################################################################################################
 
@@ -103,16 +145,16 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        #compute_masks(dataset, checkpoint, checkpoints_base_path, segmentations_path)
+        compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
         
 
-        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
+        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
                                                                                                                         masks_path=masks_path, 
                                                                                                                         segmentations_path=segmentations_path, 
                                                                                                                         dataset_name=dataset, 
                                                                                                                         model_name='selfexplainer', 
                                                                                                                         model_path=model_path, 
-                                                                                                                        method=checkpoint)
+                                                                                                                        method=checkpoint, multilabel=multilabel)
 
 
         d = {}
