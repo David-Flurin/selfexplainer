@@ -48,7 +48,6 @@ class BaseModel(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
 
-        self.frozen = None
         self.dataset = dataset
         self.num_classes = num_classes
 
@@ -194,6 +193,9 @@ class BaseModel(pl.LightningModule):
 
     def forward(self, image, targets=None, perfect_mask = None):
         output = {}
+        # from matplotlib import pyplot as plt
+        # plt.imshow(image[0].transpose(0,2))
+        # plt.show()
         output['image'] = self._forward(image, targets)
 
         i_mask = output['image'][1]
@@ -501,7 +503,7 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
-    
+        
         if self.i % 5 == 4:
             masked_image = output['image'][1].detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
@@ -557,7 +559,6 @@ class BaseModel(pl.LightningModule):
 
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
-
         
         pytorch_lightning.utilities.memory.garbage_collection_cuda()
             

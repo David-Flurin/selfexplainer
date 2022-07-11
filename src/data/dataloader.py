@@ -186,9 +186,7 @@ class OIDataModule(pl.LightningDataModule):
         super().__init__()
 
         self.data_path = Path(data_path)
-
         self.weighted_sampling = weighted_sampling
-
 
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
@@ -203,7 +201,7 @@ class OIDataModule(pl.LightningDataModule):
     def setup(self, stage: Optional[str] = None):
         self.train = OIDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
         self.val = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
-        self.test = OIDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
+        self.test = OIDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
 
     def train_dataloader(self):
         if self.weighted_sampling:
