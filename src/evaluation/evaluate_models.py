@@ -23,7 +23,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_sco
 from compute_scores import compute_numbers, selfexplainer_compute_numbers
 
 
-def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, segmentations_directory, multilabel):
+def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, segmentations_directory, aux_classifier, multilabel):
     # Set up data module
     if dataset == "VOC":
         num_classes = 20
@@ -40,7 +40,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
 
-    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, pretrained=False, aux_classifier=False)
+    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -121,13 +121,11 @@ dataset = "TOY"
 multilabel = False
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
-checkpoints = ["aux_class"]
+checkpoints = ["aux_class_later"]
 
 load_file = 'results/results_toy_singlelabel.npz'
 save_file = 'results/results_toy_singlelabel.npz'
 
-load_file = 'results.npz'
-save_file = 'results_toy_singlelabel.npz'
 
 
 #################################################################################################################################
@@ -156,7 +154,7 @@ for checkpoint in checkpoints:
         else:
             aux_classifier=False
 
-        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
+        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
