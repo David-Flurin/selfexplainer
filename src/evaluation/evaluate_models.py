@@ -126,6 +126,10 @@ checkpoints = ["aux_class"]
 load_file = 'results/results_toy_singlelabel.npz'
 save_file = 'results/results_toy_singlelabel.npz'
 
+load_file = 'results.npz'
+save_file = 'results_toy_singlelabel.npz'
+
+
 #################################################################################################################################
 
 try:
