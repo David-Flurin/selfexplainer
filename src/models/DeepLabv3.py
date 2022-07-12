@@ -34,23 +34,34 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
             return x['out']
 
 
+class FCHead_old(nn.Module):
+    def __init__(self, in_channel, num_classes):
+        super().__init__()
+        self.pool = nn.AdaptiveAvgPool2d((1,1))
+        self.fc = nn.Linear(in_channel, num_classes)
+
+    def forward(self, x):
+        x = self.pool(x)
+        x = torch.flatten(x, 1)
+        return self.fc(x)
+
 class FCHead(nn.Module):
     def __init__(self, in_channels, num_classes):
         super().__init__()
         inter_channels = in_channels // 4
-        self.layers = torch.nn.Sequential([
+        self.layers = torch.nn.Sequential(
             nn.Conv2d(in_channels, inter_channels, 3, padding=1, bias=False),
             nn.BatchNorm2d(inter_channels),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Conv2d(inter_channels, num_classes, 1),
-        ])
+            nn.AvgPool2d(28)
+        )
 
 
     def forward(self, x):
-        return self.layers(x)
-
-
+        x =  self.layers(x)
+        return torch.flatten(x, 1)
 
 class ModifiedDeepLab(DeepLabV3):
 
