@@ -23,7 +23,7 @@ from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_sco
 from compute_scores import compute_numbers, selfexplainer_compute_numbers
 
 
-def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentations_directory, multilabel):
+def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, segmentations_directory, multilabel):
     # Set up data module
     if dataset == "VOC":
         num_classes = 20
@@ -36,7 +36,7 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    save_path = Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
+    save_path = save_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
 
@@ -112,7 +112,7 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path(".")
+masks_path = Path("data/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
@@ -121,10 +121,10 @@ dataset = "TOY"
 multilabel = False
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
-checkpoints = ["1_pass", "3_passes_unfrozen", "3_passes_frozen_first", "3_passes_frozen_final"]
+checkpoints = ["aux_class"]
 
-load_file = 'results.npz'
-save_file = 'results_toy_singlelabel.npz'
+load_file = 'results/results_toy_singlelabel.npz'
+save_file = 'results/results_toy_singlelabel.npz'
 
 load_file = 'results.npz'
 save_file = 'results_toy_singlelabel.npz'
@@ -151,16 +151,23 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        classification_metrics = compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
+        if checkpoint.startswith('aux'):
+            aux_classifier=True
+        else:
+            aux_classifier=False
+
+        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
-                                                                                                                        masks_path=masks_path,
-                                                                                                                        segmentations_path=segmentations_path,
-                                                                                                                        dataset_name=dataset,
-                                                                                                                        model_name='selfexplainer',
-                                                                                                                        model_path=model_path,
-                                                                                                                        method=checkpoint, multilabel=multilabel)
+                                                                                                                        masks_path=masks_path, 
+                                                                                                                        segmentations_path=segmentations_path, 
+                                                                                                                        dataset_name=dataset, 
+                                                                                                                        model_name='selfexplainer', 
+                                                                                                                        model_path=model_path, 
+                                                                                                                        method=checkpoint, 
+                                                                                                                        aux_classifier=aux_classifier, 
+                                                                                                                        multilabel=multilabel)
 
 
         d = {}
