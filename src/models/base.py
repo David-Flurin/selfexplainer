@@ -431,7 +431,7 @@ class BaseModel(pl.LightningModule):
         '''
         loss = classification_loss
         
-        obj_back_loss = torch.zeros((1), device=image.device)
+        obj_back_loss = torch.tensor(0., device=image.device)
         if self.use_similarity_loss:
             
             if self.multiclass:
@@ -457,7 +457,7 @@ class BaseModel(pl.LightningModule):
 
         
 
-        mask_loss = torch.zeros((1), device=image.device)
+        mask_loss = torch.tensor(0., device=image.device)
         mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
         self.log('TV mask loss', mask_variation_loss.item(), on_epoch=False)
         if self.use_mask_variation_loss:
@@ -494,7 +494,7 @@ class BaseModel(pl.LightningModule):
             #self.log('weighted mask loss', w_m_loss)
             #loss += w_m_loss
         else:
-            loss = obj_back_loss + mask_loss
+            loss += obj_back_loss + mask_loss
                 
 
         if self.use_background_activation_loss:

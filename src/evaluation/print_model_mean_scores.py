@@ -6,12 +6,17 @@ with np.load("results_toy_singlelabel.npz", allow_pickle=True) as file:
 	for model in results:
 		print("\t" + model + "\n")
 		for metric in results[model]:
-			values = results[model][metric]
-			try:
-				print("\t\t\t{}: {}\n".format(metric, mean(values)))
-			except:
-				values = [mean(value) for value in values]
-				print("\t\t\t{}: {}\n".format(metric, mean(values)))
+			if metric != 'classification_metrics':
+				values = results[model][metric]
+				try:
+						print("\t\t\t{}: {}\n".format(metric, mean(values)))
+				except:
+						values = [mean(value) for value in values]
+						print("\t\t\t{}: {}\n".format(metric, mean(values)))
+
+			else:
+				for single_metric in results[model][metric]:
+					print("\t\t\t{}: {}\n".format(single_metric, results[model][metric][single_metric]))
 
 
 

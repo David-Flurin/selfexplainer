@@ -96,7 +96,7 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
             break
 
     averages = ['micro', 'weighted']
-    classification_metrics = dict.fromkeys(['f1', 'precision', 'recall', 'roc_auc'], {})
+    classification_metrics = {'f1':{}, 'precision':{}, 'recall':{}}
     #trues = np.stack(trues, axis=0)
     #trues_roc = np.stack(trues_roc, axis=0)
     for avg in averages:
@@ -110,7 +110,7 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
 
 
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
-
+    return classification_metrics
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
@@ -123,6 +123,10 @@ multilabel = False
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/"
 checkpoints = ["1_pass"]
+
+load_file = 'results.npz'
+save_file = 'results_toy_singlelabel.npz'
+
 
 #################################################################################################################################
 
@@ -145,15 +149,15 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
-        
+        classification_metrics = compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
+
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
-                                                                                                                        masks_path=masks_path, 
-                                                                                                                        segmentations_path=segmentations_path, 
-                                                                                                                        dataset_name=dataset, 
-                                                                                                                        model_name='selfexplainer', 
-                                                                                                                        model_path=model_path, 
+                                                                                                                        masks_path=masks_path,
+                                                                                                                        segmentations_path=segmentations_path,
+                                                                                                                        dataset_name=dataset,
+                                                                                                                        model_name='selfexplainer',
+                                                                                                                        model_path=model_path,
                                                                                                                         method=checkpoint, multilabel=multilabel)
 
 
@@ -172,11 +176,15 @@ for checkpoint in checkpoints:
         d["background_c"] = background_c
         d["mask_c"] = mask_c
         d["sr"] = sr
+        d['classification_metrics'] = classification_metrics
         results[checkpoint] = d
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
 
-np.savez("results.npz", results=results)
+
+
+np.savez(save_file, results=results)
+
 
 
