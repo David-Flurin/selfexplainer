@@ -56,7 +56,7 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
     trues = []
     #trues_roc = []
 
-    i = 0
+    #i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
 
@@ -91,38 +91,37 @@ def compute_masks_and_f1(dataset, checkpoint, checkpoint_base_path, segmentation
         save_mask(mask, save_path / filename, dataset)
         save_masked_image(image, mask, save_path / "images" / filename, dataset)
 
-        i += 1
-        if i == 6:
-            break
+        #i += 1
+        #if i == 6:
+        #    break
 
     averages = ['micro', 'weighted']
-    classification_metrics = dict.fromkeys(['f1', 'precision', 'recall', 'roc_auc'], {})
+    classification_metrics = {'f1':{}, 'precision':{}, 'recall':{}}
     #trues = np.stack(trues, axis=0)
     #trues_roc = np.stack(trues_roc, axis=0)
     for avg in averages:
         classification_metrics['f1'][avg] = f1_score(trues, preds, average=avg)
         classification_metrics['precision'][avg] = precision_score(trues, preds, average=avg)
         classification_metrics['recall'][avg] = recall_score(trues, preds, average=avg)
-       # classification_metrics['roc_auc'][avg] = roc_auc_score(trues_roc, preds, average=avg, multi_class='ovr')
 
     np.savez(save_path / "classification_metrics.npz", classification_metrics=classification_metrics)
 
 
 
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
-
+    return classification_metrics
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
-data_base_path = Path("../../datasets/")
-VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
 
 dataset = "TOY"
 multilabel = False
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
-checkpoints = ["3_passes_unfrozen", "3_passes_frozen_first", "3_passes_frozen_final"]
+checkpoints = ["1_pass", "3_passes_unfrozen", "3_passes_frozen_first", "3_passes_frozen_final"]
 
 load_file = 'results.npz'
 save_file = 'results_toy_singlelabel.npz'
@@ -148,7 +147,7 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
+        classification_metrics = compute_masks_and_f1(dataset, checkpoint, checkpoints_base_path, segmentations_path, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
@@ -175,10 +174,13 @@ for checkpoint in checkpoints:
         d["background_c"] = background_c
         d["mask_c"] = mask_c
         d["sr"] = sr
+        d['classification_metrics'] = classification_metrics
         results[checkpoint] = d
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
+
+
 
 np.savez(save_file, results=results)
 
