@@ -316,7 +316,7 @@ class BaseModel(pl.LightningModule):
         mask_logits = weighted_segmentations.sum(dim=(2,3))
         if not self.aux_classifier:
             logits = mask_logits
-        
+            
 
         
         #mask_logits = segmentations.mean((2,3))
