@@ -8,7 +8,7 @@ import random
 
 from matplotlib import pyplot as plt 
 
-
+import pytorch_lightning
 from torch import device, nn, softmax
 from torch.optim import Adam
 from pathlib import Path
@@ -372,13 +372,13 @@ class BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        '''        
+               
         t_classes = target_vector.sum(0)
         for i in range(t_classes.size(0)):
             self.data_stats[str(i)] += t_classes[i].item()
         if self.i % 10 == 9:
             self.log('Sample statistics', self.data_stats)
-        '''
+        
         if self.frozen and (self.use_similarity_loss or self.use_background_loss):
            self.frozen_model = deepcopy(self.model)
            for _,p in self.frozen_model.named_parameters():
@@ -442,7 +442,7 @@ class BaseModel(pl.LightningModule):
                 sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs)            
 
             self.log('similarity_loss', sim_loss.item(), on_epoch=False)
-            obj_back_loss += sim_loss
+            obj_back_loss += sim_loss.squeeze()
             
         if self.use_background_loss:
             if self.background_loss == 'entropy':
@@ -452,7 +452,7 @@ class BaseModel(pl.LightningModule):
 
             
             self.log('background_loss', background_entropy_loss.item(), on_epoch=False)
-            obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
+            obj_back_loss += background_entropy_loss.squeeze() # Entropy loss is negative, so is added to loss here but actually its subtracted
 
 
         
@@ -559,6 +559,8 @@ class BaseModel(pl.LightningModule):
 
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
+        
+        pytorch_lightning.utilities.memory.garbage_collection_cuda()
             
 
         self.log('loss', float(loss.item()), on_epoch=False)
