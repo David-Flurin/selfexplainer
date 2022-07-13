@@ -27,6 +27,10 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 20
         data_path = Path(data_base_path) / "VOC2007"
         data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+    if dataset == "VOC2012":
+        num_classes = 20
+        data_path = Path(data_base_path) / "VOC2012"
+        data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
@@ -110,20 +114,20 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-print(1)
-masks_path = Path("data/singlelabel/")
+masks_path = Path("data/VOC2012/")
 data_base_path = Path("../../datasets/")
 VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+VOC2012_segmentations_path = Path("../../datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
 TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
-dataset = "TOY"
-multilabel = False
+dataset = "VOC2012"
+multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
-checkpoints = ["aux_classifier_old"]
+checkpoints_base_path = "../checkpoints/VOC2012/"
+checkpoints = ["1_pass"]
 
-load_file = 'results/results_toy_multilabel.npz'
-save_file = 'results/results_toy_multilabel.npz'
+load_file = 'results/results_voc.npz'
+save_file = 'results/results_voc.npz'
 
 
 
@@ -142,6 +146,9 @@ for checkpoint in checkpoints:
         if dataset == 'VOC':
             data_path = data_base_path / "VOC2007"
             segmentations_path = VOC_segmentations_path
+        if dataset == 'VOC2012':
+            data_path = data_base_path / "VOC2012"
+            segmentations_path = VOC2012_segmentations_path
         elif dataset == 'TOY':
             data_path = data_base_path / "TOY"
             segmentations_path = TOY_segmentations_path

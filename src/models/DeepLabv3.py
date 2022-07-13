@@ -27,6 +27,7 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
 
 
 
+
     def forward(self, x):
         x = self.model(x)
         if self.aux_classifier:

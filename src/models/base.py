@@ -241,7 +241,7 @@ class BaseModel(pl.LightningModule):
                     output[f'object_{i}'] = self._forward(new_batch_masked, targets)
                 # plt.show()
             else:
-                output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
+                output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets,frozen=self.frozen)
             
         
         if self.use_background_loss:   
@@ -341,6 +341,7 @@ class BaseModel(pl.LightningModule):
         if self.mask_loss_scheduling <= self.i:
             self.use_mask_area_loss = True
 
+    
     '''
     def on_after_backward(self):
     # example to inspect gradient information in tensorboard
@@ -357,9 +358,9 @@ class BaseModel(pl.LightningModule):
 
             # self.logger.experiment.add_histogram(tag=name, values=grads,
             #                                     global_step=self.trainer.global_step)
+
     '''
 
-        
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
 
