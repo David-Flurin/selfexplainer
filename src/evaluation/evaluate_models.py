@@ -124,7 +124,7 @@ dataset = "VOC2012"
 multilabel = True
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/VOC2012/"
-checkpoints = ["1_pass"]
+checkpoints = ["1_pass", "3_passes", "3_passes_frozen"]
 
 load_file = 'results/results_voc.npz'
 save_file = 'results/results_voc.npz'
