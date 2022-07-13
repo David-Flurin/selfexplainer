@@ -24,7 +24,7 @@ from utils.image_display import save_all_class_masked_images, save_mask, save_ma
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, background_activation_loss, relu_classification, similarity_loss_fn
 from utils.metrics import IoU, MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
-from plot import plot_class_metrics
+#from plot import plot_class_metrics
 
 import GPUtil
 from matplotlib import pyplot as plt
@@ -238,7 +238,7 @@ class BaseModel(pl.LightningModule):
                     #     fig.add_subplot(6,2,9+(i*2)+1)
                     #     plt.imshow(new_batch_masks[1].detach().permute(1,2,0))
                     new_batch_masked = new_batch_masks * new_batch
-                    output[f'object_{i}'] = self._forward(new_batch_masked, targets, frozen=self.frozen)
+                    output[f'object_{i}'] = self._forward(new_batch_masked, targets)
                 # plt.show()
             else:
                 output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
@@ -351,17 +351,17 @@ class BaseModel(pl.LightningModule):
 
 
         print('After backwards SEGMENTATIONS:')
-        print(self.model.model.classifier[4].weight.requires_grad)
-        print(self.model.model.classifier[4].weight.grad.abs().sum())
+        #print(self.model.model.backbone[4].weight.requires_grad)
+        print('Seghead', self.model.model.backbone.layer4[2].conv1.weight.grad.abs().sum())
+        print('ClassHead', self.model.model.aux_classifier.last_resnet_layer[2].conv1.weight.grad.abs().sum())
+
             # self.logger.experiment.add_histogram(tag=name, values=grads,
             #                                     global_step=self.trainer.global_step)
-
     '''
-
 
         
     def training_step(self, batch, batch_idx):
-        GPUtil.showUtilization()
+        #GPUtil.showUtilization()
 
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
@@ -381,10 +381,10 @@ class BaseModel(pl.LightningModule):
             self.log('Sample statistics', self.data_stats)
         
         if self.frozen and (self.use_similarity_loss or self.use_background_loss):
-           #self.frozen_model = deepcopy(self.model)
-           #for _,p in self.frozen_model.named_parameters():
-           #    p.requires_grad_(False)
-           self.frozen_model = self.model
+           self.frozen_model = deepcopy(self.model)
+           for _,p in self.frozen_model.named_parameters():
+               p.requires_grad_(False)
+           #self.frozen_model = self.model
 
 
         if self.use_perfect_mask:
@@ -581,7 +581,7 @@ class BaseModel(pl.LightningModule):
         # self.global_image_mask = output['image'][1]
         # self.global_object_mask = output['object'][1]
                 
-        GPUtil.showUtilization()  
+        #GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
         #d.render('backward_graph_unfrozen', format='png')  
         # output['image'][1].retain_grad()
