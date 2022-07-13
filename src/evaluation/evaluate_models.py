@@ -1,8 +1,6 @@
 import sys
 import os
-
 sys.path.insert(0, os.path.abspath(".."))
-
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -29,6 +27,14 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 20
         data_path = Path(data_base_path) / "VOC2007"
         data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "VOC2012":
+        num_classes = 20
+        data_path = Path(data_base_path) / "VOC2012"
+        data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "OI":
+        num_classes = 20
+        data_path = Path(data_base_path) / "OI"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
@@ -112,19 +118,20 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/multilabel/")
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
+masks_path = Path("data/VOC2012/")
+data_base_path = Path("../../datasets/")
+VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+VOC2012_segmentations_path = Path("../../datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
+TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
-dataset = "TOY"
+dataset = "VOC2012"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/multilabel/"
-checkpoints = ["aux_class"]
+checkpoints_base_path = "../checkpoints/VOC2012/"
+checkpoints = ["1_pass", "3_passes", "3_passes_frozen"]
 
-load_file = 'results/results_toy_multilabel.npz'
-save_file = 'results/results_toy_multilabel.npz'
+load_file = ''
+save_file = 'results/results_voc.npz'
 
 
 
@@ -135,6 +142,7 @@ try:
 except:
     results = {}
 
+
 for checkpoint in checkpoints:
     if not(checkpoint in results):
         results[checkpoint] = {}
@@ -142,10 +150,12 @@ for checkpoint in checkpoints:
         if dataset == 'VOC':
             data_path = data_base_path / "VOC2007"
             segmentations_path = VOC_segmentations_path
+        if dataset == 'VOC2012':
+            data_path = data_base_path / "VOC2012"
+            segmentations_path = VOC2012_segmentations_path
         elif dataset == 'TOY':
             data_path = data_base_path / "TOY"
             segmentations_path = TOY_segmentations_path
-        
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
@@ -153,8 +163,7 @@ for checkpoint in checkpoints:
             aux_classifier=True
         else:
             aux_classifier=False
-
-        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
+        #classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,

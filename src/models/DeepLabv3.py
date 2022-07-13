@@ -7,6 +7,7 @@ from torchvision.models.segmentation.deeplabv3 import DeepLabV3
 from collections import OrderedDict
 from typing import Optional, Dict
 from torch.nn import functional as F
+from copy import deepcopy
 
 class Deeplabv3Resnet50Model(pl.LightningModule):
     def __init__(self, pretrained=False, num_classes=20, aux_classifier=False):
@@ -26,6 +27,7 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
 
 
 
+
     def forward(self, x):
         x = self.model(x)
         if self.aux_classifier:
@@ -35,12 +37,14 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
 
 
 class FCHead_old(nn.Module):
-    def __init__(self, in_channel, num_classes):
+    def __init__(self, in_channel, num_classes, layer4):
         super().__init__()
+        self.last_resnet_layer = layer4
         self.pool = nn.AdaptiveAvgPool2d((1,1))
         self.fc = nn.Linear(in_channel, num_classes)
 
     def forward(self, x):
+        #x = self.last_resnet_layer(x)
         x = self.pool(x)
         x = torch.flatten(x, 1)
         return self.fc(x)

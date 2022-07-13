@@ -11,7 +11,7 @@ from pathlib import Path
 
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
-from data.dataloader import ToyData_Saved_Module, VOCDataModule, COCODataModule, ToyDataModule
+from data.dataloader import ToyData_Saved_Module, VOCDataModule, VOC2012DataModule, COCODataModule, ToyDataModule
 #from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
 from utils.helper import get_class_dictionary
 
@@ -48,6 +48,9 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
 def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, multilabel, aux_classifier):
     if dataset_name == "VOC":
         data_module = VOCDataModule(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multiclass=multilabel, pretrained=False, aux_classifier=aux_classifier)
+    elif dataset_name == "VOC2012":
+        data_module = VOC2012DataModule(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multiclass=multilabel, pretrained=False, aux_classifier=aux_classifier)
     elif dataset_name == "TOY":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
