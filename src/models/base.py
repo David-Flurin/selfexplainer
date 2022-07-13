@@ -48,7 +48,6 @@ class BaseModel(pl.LightningModule):
         self.learning_rate = learning_rate
         self.weighting_koeff = weighting_koeff
 
-        self.frozen = None
         self.dataset = dataset
         self.num_classes = num_classes
 
@@ -194,6 +193,9 @@ class BaseModel(pl.LightningModule):
 
     def forward(self, image, targets=None, perfect_mask = None):
         output = {}
+        # from matplotlib import pyplot as plt
+        # plt.imshow(image[0].transpose(0,2))
+        # plt.show()
         output['image'] = self._forward(image, targets)
 
         i_mask = output['image'][1]
@@ -314,6 +316,7 @@ class BaseModel(pl.LightningModule):
         mask_logits = weighted_segmentations.sum(dim=(2,3))
         if not self.aux_classifier:
             logits = mask_logits
+            
 
         
         #mask_logits = segmentations.mean((2,3))
@@ -370,13 +373,13 @@ class BaseModel(pl.LightningModule):
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
         target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
 
-        '''        
+               
         t_classes = target_vector.sum(0)
         for i in range(t_classes.size(0)):
             self.data_stats[str(i)] += t_classes[i].item()
         if self.i % 10 == 9:
             self.log('Sample statistics', self.data_stats)
-        '''
+        
         if self.frozen and (self.use_similarity_loss or self.use_background_loss):
            #self.frozen_model = deepcopy(self.model)
            #for _,p in self.frozen_model.named_parameters():
@@ -431,7 +434,7 @@ class BaseModel(pl.LightningModule):
         '''
         loss = classification_loss
         
-        obj_back_loss = torch.zeros((1), device=image.device)
+        obj_back_loss = torch.tensor(0., device=image.device)
         if self.use_similarity_loss:
             
             if self.multiclass:
@@ -442,7 +445,7 @@ class BaseModel(pl.LightningModule):
                 sim_loss = self.similarity_regularizer * self.classification_loss_fn(output['object_0'][3], probs)            
 
             self.log('similarity_loss', sim_loss.item(), on_epoch=False)
-            obj_back_loss += sim_loss
+            obj_back_loss += sim_loss.squeeze()
             
         if self.use_background_loss:
             if self.background_loss == 'entropy':
@@ -452,12 +455,12 @@ class BaseModel(pl.LightningModule):
 
             
             self.log('background_loss', background_entropy_loss.item(), on_epoch=False)
-            obj_back_loss += background_entropy_loss # Entropy loss is negative, so is added to loss here but actually its subtracted
+            obj_back_loss += background_entropy_loss.squeeze() # Entropy loss is negative, so is added to loss here but actually its subtracted
 
 
         
 
-        mask_loss = torch.zeros((1), device=image.device)
+        mask_loss = torch.tensor(0., device=image.device)
         mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
         self.log('TV mask loss', mask_variation_loss.item(), on_epoch=False)
         if self.use_mask_variation_loss:
@@ -494,7 +497,7 @@ class BaseModel(pl.LightningModule):
             #self.log('weighted mask loss', w_m_loss)
             #loss += w_m_loss
         else:
-            loss = obj_back_loss + mask_loss
+            loss += obj_back_loss + mask_loss
                 
 
         if self.use_background_activation_loss:
@@ -503,7 +506,7 @@ class BaseModel(pl.LightningModule):
             loss = weighted_loss(loss, bg_logits_loss, 2, 0.1)
         
         
-    
+        
         if self.i % 5 == 4:
             masked_image = output['image'][1].detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
@@ -559,8 +562,8 @@ class BaseModel(pl.LightningModule):
 
             log_string += '  \n'
             self.logger.experiment.add_text('Train Logits', log_string,  self.i)
-
         
+        pytorch_lightning.utilities.memory.garbage_collection_cuda()
             
 
         self.log('loss', float(loss.item()), on_epoch=False)

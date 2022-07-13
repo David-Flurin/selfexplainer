@@ -18,10 +18,12 @@ from data.dataloader import *
 from utils.helper import *
 from utils.image_display import *
 
-from compute_scores import compute_numbers
+from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+
+from compute_scores import compute_numbers, selfexplainer_compute_numbers
 
 
-def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_directory):
+def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, segmentations_directory, aux_classifier, multilabel):
     # Set up data module
     if dataset == "VOC":
         num_classes = 20
@@ -34,11 +36,11 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    save_path = Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
+    save_path = save_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
 
-    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, pretrained=False, aux_classifier=False)
+    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multiclass=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -46,9 +48,19 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
     data_module.setup()
 
     total_time = 0.0
+    print(checkpoint_base_path+checkpoint+".ckpt")
 
+    logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
+    thresh_preds = []
+    preds = []
+    trues = []
+    #trues_roc = []
+
+    #i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
+
+
 
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
@@ -60,32 +72,66 @@ def compute_masks(dataset, checkpoint, checkpoint_base_path, segmentations_direc
         targets = get_targets_from_annotations(annotations, dataset=dataset, num_classes=num_classes)
 
         start_time = default_timer()
-        mask = model(image, targets)['image'][1]
+        output = model(image, targets)
+        mask = output['image'][1]
+        logits = (output['image'][3])
+        pred = logits_fn(logits)
+        preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
+        #thresh_preds.append(pred.detach().cpu().squeeze().numpy() > 0.5)
+        trues.append(targets.int().cpu().squeeze().numpy())
+        # if multilabel:
+        #     trues_roc.append(targets.int().cpu().squeeze().numpy())
+        # else:
+        #     trues_roc.append(np.where(targets.int().cpu().squeeze().numpy() == 1)[0])
+
+
         end_time = default_timer()
         total_time += end_time - start_time
 
         save_mask(mask, save_path / filename, dataset)
         save_masked_image(image, mask, save_path / "images" / filename, dataset)
 
+        #i += 1
+        #if i == 6:
+        #    break
+
+    averages = ['micro', 'weighted']
+    classification_metrics = {'f1':{}, 'precision':{}, 'recall':{}}
+    #trues = np.stack(trues, axis=0)
+    #trues_roc = np.stack(trues_roc, axis=0)
+    for avg in averages:
+        classification_metrics['f1'][avg] = f1_score(trues, preds, average=avg)
+        classification_metrics['precision'][avg] = precision_score(trues, preds, average=avg)
+        classification_metrics['recall'][avg] = recall_score(trues, preds, average=avg)
+
+    np.savez(save_path / "classification_metrics.npz", classification_metrics=classification_metrics)
+
+
 
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
-
+    return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path(".")
+masks_path = Path("data/multilabel/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
 
 dataset = "TOY"
+multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/"
-checkpoints = ["3_passes_frozen_final",  "3_passes_frozen_first",  "3_passes_unfrozen"]
+checkpoints_base_path = "../checkpoints/TOY/multilabel/"
+checkpoints = ["1_pass", "3_passes", "3_passes_frozen", "aux_class"]
+
+load_file = 'results/results_toy_multilabel.npz'
+save_file = 'results/results_toy_multilabel.npz'
+
+
 
 #################################################################################################################################
 
 try:
-    results = np.load("results_models.npz", allow_pickle=True)["results"].item()
+    results = np.load(load_file, allow_pickle=True)["results"].item()
 except:
     results = {}
 
@@ -103,16 +149,23 @@ for checkpoint in checkpoints:
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 
-        #compute_masks(dataset, checkpoint, checkpoints_base_path, segmentations_path)
+        if checkpoint.startswith('aux'):
+            aux_classifier=True
+        else:
+            aux_classifier=False
+
+        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
 
-        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
+        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
                                                                                                                         masks_path=masks_path, 
                                                                                                                         segmentations_path=segmentations_path, 
                                                                                                                         dataset_name=dataset, 
                                                                                                                         model_name='selfexplainer', 
                                                                                                                         model_path=model_path, 
-                                                                                                                        method=checkpoint)
+                                                                                                                        method=checkpoint, 
+                                                                                                                        aux_classifier=aux_classifier, 
+                                                                                                                        multilabel=multilabel)
 
 
         d = {}
@@ -130,11 +183,14 @@ for checkpoint in checkpoints:
         d["background_c"] = background_c
         d["mask_c"] = mask_c
         d["sr"] = sr
+        d['classification_metrics'] = classification_metrics
         results[checkpoint] = d
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
 
-np.savez("results.npz", results=results)
+
+
+np.savez(save_file, results=results)
 
 
