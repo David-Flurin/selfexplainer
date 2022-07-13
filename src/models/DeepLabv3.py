@@ -20,7 +20,7 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
 
         self.aux_classifier = aux_classifier
         if self.aux_classifier:
-            a_c = FCHead_old(2048, num_classes)
+            a_c = FCHead_old(1024, num_classes)
             self.model = ModifiedDeepLab(self.model.backbone, self.model.classifier, a_c)
 
 
@@ -77,7 +77,7 @@ class ModifiedDeepLab(DeepLabV3):
         result["out"] = x
 
         if self.aux_classifier is not None:
-            x = features["out"]
+            x = features["aux"]
             x = self.aux_classifier(x)
             result["aux"] = x
 

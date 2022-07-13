@@ -121,7 +121,7 @@ dataset = "TOY"
 multilabel = True
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/TOY/multilabel/"
-checkpoints = ["1_pass", "3_passes", "3_passes_frozen", "aux_class"]
+checkpoints = ["aux_class"]
 
 load_file = 'results/results_toy_multilabel.npz'
 save_file = 'results/results_toy_multilabel.npz'
