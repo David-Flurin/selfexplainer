@@ -27,10 +27,14 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 20
         data_path = Path(data_base_path) / "VOC2007"
         data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-    if dataset == "VOC2012":
+    elif dataset == "VOC2012":
         num_classes = 20
         data_path = Path(data_base_path) / "VOC2012"
         data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "OI":
+        num_classes = 20
+        data_path = Path(data_base_path) / "OI"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
@@ -126,7 +130,7 @@ classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/VOC2012/"
 checkpoints = ["1_pass", "3_passes", "3_passes_frozen"]
 
-load_file = 'results/results_voc.npz'
+load_file = ''
 save_file = 'results/results_voc.npz'
 
 
@@ -159,7 +163,7 @@ for checkpoint in checkpoints:
             aux_classifier=True
         else:
             aux_classifier=False
-        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
+        #classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
