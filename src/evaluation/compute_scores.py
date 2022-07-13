@@ -45,13 +45,13 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
     return model, data_module
 
 
-def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, aux_classifier):
+def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, multilabel, aux_classifier):
     if dataset_name == "VOC":
         data_module = VOCDataModule(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, pretrained=False, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multiclass=multilabel, pretrained=False, aux_classifier=aux_classifier)
     elif dataset_name == "TOY":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multiclass=multilabel, aux_classifier=aux_classifier)
 
 
     data_module.setup()
@@ -220,7 +220,7 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
 
     print(model_path)
 
-    model, data_module = get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, aux_classifier)
+    model, data_module = get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, multilabel, aux_classifier)
     device = get_device()
     model = model.to(device)
     model.eval()

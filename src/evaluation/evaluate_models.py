@@ -40,7 +40,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
 
-    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
+    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multiclass=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -112,19 +112,19 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/")
+masks_path = Path("data/multilabel/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
 
 dataset = "TOY"
-multilabel = False
+multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/singlelabel/"
-checkpoints = ["aux_class_later"]
+checkpoints_base_path = "../checkpoints/TOY/multilabel/"
+checkpoints = ["1_pass", "3_passes", "3_passes_frozen", "aux_class"]
 
-load_file = 'results/results_toy_singlelabel.npz'
-save_file = 'results/results_toy_singlelabel.npz'
+load_file = 'results/results_toy_multilabel.npz'
+save_file = 'results/results_toy_multilabel.npz'
 
 
 
