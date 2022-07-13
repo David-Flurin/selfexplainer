@@ -8,7 +8,7 @@ import random
 
 from matplotlib import pyplot as plt 
 
-
+import pytorch_lightning
 from torch import device, nn, softmax
 from torch.optim import Adam
 from pathlib import Path
@@ -358,7 +358,7 @@ class BaseModel(pl.LightningModule):
 
         
     def training_step(self, batch, batch_idx):
-        #GPUtil.showUtilization()
+        GPUtil.showUtilization()
 
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
@@ -378,15 +378,17 @@ class BaseModel(pl.LightningModule):
             self.log('Sample statistics', self.data_stats)
         '''
         if self.frozen and (self.use_similarity_loss or self.use_background_loss):
-           self.frozen_model = deepcopy(self.model)
-           for _,p in self.frozen_model.named_parameters():
-               p.requires_grad_(False)
+           #self.frozen_model = deepcopy(self.model)
+           #for _,p in self.frozen_model.named_parameters():
+           #    p.requires_grad_(False)
+           self.frozen_model = self.model
+
 
         if self.use_perfect_mask:
             output = self(image, target_vector, torch.max(targets, dim=1)[0])
         else:
             output = self(image, target_vector)
-
+        
         # if self.dataset == 'TOY':
         #     self.iou(output['image'][1], seg, output['image'][3], target_vector)
 
@@ -576,7 +578,7 @@ class BaseModel(pl.LightningModule):
         # self.global_image_mask = output['image'][1]
         # self.global_object_mask = output['object'][1]
                 
-        #GPUtil.showUtilization()  
+        GPUtil.showUtilization()  
         #d = make_dot(loss, params=dict(self.model.named_parameters())) 
         #d.render('backward_graph_unfrozen', format='png')  
         # output['image'][1].retain_grad()
@@ -585,6 +587,8 @@ class BaseModel(pl.LightningModule):
         # o = self.optimizers()
         # self.manual_backward(loss)
         # o.step()
+        pytorch_lightning.utilities.memory.garbage_collection_cuda()
+
         self.i += 1.
         self.log('iterations', self.i)
         return loss
