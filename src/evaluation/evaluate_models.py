@@ -118,20 +118,20 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/VOC2012/")
+masks_path = Path("data/")
 data_base_path = Path("../../datasets/")
 VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 VOC2012_segmentations_path = Path("../../datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
 TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
-dataset = "VOC2012"
+dataset = "TOY"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/VOC2012/"
-checkpoints = ["1_pass", "3_passes", "3_passes_frozen"]
+checkpoints_base_path = "../checkpoints/"
+checkpoints = ["aux_class_final"]
 
 load_file = ''
-save_file = 'results/results_voc.npz'
+save_file = 'results/results_multilabel.npz'
 
 
 
@@ -163,7 +163,7 @@ for checkpoint in checkpoints:
             aux_classifier=True
         else:
             aux_classifier=False
-        #classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
+        classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,

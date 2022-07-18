@@ -5,17 +5,18 @@ from texttable import Texttable
 import sys
 import json
 
-results_file = sys.argv[1]
+results_file = 'results/concatenated_all.npz'
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
 except:
     checkpoint_dict = None
-results_file = 'results/results_toy_singlelabel.npz'
-print(type(checkpoint_dict))
+print(checkpoint_dict)
 
 
 mode = 'micro'
+checkpoint_dict = {"1_pass": "1 Pass", "3_passes_frozen_final": "3 Passes", "aux_class_old": "Aux classifier old", "aux_class_first": "Aux classifier new"}
+
 
 with open(results_file[:-3]+".txt", 'w') as table_file:
     table = Texttable()
@@ -28,7 +29,6 @@ with open(results_file[:-3]+".txt", 'w') as table_file:
         if 'classification_metrics' in metric_names:
             i = metric_names.index('classification_metrics')
             metric_names = metric_names[:i] + ['f1_class', 'prec', 'rec'] + metric_names[i+1:]
-        print(metric_names)
         column_align += ['c' for i in range(len(metric_names))]
         table.set_cols_align(column_align)
         rows = [] 
@@ -47,21 +47,22 @@ with open(results_file[:-3]+".txt", 'w') as table_file:
                     for c_metric in results[model][metric]:
                         metrics.append(results[model][metric][c_metric][mode])
                 else:
+                    values = [x for x in results[model][metric] if x]
                     try:
-                        metrics.append(mean(results[model][metric]))
+                        metrics.append(mean(values))
                     except:
                         metrics.append(mean([mean(values) for values in results[model][metric]]))
             rows.append(metrics)
-        print(rows)
         
         # Calculate best entry per metric and boldface it
         best_metrics = dict.fromkeys(metric_names,(-1000, -1))
         best_metrics['sal'] = (1000, -1)
+        best_metrics['background_c'] = (1000, -1)
         for i, row in enumerate(rows[1:], 1):
             for j, m in enumerate(row[1:], 1):
-                if rows[0][j] == 'sal':
-                    if m < best_metrics['sal'][0]:
-                        best_metrics['sal'] = (m,i)
+                if rows[0][j] in ['sal', 'background_c']:
+                    if m < best_metrics[rows[0][j]][0]:
+                        best_metrics[rows[0][j]] = (m,i)
                 else:
                     if m > best_metrics[rows[0][j]][0]:
                         best_metrics[rows[0][j]] = (m,i)

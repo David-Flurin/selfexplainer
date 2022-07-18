@@ -10,6 +10,7 @@ import torch
 from matplotlib.ticker import FormatStrFormatter
 from toy_dataset.generator import Generator
 import pathlib
+from xml.etree import cElementTree as ElementTree
 
 import itertools
 from functools import partial
@@ -18,6 +19,52 @@ import matplotlib.ticker as mticker
 from cycler import cycler
 
 from tqdm import tqdm
+
+class XmlDictConfig(dict):
+    '''
+    Example usage:
+
+    >>> tree = ElementTree.parse('your_file.xml')
+    >>> root = tree.getroot()
+    >>> xmldict = XmlDictConfig(root)
+
+    Or, if you want to use an XML string:
+
+    >>> root = ElementTree.XML(xml_string)
+    >>> xmldict = XmlDictConfig(root)
+
+    And then use xmldict for what it is... a dict.
+    '''
+    def __init__(self, parent_element):
+        if parent_element.items():
+            self.update(dict(parent_element.items()))
+        for element in parent_element:
+            if element:
+                # treat like dict - we assume that if the first two tags
+                # in a series are different, then they are all different.
+                if len(element) == 1 or element[0].tag != element[1].tag:
+                    aDict = XmlDictConfig(element)
+                # treat like list - we assume that if the first two tags
+                # in a series are the same, then the rest are the same.
+                else:
+                    # here, we put the list in dictionary; the key is the
+                    # tag name the list elements all share in common, and
+                    # the value is the list itself 
+                    aDict = {element[0].tag: XmlListConfig(element)}
+                # if the tag has attributes, add those to the dict
+                if element.items():
+                    aDict.update(dict(element.items()))
+                self.update({element.tag: aDict})
+            # this assumes that if you've got an attribute in a tag,
+            # you won't be having any text. This may or may not be a 
+            # good idea -- time will tell. It works for the way we are
+            # currently doing XML configuration files...
+            elif element.items():
+                self.update({element.tag: dict(element.items())})
+            # finally, if there are no child tags and no attributes, extract
+            # the text
+            else:
+                self.update({element.tag: element.text})
 
 def convert_tb_data(root_dir, sort_by=None):
     """Convert local TensorBoard data into Pandas DataFrame.
@@ -424,8 +471,119 @@ def plot_generator_distribution(num_samples):
     plt.show()
 #---------------------------------------------------
 
+def plot_toydata_distribution(data_path):
+    g = Generator(pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'foreground.txt'), pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'background.txt'))
 
-#plot_generator_distribution(100000)
+    shapes = {k: {} for k in g.f_texture_names}
+    #sizes = {k: [] for k in g.f_texture_names}
+    bg_tex = {k: {} for k in g.f_texture_names}
+
+    for file in tqdm(os.listdir(os.path.join(data_path,  'annotations'))):
+        tree = ElementTree.parse(os.path.join(data_path, 'annotations', file))
+        root = tree.getroot()
+        annotations = XmlDictConfig(root)
+        for _, objects in annotations['objects'].items():
+            f_tex = objects['texture']
+            shape = objects['shape']
+            shapes[f_tex][shape] = shapes[f_tex].get(shape, 0) + 1
+            #radius = objects[0][2]
+        b_tex = annotations['background']
+
+        
+        #sizes[f_tex].append(radius)
+        bg_tex[f_tex][b_tex] = bg_tex[f_tex].get(b_tex, 0) + 1
+
+    # for k,v in sizes.items():
+    #     sizes[k] = sorted(v)
+
+    
+# --------------Shapes plot---------------------    
+    labels = list(shapes.keys())
+    x = np.arange(len(labels))  # the label locations
+    width = 0.05  # the width of the bars
+
+    
+    fig, ax = plt.subplots()
+    fig.set_figwidth(15)
+    fig.set_figheight(8)
+
+    rects = []
+    for i, shape in enumerate(shapes[list(shapes.keys())[0]].keys()):
+        rects.append(ax.bar(x + (-3.5+i)*(width+0.01), [shapes[f][shape] for f in labels], width, label=shape))
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Metrics')
+    ax.set_title('Metrics per class')
+    ax.set_xticks(x, labels)
+    ax.legend()
+    #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+    # for rect in rects:
+    #     ax.bar_label(rect, padding=3, fmt='%.2f')
+
+    fig.tight_layout()
+    plt.show()
+    plt.close()
+#-------------------------------------------------
+
+#--------------Background plots-------------------
+    labels = list(bg_tex.keys())
+    x = np.arange(len(labels))  # the label locations
+    width = 0.05  # the width of the bars
+
+    
+    fig, ax = plt.subplots()
+    fig.set_figwidth(15)
+    fig.set_figheight(8)
+
+    rects = []
+    for i, b_tex in enumerate(bg_tex[list(bg_tex.keys())[0]].keys()):
+        rects.append(ax.bar(x + (-6.5+i)*(width+0.01), [bg_tex[f][b_tex] for f in labels], width, label=b_tex))
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Metrics')
+    ax.set_title('Metrics per class')
+    ax.set_xticks(x, labels)
+    ax.legend()
+    #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+
+    # for rect in rects:
+    #     ax.bar_label(rect, padding=3, fmt='%.2f')
+
+    fig.tight_layout()
+    plt.show()
+    plt.close()
+#---------------------------------------------------
+
+# #--------------Radius plots-------------------
+#     # set up histogram function to fixed bins
+#     hist_func = partial(np.histogram, bins=51)
+
+#     # set up style cycles
+#     color_cycle = cycler(facecolor=plt.rcParams['axes.prop_cycle'][:8])
+#     label_cycle = cycler(label=['set {n}'.format(n=n) for n in range(4)])
+#     hatch_cycle = cycler(hatch=['/', '*', '+', '|'])
+
+#     # Fixing random state for reproducibility
+#     np.random.seed(19680801)
+
+#     stack_data = np.random.randn(4, 12250)
+#     dict_data = dict(zip((c['label'] for c in label_cycle), stack_data))
+
+#     fig, ax = plt.subplots(figsize=(9, 4.5), tight_layout=True)
+
+#     arts = stack_hist(ax, sizes, color_cycle,
+#                     hist_func=hist_func,
+#                     plot_kwargs=dict(edgecolor='w'))
+
+#     ax.set_xlabel('object radius')
+#     ax.set_ylabel('number of objects')
+
+#     plt.show()
+#---------------------------------------------------
+
+
+# plot_toydata_distribution('/home/david/Documents/Master/Thesis/selfexplainer/datasets/TOY_MULTI')
 
     
 
