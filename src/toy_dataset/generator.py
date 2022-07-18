@@ -9,7 +9,7 @@ from torch import _shape_as_tensor, randint, square
 from .shapes import *
 import matplotlib.pyplot as plt
 from matplotlib import colors
-from random import randint, sample
+from random import randint, sample, choice
 from tqdm import tqdm
 from pathlib import Path
 import xml.etree.ElementTree as ET
@@ -95,7 +95,7 @@ class Generator:
         return self.__generate(get_i(idx, self.shapes))
 
     
-    def create(self, number_per_shape, proportions):
+    def create(self, number_per_shape, proportions, multiclass=False):
 
         proportions = [float(x) for x in proportions]
         if len(proportions) != 3 or sum(proportions) != 1.0:
@@ -112,8 +112,14 @@ class Generator:
             i = 1
             for _ in range(number_per_shape):
                 for shape in self.shapes:
+                    gen_shapes = [shape]
+                    if multiclass:
+                        r = randint(1, 2)
+                        if r == 2:
+                            shape_2 = choice(self.shapes)
+                            gen_shapes.append(shape_2)
                     filename = f'{i:0{num_length}d}'
-                    s = self.__generate([shape])
+                    s = self.__generate(gen_shapes)
                     self.__save(s, filename)
                     for o in s['objects']:
                         try:

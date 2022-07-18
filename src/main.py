@@ -27,7 +27,6 @@ from utils.image_display import save_all_class_masked_images, save_masked_image
 
 from toy_dataset import generator
 
-
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 parser = get_parser()

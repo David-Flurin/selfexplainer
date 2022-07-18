@@ -16,17 +16,17 @@ data_base_path = Path("../../datasets/")
 VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
+
 datasets = ["TOY"]
 classifiers = ["resnet50"]
-vgg16_voc_checkpoint = "../checkpoints/pretrained_classifiers/vgg16_voc.ckpt"
-vgg16_coco_checkpoint = "../checkpoints/pretrained_classifiers/vgg16_coco.ckpt"
+resnet50_toy_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 
-methods = ["selfexplainer"]
+methods = ["classification"]
 #################################################################################################################################
 
 try:
