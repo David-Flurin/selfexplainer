@@ -163,9 +163,13 @@ class Generator:
             val += (get_i(val_idx, v))
             test += (get_i(test_idx, v))
         
-        train.sort(key=int)
-        val.sort(key=int)
-        test.sort(key=int)
+        if len(train) > 0:
+            train = sorted(list(set(train)))
+        if len(val) > 0:
+            val = sorted(list(set(val)))
+        if len(test) > 0:
+            test = sorted(list(set(test)))
+
         self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', 'train.txt'), train)
         self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', 'val.txt'), val)
         self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', 'test.txt'), test)
@@ -195,9 +199,12 @@ class Generator:
             val += (get_i(val_idx, v))
             test += (get_i(test_idx, v))
 
-        train.sort(key=int)
-        val.sort(key=int)
-        test.sort(key=int)
+        if len(train) > 0:
+            train = sorted(list(set(train)))
+        if len(val) > 0:
+            val = sorted(list(set(val)))
+        if len(test) > 0:
+            test = sorted(list(set(test)))
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'train.txt'), train)
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'val.txt'), val)
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'test.txt'), test)

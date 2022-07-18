@@ -4,22 +4,18 @@ import torch
 import os
 import sys
 import shutil
-import datetime
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.profiler import AdvancedProfiler, SimpleProfiler, PyTorchProfiler
 from pathlib import Path
-import pickle
-import hashlib
 
 from data.dataloader import ColorDataModule, MNISTDataModule, OIDataModule, OISmallDataModule, ToyDataModule, VOCDataModule, COCODataModule, CUB200DataModule, ToyData_Saved_Module, VOC2012DataModule
 from models.resnet50 import Resnet50
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
-from models.classifier import Classifier
-from models.fcn_16 import FCN16
+from models.explainer_classifier import ExplainerClassifierModel
 from plot import plot_metrics_from_file
 
 from models.mlp import MLP
@@ -27,6 +23,9 @@ from utils.image_display import save_all_class_masked_images, save_masked_image
 
 from toy_dataset import generator
 
+# generator = generator.Generator('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/foreground.txt', '/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset/background.txt')
+# generator.create(500, [0, 0, 1], multiclass=True)
+# quit()
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
 parser = get_parser()
@@ -109,7 +108,7 @@ elif args.dataset == "TOY":
         epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), multiclass=args.multiclass, 
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
-    num_classes = 8 if args.model_to_train == 'fcn' else 8
+    num_classes = 8
 
 elif args.dataset == "TOY_SAVED":
     data_path = main_dir / args.data_base_path / 'TOY'
@@ -166,6 +165,27 @@ if args.model_to_train == "selfexplainer":
          weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multiclass=args.multiclass, use_bounding_loss=args.use_bounding_loss, 
          similarity_loss_mode=args.similarity_loss_mode, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
          freeze_every=args.freeze_every, background_activation_loss=args.background_activation_loss, save_all_class_masks=args.save_all_class_masks, objective=args.objective, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
+        )
+
+elif args.model_to_train == "explainer":
+    model = ExplainerClassifierModel(
+        num_classes=num_classes, dataset=args.dataset, classifier_type=args.classifier_type, classifier_checkpoint=args.classifier_checkpoint, fix_classifier=args.fix_classifier, learning_rate=args.learning_rate, 
+        class_mask_min_area=args.class_mask_min_area, class_mask_max_area=args.class_mask_max_area, entropy_regularizer=args.entropy_regularizer, use_mask_variation_loss=args.use_mask_variation_loss, 
+        mask_variation_regularizer=args.mask_variation_regularizer, use_mask_area_loss=args.use_mask_area_loss, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, 
+        mask_total_area_regularizer=args.mask_total_area_regularizer, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, 
+        save_masked_images=args.save_masked_images, save_masks=args.save_masks,
+        save_all_class_masks=args.save_all_class_masks, save_path=args.save_path
+    )
+    print(model)
+
+    if args.explainer_classifier_checkpoint != None:
+        model = model.load_from_checkpoint(
+            args.explainer_classifier_checkpoint,
+            num_classes=num_classes, dataset=args.dataset, classifier_type=args.classifier_type, classifier_checkpoint=args.classifier_checkpoint, fix_classifier=args.fix_classifier, learning_rate=args.learning_rate, 
+            class_mask_min_area=args.class_mask_min_area, class_mask_max_area=args.class_mask_max_area, entropy_regularizer=args.entropy_regularizer, use_mask_variation_loss=args.use_mask_variation_loss, 
+            mask_variation_regularizer=args.mask_variation_regularizer, use_mask_area_loss=args.use_mask_area_loss, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, 
+            mask_total_area_regularizer=args.mask_total_area_regularizer, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, 
+            save_masked_images=args.save_masked_images, save_masks=args.save_masks, save_all_class_masks=args.save_all_class_masks, save_path=args.save_path
         )
 
 elif args.model_to_train == "slike_selfexplainer":
@@ -227,15 +247,7 @@ elif args.model_to_train == "resnet50":
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, 
        gpu=args.gpu, metrics_threshold=args.metrics_threshold, multiclass=args.multiclass, weighted_sampling=args.weighted_sampling
     )
-elif args.model_to_train == "classifier":
-    model = Classifier(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path, gpu=args.gpu, profiler=profiler
-    )
-    if args.checkpoint != None:
-        model = model.load_from_checkpoint(
-            args.checkpoint,
-            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, save_path=args.save_path
-        )
+
 elif args.model_to_train == 'simple':
     model = Simple_Model(
         num_classes=num_classes, pretrained=False, aux_classifier=args.aux_classifier, learning_rate=args.learning_rate, dataset = args.dataset, multiclass=args.multiclass

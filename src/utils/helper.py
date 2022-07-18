@@ -2,7 +2,7 @@ import torch
 import os
 import random
 
-def get_targets_from_annotations(annotations, dataset, num_classes, include_background_class=False, gpu=0, toy_target='texture'):
+def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
     
     if dataset in ["VOC", 'VOC2012', "OI"]:
@@ -56,7 +56,7 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
     elif dataset in ["TOY", "TOY_SAVED"]:
         target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
         batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
+        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
         for i in range(batch_size):
             targets = annotations[i]['objects']
             for obj in targets:
@@ -69,14 +69,10 @@ def get_targets_from_annotations(annotations, dataset, num_classes, include_back
 
     elif dataset == 'COLOR':
         batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
+        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
         for i in range(batch_size):
             target_vectors[i] = torch.Tensor(annotations[i]['logits'])
 
-    elif dataset == "MNIST":
-        batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, num_classes), fill_value=0.0, device=device)
-        for i in range(batch_size):
             target_vectors[i][annotations[i]] = 1.0
 
     return target_vectors

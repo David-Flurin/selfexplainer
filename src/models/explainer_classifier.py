@@ -7,8 +7,9 @@ from pathlib import Path
 
 from models.explainer import Deeplabv3Resnet50ExplainerModel
 from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
+from models.resnet50 import Resnet50
 from utils.helper import get_targets_from_annotations, get_filename_from_annotations, extract_masks
-from utils.image_display import save_mask, save_masked_image, save_all_class_masked_images
+from utils.image_display import save_mask, save_masked_image, save_all_class_masks
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss
 from utils.metrics import MultiLabelMetrics
 
@@ -52,7 +53,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         if classifier_type == "vgg16":
             self.classifier = VGG16ClassifierModel(num_classes=num_classes)
         elif classifier_type == "resnet50":
-            self.classifier = Resnet50ClassifierModel(num_classes=num_classes)
+            self.classifier = Resnet50(num_classes=num_classes)
         else:
             raise Exception("Unknown classifier type " + classifier_type)
             
@@ -168,7 +169,7 @@ class ExplainerClassifierModel(pl.LightningModule):
 
         if self.save_all_class_masks and image.size()[0] == 1 and self.dataset == "VOC":
             filename = Path(self.save_path) / "all_class_masks" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_all_class_masked_images(image, segmentations, filename)
+            save_all_class_masks(image, segmentations, filename)
         
         if self.dataset == "CUB":
             labels = targets.argmax(dim=1)

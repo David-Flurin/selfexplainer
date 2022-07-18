@@ -1,117 +1,232 @@
 import torch
 import pytorch_lightning as pl
 
-from torch import nn, softmax
+from torch import nn
 from torch.optim import Adam
-from pathlib import Path
-
-from copy import deepcopy
-
 from torchvision import models
-from utils.helper import get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution
-from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image
-from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss
-from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
-from utils.weighting import softmax_weighting
 
-class Classifier(pl.LightningModule):
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, gpu=0, profiler=None, metrics_threshold=-1.0, save_path="./results/"):
+from utils.helper import get_targets_from_annotations
+from utils.metrics import MultiLabelMetrics
 
+class VGG16ClassifierModel(pl.LightningModule):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, use_imagenet_pretraining=True, fix_classifier_backbone=True, metrics_threshold=0.0):
         super().__init__()
 
-        self.gpu = gpu
-        self.profiler = profiler
+        self.setup_model(num_classes=num_classes, use_imagenet_pretraining=use_imagenet_pretraining, fix_classifier_backbone=fix_classifier_backbone)
 
-        self.learning_rate = learning_rate
-
-        self.model = models.resnet50()
-        self.model.fc = nn.Linear(2048, num_classes)
-        self.dataset = dataset
-
-        self.num_classes = num_classes
-
-        self.setup_losses()
+        self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
-        if self.dataset == 'TOY':
-            self.f_tex_dist = Distribution()
-            self.b_text_dist = Distribution()
-            self.shapes_dist = Distribution()
+        self.dataset = dataset
+        self.learning_rate = learning_rate
 
-        self.i = 0
+    def setup_model(self, num_classes, use_imagenet_pretraining, fix_classifier_backbone):
+        backbone = models.vgg16(pretrained=use_imagenet_pretraining)
 
+        layers = list(backbone.children())[:-1]
 
-    def setup_losses(self):
-        self.classification_loss_fn = nn.BCEWithLogitsLoss()
+        self.feature_extractor = nn.Sequential(*layers[0])
+        self.avgpool = layers[1]
+
+        if fix_classifier_backbone:
+            self.feature_extractor.eval()
+
+            for param in self.feature_extractor.parameters():
+                param.requires_grad = False
+
+            self.avgpool.eval()
+            for param in self.avgpool.parameters():
+                param.requires_grad = False
+
+        self.classifier = nn.Sequential(
+            nn.Linear(in_features=25088, out_features=4096, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5, inplace=False),
+            nn.Linear(in_features=4096, out_features=4096, bias=True),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5, inplace=False),
+            nn.Linear(in_features=4096, out_features=num_classes, bias=True)
+        )
+
+    def setup_losses(self, dataset):
+        if dataset == "CUB":
+            self.classification_loss_fn = nn.CrossEntropyLoss()
+        else:
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
 
     def setup_metrics(self, num_classes, metrics_threshold):
         self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
         self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
         self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
-    
-
-
-    def forward(self, image, targets):
-        logits = self.model(image) 
-        return logits
-
-    def training_step(self, a, batch_idx):
-        image, annotations = a
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes = self.num_classes, gpu=self.gpu)
-
-        if self.dataset == 'TOY':
-            for a in annotations:
-                for obj in a['objects']:
-                    self.shapes_dist.update(obj[0])
-                    self.f_tex_dist.update(obj[1])
-            self.b_text_dist.update(a['background'])
-           
+    def forward(self, x):
+        x = self.feature_extractor(x)
+        x = self.avgpool(x)
+        x = torch.flatten(x, 1)
         
-        logits = self(image, targets)
-        loss = self.classification_loss_fn(logits, targets)
-        self.log('loss', float(loss))
+        x = self.classifier(x)
 
-        self.i += 1.
-        self.log('iterations', self.i, prog_bar=True)
-       
+        return x
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
+
+        self.log('train_loss', loss)
         self.train_metrics(logits, targets)
+
         return loss
 
     def training_epoch_end(self, outs):
         self.log('train_metrics', self.train_metrics.compute())
         self.train_metrics.reset()
-        # self.f_tex_dist.print_distribution()
-        # self.b_text_dist.print_distribution()
-        # self.shapes_dist.print_distribution()
 
     def validation_step(self, batch, batch_idx):
-        image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        
-        
-        logits = self(image, targets)
-        loss = self.classification_loss_fn(logits, targets)
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
 
         self.log('val_loss', loss)
-        self.valid_metrics(logits, targets) 
-   
+        self.valid_metrics(logits, targets)
+
     def validation_epoch_end(self, outs):
         self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
         self.valid_metrics.reset()
 
     def test_step(self, batch, batch_idx):
-        image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
-        
-        logits = self(image, targets)
-        loss = self.classification_loss_fn(logits, targets)
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
 
         self.log('test_loss', loss)
         self.test_metrics(logits, targets)
 
     def test_epoch_end(self, outs):
         self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
+        self.test_metrics.save(model="classifier", classifier_type="vgg16", dataset=self.dataset)
+        self.test_metrics.reset()
+
+    def configure_optimizers(self):
+        return Adam(self.parameters(), lr=self.learning_rate)
+
+class Resnet50ClassifierModel(pl.LightningModule):
+
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, use_imagenet_pretraining=True, fix_classifier_backbone=True, metrics_threshold=0.0):
+        super().__init__()
+
+        self.setup_model(num_classes=num_classes, use_imagenet_pretraining=use_imagenet_pretraining, fix_classifier_backbone=fix_classifier_backbone)
+
+        self.setup_losses(dataset=dataset)
+        self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
+
+        self.dataset = dataset
+        self.learning_rate = learning_rate
+
+    def setup_model(self, num_classes, use_imagenet_pretraining, fix_classifier_backbone):
+        backbone = models.resnet50(pretrained=use_imagenet_pretraining)
+
+        num_filters = backbone.fc.in_features
+        layers = list(backbone.children())[:-1]
+        self.feature_extractor = nn.Sequential(*layers)
+
+        if fix_classifier_backbone:
+            self.feature_extractor.eval()
+            for param in self.feature_extractor.parameters():
+                param.requires_grad = False
+
+        self.classifier = nn.Linear(in_features=num_filters, out_features=num_classes, bias=True)
+
+    def setup_losses(self, dataset):
+        if dataset == "CUB":
+            self.classification_loss_fn = nn.CrossEntropyLoss()
+        else:
+            self.classification_loss_fn = nn.BCEWithLogitsLoss()
+
+    def setup_metrics(self, num_classes, metrics_threshold):
+        self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+
+    def forward(self, x):
+        representations = self.feature_extractor(x).flatten(1)
+        x = self.classifier(representations)
+
+        return x
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
+
+        self.log('train_loss', loss)
+        self.train_metrics(logits, targets)
+
+        return loss
+
+    def training_epoch_end(self, outs):
+        self.log('train_metrics', self.train_metrics.compute())
+        self.train_metrics.reset()
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
+
+        self.log('val_loss', loss)
+        self.valid_metrics(logits, targets)
+
+    def validation_epoch_end(self, outs):
+        self.log('val_metrics', self.valid_metrics.compute(), prog_bar=True)
+        self.valid_metrics.reset()
+
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        logits = self(x)
+        targets = get_targets_from_annotations(y, dataset=self.dataset)
+
+        if self.dataset == "CUB":
+            labels = targets.argmax(dim=1)
+            loss = self.classification_loss_fn(logits, labels)
+        else:
+            loss = self.classification_loss_fn(logits, targets)
+
+        self.log('test_loss', loss)
+        self.test_metrics(logits, targets)
+
+    def test_epoch_end(self, outs):
+        self.log('test_metrics', self.test_metrics.compute(), prog_bar=True)
+        self.test_metrics.save(model="classifier", classifier_type="resnet50", dataset=self.dataset)
         self.test_metrics.reset()
 
     def configure_optimizers(self):
