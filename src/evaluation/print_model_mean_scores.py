@@ -2,8 +2,7 @@ import numpy as np
 from statistics import mean
 import sys
 
-#filename = sys.argv[1]
-filename = 'results/results_voc.npz'
+filename = sys.argv[1]
 
 with np.load(filename, allow_pickle=True) as file:
     results = file["results"].item()

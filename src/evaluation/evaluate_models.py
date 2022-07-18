@@ -32,7 +32,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         data_path = Path(data_base_path) / "VOC2012"
         data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "OI":
-        num_classes = 20
+        num_classes = 13
         data_path = Path(data_base_path) / "OI"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
@@ -118,21 +118,22 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/VOC2012/")
-data_base_path = Path("../../datasets/")
-VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-VOC2012_segmentations_path = Path("../../datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
-TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
+masks_path = Path("data/multilabel/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
+VOC2012_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
+TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
+OI_segmentations_path = Path('/scratch/snx3000/dniederb/datasets/OI/test1/segmentations/')
 
-dataset = "VOC2012"
+dataset = "TOY"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/VOC2012/"
-checkpoints = ["1_pass", "3_passes", "3_passes_frozen"]
+checkpoints_base_path = "../checkpoints/TOY/multilabel/"
+checkpoints = ["aux_class_first"]
 
 load_file = ''
-save_file = 'results/results_voc.npz'
-
+save_file = 'results/results_toy_multilabel_auxhead_new.npz'
+compute_masks = False
 
 
 #################################################################################################################################
@@ -163,8 +164,12 @@ for checkpoint in checkpoints:
             aux_classifier=True
         else:
             aux_classifier=False
-        #classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
         
+        if compute_masks:
+            classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
+        else:
+            save_path = masks_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
+            classification_metrics = np.load(save_path / 'classification_metrics.npz' , allow_pickle=True)["classification_metrics"].item()
 
         d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
                                                                                                                         masks_path=masks_path, 
@@ -200,6 +205,6 @@ for checkpoint in checkpoints:
 
 
 
-np.savez(save_file, results=results)
+        np.savez(save_file, results=results)
 
 

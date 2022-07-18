@@ -21,7 +21,8 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
 
         self.aux_classifier = aux_classifier
         if self.aux_classifier:
-            a_c = FCHead_old(1024, num_classes)
+            a_c = FCHead_old(2048, num_classes, deepcopy(self.model.backbone.layer4))
+            #a_c = FCHead(1024, num_classes)
             self.model = ModifiedDeepLab(self.model.backbone, self.model.classifier, a_c)
 
 
@@ -44,10 +45,11 @@ class FCHead_old(nn.Module):
         self.fc = nn.Linear(in_channel, num_classes)
 
     def forward(self, x):
-        #x = self.last_resnet_layer(x)
+        x = self.last_resnet_layer(x)
         x = self.pool(x)
         x = torch.flatten(x, 1)
         return self.fc(x)
+
 
 class FCHead(nn.Module):
     def __init__(self, in_channels, num_classes):
@@ -66,6 +68,7 @@ class FCHead(nn.Module):
     def forward(self, x):
         x =  self.layers(x)
         return torch.flatten(x, 1)
+
 
 class ModifiedDeepLab(DeepLabV3):
 

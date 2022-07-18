@@ -241,7 +241,7 @@ class BaseModel(pl.LightningModule):
                     output[f'object_{i}'] = self._forward(new_batch_masked, targets)
                 # plt.show()
             else:
-                output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets,frozen=self.frozen)
+                output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
             
         
         if self.use_background_loss:   

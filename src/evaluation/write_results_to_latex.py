@@ -11,8 +11,6 @@ try:
     checkpoint_dict = json.loads(sys.argv[2])
 except:
     checkpoint_dict = None
-results_file = 'results/results_toy_singlelabel.npz'
-print(type(checkpoint_dict))
 
 
 mode = 'micro'
