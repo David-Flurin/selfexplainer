@@ -167,7 +167,7 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
                 target_vectors[i][index] = 1.0
 
     elif dataset == 'OI':
-        target_dict = get_target_dictionary(include_background_class)
+        target_dict = get_class_dictionary(dataset, include_background_class)
         objects = [item['annotation']['object'] for item in annotations]
 
         batch_size = len(objects)
@@ -365,6 +365,29 @@ def get_class_weights(dataset):
         }
         target_dict = get_class_dictionary(dataset)
         numeral_stats = {k:stats[k] for k,v in target_dict.items()}
+    elif dataset == 'OI_LARGE':
+        stats = {
+            'Flower': 60224,
+            'Fish': 5400,
+            'Monkey': 2118,
+            'Cake': 3263,
+            'Sculpture': 17690,
+            'Lizard': 1821,
+            'Mobile phone': 4182,
+            'Camera': 4879,
+            'Bread': 1629,
+            'Guitar': 17463,
+            'Snake': 1175,
+            'Handbag': 1725,
+            'Pastry': 892,
+            'Ball': 3441,
+            'Flag': 8177,
+            'Piano': 1175,
+            'Rabbit': 1146,
+            'Book': 7739,
+            'Mushroom': 1741,
+            'Dress': 29087
+        }
     elif dataset == 'OISMALL':
         stats = {
             'cat': 13936,
