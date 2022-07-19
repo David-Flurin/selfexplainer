@@ -114,7 +114,7 @@ class OIDataset(Dataset):
         self.images = list(self.labels.keys())
 
         if root.parts[-2] == 'OI':
-            self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Cow', 'Horse', 'Sheep', 'Aeroplane', 'Bicycle', 'Boat', 'Bus', 'Car', 'Motorbike', 'Train', 'Bottle', 'Chair', 'Diningtable', 'Pottedplant', 'Sofa', 'TVmonitor']
+            self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Horse', 'Sheep', 'Aeroplane', 'Bus', 'Car', 'Motorbike', 'Train', 'Bottle', 'Sofa']
         elif root.parts[-2] == 'OI_LARGE':
             self.t_class_list = ['Flower', 'Fish', 'Monkey', 'Cake', 'Sculpture', 'Lizard', 'Mobile phone', 'Camera', 'Bread', 'Guitar', 'Snake', 'Handbag', 'Pastry', 'Ball', 'Flag', 'Piano', 'Rabbit', 'Book', 'Mushroom']
         else:
