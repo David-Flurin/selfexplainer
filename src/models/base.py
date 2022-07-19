@@ -372,7 +372,7 @@ class BaseModel(pl.LightningModule):
         else:
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
 
                
         t_classes = target_vector.sum(0)
@@ -630,7 +630,7 @@ class BaseModel(pl.LightningModule):
         else:
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
 
 
         

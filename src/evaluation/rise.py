@@ -16,13 +16,13 @@ from models.resnet50 import Resnet50
 from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
-dataset = 'TOY' # one of: ['VOC', 'TOY']
-data_base_path = '../../datasets/'
+dataset = 'TOY_MULTI' # one of: ['VOC', 'TOY']
+data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
-VOC_segmentations_directory = '../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
-TOY_segmentations_directory = "../../datasets/TOY/segmentations/textures/"
-TOY_MULTI_segmentations_directory = "../../datasets/TOY_MULTI/segmentations/textures/"
+classifier_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
+VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
+TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
+TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
 
 #####################################################################################
     
@@ -57,7 +57,7 @@ class RISEModel(pl.LightningModule):
         super().__init__()
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.model.layer4[-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -102,7 +102,7 @@ class RISEModel(pl.LightningModule):
         global total_time
         total_time += end_time - start_time
 
-        save_mask(saliency_map, save_path / filename)
+        save_mask(saliency_map, save_path / filename, dataset=dataset)
 
 model = RISEModel(num_classes=num_classes)
 trainer = pl.Trainer(gpus=[0] if torch.cuda.is_available() else 0)

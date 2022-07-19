@@ -18,13 +18,12 @@ from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
 dataset = 'TOY_MULTI' # one of: ['VOC', 'TOY']
-data_base_path = '../../datasets/'
+data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
-VOC_segmentations_directory = '../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
-COCO_segmentations_directory = './coco_segmentations/'
-TOY_segmentations_directory = "../../datasets/TOY/segmentations/textures/"
-TOY_MULTI_segmentations_directory = "../../datasets/TOY_MULTI/segmentations/textures/"
+classifier_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
+VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
+TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
+TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
 
 #####################################################################################
     
@@ -61,7 +60,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.model.layer4[-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
