@@ -114,7 +114,7 @@ class ExplainerClassifierModel(pl.LightningModule):
             mask_area_loss += self.ncmask_total_area_regularizer * non_target_mask.mean()
             loss += mask_area_loss
 
-        self.log('train_loss', loss)
+        self.log('loss', loss)
         self.train_metrics(logits_mask, targets)
 
         return loss

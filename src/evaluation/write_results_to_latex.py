@@ -15,7 +15,7 @@ except:
 
 mode = 'micro'
 checkpoint_dict = {"1_pass": "1 Pass", "3_passes_frozen_final": "3 Passes", "aux_class_old": "Aux classifier old", "aux_class_first": "Aux classifier new"}
-
+metric_list = ['classification_metrics']
 
 with open(results_file[:-3]+".txt", 'w') as table_file:
     table = Texttable()
@@ -24,8 +24,8 @@ with open(results_file[:-3]+".txt", 'w') as table_file:
 
     with np.load(results_file, allow_pickle=True) as results_file:
         results = results_file["results"].item()
-        metric_names = list(next(iter(results.values())).keys())
-        if 'classification_metrics' in metric_names:
+        metric_names = metric_list
+        if 'classification_metrics' in metric_list:
             i = metric_names.index('classification_metrics')
             metric_names = metric_names[:i] + ['f1_class', 'prec', 'rec'] + metric_names[i+1:]
         column_align += ['c' for i in range(len(metric_names))]
@@ -40,8 +40,9 @@ with open(results_file[:-3]+".txt", 'w') as table_file:
             else:
                 model_name = model
             metrics = [model_name]
-            metric_list = results[model].values()
-            for metric in results[model]:
+            for metric in metric_list:
+                if metric not in results[model]:
+                    metrics.append(None)
                 if metric == 'classification_metrics':
                     for c_metric in results[model][metric]:
                         metrics.append(results[model][metric][c_metric][mode])
@@ -55,8 +56,11 @@ with open(results_file[:-3]+".txt", 'w') as table_file:
         
         # Calculate best entry per metric and boldface it
         best_metrics = dict.fromkeys(metric_names,(-1000, -1))
-        best_metrics['sal'] = (1000, -1)
-        best_metrics['background_c'] = (1000, -1)
+        if 'sal' in best_metrics:
+            best_metrics['sal'] = (1000, -1)
+        if 'background_c' in best_metrics:
+            best_metrics['background_c'] = (1000, -1)
+            
         for i, row in enumerate(rows[1:], 1):
             for j, m in enumerate(row[1:], 1):
                 if rows[0][j] in ['sal', 'background_c']:

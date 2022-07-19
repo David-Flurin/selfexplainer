@@ -185,6 +185,7 @@ class OIDataModule(pl.LightningDataModule):
     def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
         super().__init__()
 
+        self.type = data_path.name
         self.data_path = Path(data_path)
         self.weighted_sampling = weighted_sampling
 
@@ -220,7 +221,7 @@ class OIDataModule(pl.LightningDataModule):
         return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
     def calculate_weights(self):
-        oi_classes = get_class_dictionary('OI', include_background_class=False)
+        oi_classes = get_class_dictionary(self.type, include_background_class=False)
         img_classes = {}
         obj_img_count = [0] * len(oi_classes)
         for img, classes in self.train.labels.items():
