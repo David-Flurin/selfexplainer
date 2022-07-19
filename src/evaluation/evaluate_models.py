@@ -118,7 +118,6 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-<<<<<<< HEAD
 masks_path = Path("data/multilabel/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
@@ -129,7 +128,6 @@ OI_segmentations_path = Path('/scratch/snx3000/dniederb/datasets/OI/test1/segmen
 dataset = "TOY"
 multilabel = True
 classifiers = ["resnet50"]
-<<<<<<< HEAD
 checkpoints_base_path = "../checkpoints/TOY/multilabel/"
 checkpoints = ["aux_class_first"]
 

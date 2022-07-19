@@ -2,80 +2,7 @@ import torch
 import os
 import random
 
-def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, toy_target='texture'):
-    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
-    
-    if dataset in ["VOC", 'VOC2012', "OI"]:
-        target_dict = get_target_dictionary(include_background_class)
-        objects = [item['annotation']['object'] for item in annotations]
 
-        batch_size = len(objects)
-        target_vectors = torch.full((batch_size, 20), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            object_names = [item['name'] for item in objects[i]]
-
-            for name in object_names:
-                index = target_dict[name]
-                target_vectors[i][index] = 1.0
-
-    if dataset in ["SMALLVOC", 'OISMALL']:
-        target_dict = get_small_target_dictionary(include_background_class)
-        objects = [item['annotation']['object'] for item in annotations]
-
-        batch_size = len(objects)
-        target_vectors = torch.full((batch_size, len(target_dict)), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            object_names = [item['name'] for item in objects[i]]
-
-            for name in object_names:
-                try:
-                    index = target_dict[name]
-                    target_vectors[i][index] = 1.0
-                except KeyError:
-                    pass
-        if target_vectors.sum() < batch_size:
-            raise ValueError('Target vector is all zero')
-
-            
-
-    elif dataset == "COCO":
-        batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, 91), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            targets = annotations[i]['targets']
-            for target in targets:
-                target_vectors[i][target] = 1.0
-
-    elif dataset == "CUB":
-        batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, 200), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            target = annotations[i]['target']
-            target_vectors[i][target] = 1.0
-
-    elif dataset in ["TOY", "TOY_SAVED"]:
-        target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
-        batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            targets = annotations[i]['objects']
-            for obj in targets:
-                if toy_target == 'texture':
-                    name = obj[1]
-                else:
-                    name = obj[0]
-                index = target_dict[name]
-                target_vectors[i][index] = 1.0
-
-    elif dataset == 'COLOR':
-        batch_size = len(annotations)
-        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
-        for i in range(batch_size):
-            target_vectors[i] = torch.Tensor(annotations[i]['logits'])
-
-            target_vectors[i][annotations[i]] = 1.0
-
-    return target_vectors
 
 def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
@@ -151,6 +78,27 @@ def get_target_dictionary(include_background_class):
 
     return target_dict
 
+def get_OI_dictionary(include_background_class):
+    target_dict = {'aeroplane' : 0, 'train' : 1, 'bird' : 2, 'motorbike' : 3, 'bottle' : 4, 'bus' : 5, 'car' : 6, 
+            'cat' : 7, 'sofa' : 8, 'sheep' : 9, 'person' : 10, 'dog' : 11, 'horse' : 12  
+            }
+
+    if include_background_class:
+        target_dict['background'] = len(target_dict.values())
+
+    return target_dict
+
+def get_large_OI_dictionary(include_background_class):
+    
+
+    target_dict = {'Flower':0, 'Fish':1, 'Monkey':2, 'Cake':3, 'Sculpture':4, 'Lizard':5, 'Mobile phone':6, 'Camera':7, 'Bread':8, 'Guitar':9,
+                     'Snake':10, 'Handbag':11, 'Pastry':12, 'Ball':13, 'Flag':14, 'Piano':15, 'Rabbit':16, 'Book':17, 'Mushroom':18, 'Dress':19}
+
+    if include_background_class:
+        target_dict['background'] = len(target_dict.values())
+
+    return target_dict
+
 def get_small_target_dictionary(include_background_class):
     if include_background_class:
         target_dict = {'background' : 0, 'cat' : 1, 'dog' : 2, 'bird' : 3}
@@ -186,8 +134,12 @@ def get_color_dictionary(include_background_class, rgb=True):
     return target
 
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
-    if dataset in ['VOC', 'VOC2012', 'OI']:
+    if dataset in ['VOC', 'VOC2012']:
         return get_target_dictionary(include_background_class=include_background_class)
+    elif dataset == 'OI':
+        return get_OI_dictionary(include_background_class=include_background_class)
+    elif dataset == 'OI_LARGE':
+        return get_large_OI_dictionary(include_background_class=include_background_class)
     elif dataset in ['SMALLVOC', 'OISMALL']:
         return get_small_target_dictionary(include_background_class=include_background_class)
     elif dataset in ['TOY', 'TOY_SAVED']:
@@ -198,6 +150,86 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         raise ValueError('Dataset not known.')
 
 
+def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, toy_target='texture'):
+    device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
+    
+    if dataset in ["VOC", 'VOC2012', 'OI_LARGE']:
+        target_dict = get_class_dictionary(dataset, include_background_class)
+        objects = [item['annotation']['object'] for item in annotations]
+
+        batch_size = len(objects)
+        target_vectors = torch.full((batch_size, 20), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            object_names = [item['name'] for item in objects[i]]
+
+            for name in object_names:
+                index = target_dict[name]
+                target_vectors[i][index] = 1.0
+
+    elif dataset == 'OI':
+        target_dict = get_target_dictionary(include_background_class)
+        objects = [item['annotation']['object'] for item in annotations]
+
+        batch_size = len(objects)
+        target_vectors = torch.full((batch_size, 13), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            object_names = [item['name'] for item in objects[i]]
+
+            for name in object_names:
+                index = target_dict[name]
+                target_vectors[i][index] = 1.0
+
+    elif dataset in ["SMALLVOC", 'OISMALL']:
+        target_dict = get_small_target_dictionary(include_background_class)
+        objects = [item['annotation']['object'] for item in annotations]
+
+        batch_size = len(objects)
+        target_vectors = torch.full((batch_size, len(target_dict)), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            object_names = [item['name'] for item in objects[i]]
+
+            for name in object_names:
+                try:
+                    index = target_dict[name]
+                    target_vectors[i][index] = 1.0
+                except KeyError:
+                    pass
+        if target_vectors.sum() < batch_size:
+            raise ValueError('Target vector is all zero')
+
+            
+    elif dataset == "COCO":
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, 91), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            targets = annotations[i]['targets']
+            for target in targets:
+                target_vectors[i][target] = 1.0
+
+
+    elif dataset in ["TOY", "TOY_SAVED"]:
+        target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            targets = annotations[i]['objects']
+            for obj in targets:
+                if toy_target == 'texture':
+                    name = obj[1]
+                else:
+                    name = obj[0]
+                index = target_dict[name]
+                target_vectors[i][index] = 1.0
+
+    elif dataset == 'COLOR':
+        batch_size = len(annotations)
+        target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
+        for i in range(batch_size):
+            target_vectors[i] = torch.Tensor(annotations[i]['logits'])
+
+            target_vectors[i][annotations[i]] = 1.0
+
+    return target_vectors
 
 def get_toy_class_colors(include_background_class, toy_target):
     if toy_target == 'texture':
