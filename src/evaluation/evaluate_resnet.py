@@ -19,7 +19,6 @@ from utils.image_display import *
 
 from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
 
-from compute_scores import compute_numbers, selfexplainer_compute_numbers
 
 
 def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
@@ -91,7 +90,7 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
 dataset = "TOY"
 multilabel = False
@@ -99,7 +98,7 @@ checkpoints_base_path = "../checkpoints/resnet50/"
 checkpoints = ["toy_singlelabel"]
 
 load_file = ''
-save_file = 'results/result_resnet_toy_singlelabel.npz'
+save_file = 'results/resnet_toy_singlelabel.npz'
 
 
 #################################################################################################################################

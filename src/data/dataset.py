@@ -134,7 +134,6 @@ class OIDataset(Dataset):
         if self.transforms is not None:
             img = self.transforms(img)
         
-
         return img, {'annotation':{'object': [{'name': name.lower()} for name in set.intersection(set(self.t_class_list), set(self.labels[self.images[idx]]))], 'filename': self.images[idx]}}
 
 

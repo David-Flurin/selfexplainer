@@ -183,7 +183,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         else:
             loss = self.classification_loss_fn(logits, targets)
 
-        self.log('train_loss', loss)
+        self.log('loss', loss)
         self.train_metrics(logits, targets)
 
         return loss

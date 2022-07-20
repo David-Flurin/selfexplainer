@@ -19,18 +19,20 @@ TOY_segmentations_path = Path("../../datasets/TOY/segmentations/textures/")
 
 datasets = ["TOY"]
 classifiers = ["resnet50"]
-resnet50_toy_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
+resnet50_toy_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
+load_file = ''
+save_file = 'results/toy_singlelabel_gradcam_rise.npz'
 
-methods = ["classification"]
+methods = ["grad_cam, rise"]
 #################################################################################################################################
 
 try:
-    results = np.load("results.npz", allow_pickle=True)["results"].item()
+    results = np.load(load_file, allow_pickle=True)["results"].item()
 except:
     results = {}
 
