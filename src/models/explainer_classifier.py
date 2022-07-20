@@ -1,3 +1,4 @@
+from audioop import mul
 import torch
 import pytorch_lightning as pl
 
@@ -18,7 +19,7 @@ class ExplainerClassifierModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", classifier_type="vgg16", classifier_checkpoint=None, fix_classifier=True, learning_rate=1e-5, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, entropy_regularizer=1.0, use_mask_variation_loss=True, mask_variation_regularizer=1.0, use_mask_area_loss=True, 
                  mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, ncmask_total_area_regularizer=0.3, metrics_threshold=-1.0,
-                 save_masked_images=False, save_masks=False, save_all_class_masks=False, save_path="./results/"):
+                 save_masked_images=False, save_masks=False, save_all_class_masks=False, save_path="./results/", multilabel=True):
 
         super().__init__()
 
@@ -48,6 +49,8 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.save_path = save_path
         self.i = 0
 
+        self.multilabel = multilabel
+
     def setup_explainer(self, num_classes):
         self.explainer = Deeplabv3Resnet50ExplainerModel(num_classes=num_classes)
 
@@ -67,7 +70,7 @@ class ExplainerClassifierModel(pl.LightningModule):
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         self.total_variation_conv = TotalVariationConv()
 
-        if dataset in ["TOY", "OI"]:
+        if not self.multilabel:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
@@ -98,7 +101,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations = self(image, targets)
 
-        if self.dataset in ["OI", "TOY"]:
+        if not self.multilabel:
             labels = targets.argmax(dim=1)
             classification_loss_mask = self.classification_loss_fn(logits_mask, labels)
         else:
@@ -139,7 +142,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations = self(image, targets)
         
-        if self.dataset in ["OI", "TOY"]:
+        if not self.multilabel:
             labels = targets.argmax(dim=1)
             classification_loss_mask = self.classification_loss_fn(logits_mask, labels)
         else:
