@@ -118,6 +118,7 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
     if compute_p:
         device = get_device()
         model = model.to(device)
+        model.eval()
 
     for x, category_id, filename in segmented_generator(data_module, segmentations_path):
         seg_mask = open_segmentation_mask(segmentations_path / filename, dataset_name)
@@ -133,6 +134,7 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             else:
                 raise ValueError("Something went wrong!")
 
+        
         else:
             try:
                 npz_name = Path(str(filename)[:-4] + ".npz")
@@ -141,11 +143,13 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
                 continue
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
+
         if compute_p:
-            x = x.to(device)
             logits = model.forward(x)
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
             x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
+            plt.imshow(x_masked[0].permute(1,2,0))
+            plt.show()
             logits_mask = model.forward(x_masked)
             p_mask = torch.nn.functional.softmax(logits_mask, dim=1).detach().cpu().numpy().squeeze()
             x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(device) * x

@@ -5,7 +5,22 @@ from texttable import Texttable
 import sys
 import json
 
-result_files = ['results/resnet_toy_singlelabel.npz', 'results/results_toy_singlelabel.npz']
+metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'c_f1', 'a_f1s': 'a_f1s', 'aucs': 'aucs', 'd_IOU': 'd_IOU', 'c_IOU': 'c_IOU', 'sal': 'sal', 'over': 'over', 'background_c': 'background_c', 'mask_c': 'mask_c', 'sr': 'sr'}
+
+def find_checkpoint(result_dict):
+    results = {}
+    for k in result_dict:
+        if k in checkpoint_dict.keys():
+            results[k] = result_dict[k]
+        else:
+            try:
+                d = find_checkpoint(result_dict[k])
+                results = {**results, **d}
+            except:
+                continue
+    return results
+
+result_files = ['results/toy_singlelabel_gradcam_rise.npz', 'results/results_toy_singlelabel.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
@@ -14,8 +29,9 @@ except:
 
 
 mode = 'micro'
-checkpoint_dict = {"toy_singlelabel": "Resnet50 Classifier", "1_pass": "Simple Selfexplainer", "3_passes_frozen_final": "Selfexplainer"}
-metric_dict = {'classification_metrics': 'classification_metrics'}
+checkpoint_dict = {"grad_cam": "GradCam", "rise": "Rise", "1_pass": "Simple Selfexplainer", "3_passes_frozen_final": "Selfexplainer"}
+metric_list = ['d_f1_25', 'd_f1_50', 'd_f1_75', 'd_f1', 'c_f1', 'a_f1s', 'aucs', 'd_IOU', 'c_IOU', 'sal', 'over', 'background_c', 'mask_c', 'sr']
+
 
 table = Texttable()
 column_align = ['l']
@@ -25,8 +41,10 @@ for results_file in result_files:
     with np.load(results_file, allow_pickle=True) as results_file:
         results = {**results, **(results_file["results"].item())}
 
-metric_names = list(metric_dict.values())
-if 'classification_metrics' in metric_dict.keys():
+results = find_checkpoint(results)
+
+metric_names = [metrics_dict[m] for m in metric_list]
+if 'classification_metrics' in metric_list:
     i = metric_names.index('classification_metrics')
     metric_names = metric_names[:i] + ['F1', 'Precision', 'Recall'] + metric_names[i+1:]
 column_align += ['c' for i in range(len(metric_names))]
@@ -41,7 +59,7 @@ for model in results:
     else:
         model_name = model
     metrics = [model_name]
-    for metric in metric_dict.keys():
+    for metric in metrics_dict.keys():
         if metric not in results[model]:
             metrics.append(None)
         if metric == 'classification_metrics':

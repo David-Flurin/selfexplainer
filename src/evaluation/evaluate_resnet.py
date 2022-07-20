@@ -70,6 +70,10 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
         start_time = default_timer()
+        from matplotlib import pyplot as plt
+        plt.imshow(image[0].permute(1,2,0))
+        plt.show()
+        torch.save(image,'eval_tensor.pt')
         logits = model(image)
         pred = logits_fn(logits)
         preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
@@ -90,7 +94,7 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+data_base_path = Path("../../datasets/")
 
 dataset = "TOY"
 multilabel = False
