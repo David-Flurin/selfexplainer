@@ -143,8 +143,8 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
                 continue
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
-
         if compute_p:
+            x = x.to(device)
             logits = model.forward(x)
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
             x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
