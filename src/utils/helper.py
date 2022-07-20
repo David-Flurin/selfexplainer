@@ -209,7 +209,7 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
                 target_vectors[i][target] = 1.0
 
 
-    elif dataset in ["TOY", "TOY_SAVED"]:
+    elif dataset in ["TOY", "TOY_SAVED", "TOY_MULTI"]:
         target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
         batch_size = len(annotations)
         target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)

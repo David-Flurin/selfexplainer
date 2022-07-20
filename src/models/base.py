@@ -781,7 +781,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE', 'TOY_SAVED', 'TOY_MULTI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
