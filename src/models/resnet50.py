@@ -68,7 +68,7 @@ class Resnet50(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI', 'OI_LARGE']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce', classwise=True, dataset=self.dataset)
@@ -83,11 +83,11 @@ class Resnet50(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset,  gpu=self.gpu)
 
 
         output = self(image)
@@ -118,11 +118,11 @@ class Resnet50(pl.LightningModule):
             self.log('lr', g['lr'], prog_bar=True)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI_LARGE', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
 
     
         output = self(image)
@@ -146,12 +146,12 @@ class Resnet50(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpu)
 
         output = self(image, target_vector)
         loss = self.classification_loss_fn(output, target_vector)

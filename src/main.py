@@ -290,7 +290,7 @@ k_checkpoint_callback = ModelCheckpoint(
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
-if args.dataset in ['OISMALL', 'OI']:
+if args.dataset in ['OISMALL', 'OI', 'OI_LARGE']:
     trainer = pl.Trainer(
         logger = logger,
         callbacks = [early_stop_callback, checkpoint_callback],

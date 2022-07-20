@@ -54,7 +54,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     if not os.path.isdir(save_path):
         os.makedirs(save_path)
 
-    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multiclass=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
+    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -140,7 +140,7 @@ dataset = "TOY_MULTI"
 multilabel = True
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/TOY/multilabel/"
-checkpoints = ["1_pass",  "3_passes",  "3_passes_frozen_final",  "3_passes_frozen_first",  "aux_class_final",  "aux_class_first",  "aux_class_old"]
+checkpoints = ["aux_class_first"]
 
 load_file = ''
 save_file = 'results/TOY/multilabel.npz'

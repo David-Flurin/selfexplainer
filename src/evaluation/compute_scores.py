@@ -148,8 +148,6 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             logits = model.forward(x)
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
             x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
-            plt.imshow(x_masked[0].permute(1,2,0))
-            plt.show()
             logits_mask = model.forward(x_masked)
             p_mask = torch.nn.functional.softmax(logits_mask, dim=1).detach().cpu().numpy().squeeze()
             x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(device) * x
