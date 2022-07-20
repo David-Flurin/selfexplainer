@@ -66,7 +66,7 @@ class ExplainerClassifierModel(pl.LightningModule):
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         self.total_variation_conv = TotalVariationConv()
 
-        if dataset in ["TOY, OI"]:
+        if dataset in ["TOY", "OI"]:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
