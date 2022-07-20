@@ -143,7 +143,7 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         return get_large_OI_dictionary(include_background_class=include_background_class)
     elif dataset in ['SMALLVOC', 'OISMALL']:
         return get_small_target_dictionary(include_background_class=include_background_class)
-    elif dataset in ['TOY', 'TOY_SAVED']:
+    elif dataset in ['TOY', 'TOY_SAVED', 'TOY_MULTI']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
         return get_color_dictionary(include_background_class=include_background_class, rgb=rgb)

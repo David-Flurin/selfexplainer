@@ -43,6 +43,10 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
         data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "TOY_MULTI":
+        num_classes = 8
+        data_path = Path(data_base_path) / "TOY_MULTI"
+        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
     else:
         raise Exception("Unknown dataset " + dataset)
 
@@ -123,7 +127,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path("data/multilabel/")
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+data_base_path = Path("../../datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -132,11 +136,11 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "TOY"
+dataset = "TOY_MULTI"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/multilabel/"
-checkpoints = ["aux_class_first"]
+checkpoints_base_path = "../checkpoints/selfexplainer/"
+checkpoints = ["3_passes_frozen_final"]
 
 load_file = ''
 save_file = 'results/results_toy_multilabel_auxhead_new.npz'
@@ -164,6 +168,10 @@ for checkpoint in checkpoints:
         elif dataset == 'TOY':
             data_path = data_base_path / "TOY"
             segmentations_path = TOY_segmentations_path
+        elif dataset == 'TOY_MULTI':
+            data_path = data_base_path / "TOY_MULTI"
+            segmentations_path = TOY_MULTI_segmentations_path
+            
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 

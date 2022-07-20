@@ -63,6 +63,9 @@ def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, 
     elif dataset_name == "TOY":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multiclass=multilabel, aux_classifier=aux_classifier)
+    elif dataset_name == "TOY_MULTI":
+        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multiclass=multilabel, aux_classifier=aux_classifier)
 
 
     data_module.setup()
