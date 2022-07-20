@@ -124,10 +124,13 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
 ############################################## Change to your settings ##########################################################
 masks_path = Path("data/multilabel/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-VOC2012_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
-TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
-OI_segmentations_path = Path('/scratch/snx3000/dniederb/datasets/OI/test/segmentations/')
+VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
+VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
+TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
+TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
+OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
+OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 dataset = "TOY"
 multilabel = True

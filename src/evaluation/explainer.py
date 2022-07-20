@@ -17,7 +17,8 @@ from utils.image_display import *
 dataset = 'TOY' # one of: ['VOC', 'COCO']
 data_base_path = Path('../../datasets/')
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/explainer/resnet50_toy_singlelabel.ckpt'
+explainer_classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/explainer/resnetsteven_toy_singlelabel.ckpt'
+
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
