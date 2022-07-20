@@ -327,7 +327,7 @@ class LogitStats():
 
 def get_class_weights(dataset):
     if dataset == 'VOC':
-        {
+        stats = {
             "aeroplane": 112,
             "bicycle": 116,
             "bird": 180,
