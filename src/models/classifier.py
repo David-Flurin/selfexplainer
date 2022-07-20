@@ -177,7 +177,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         logits = self(x)
         targets = get_targets_from_annotations(y, dataset=self.dataset)
 
-        if dataset in ["TOY", "OI"]:
+        if self.dataset in ["TOY", "OI"]:
             labels = targets.argmax(dim=1)
             loss = self.classification_loss_fn(logits, labels)
         else:
