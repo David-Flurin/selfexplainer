@@ -11,7 +11,7 @@ from models.resnet50 import Resnet50
 from utils.helper import get_targets_from_annotations, get_filename_from_annotations, extract_masks
 from utils.image_display import save_mask, save_masked_image, save_all_class_masks
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss
-from utils.metrics import MultiLabelMetrics
+from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 
 class ExplainerClassifierModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", classifier_type="vgg16", classifier_checkpoint=None, fix_classifier=True, learning_rate=1e-5, class_mask_min_area=0.05, 
@@ -73,9 +73,9 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-        self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
-        self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        self.train_metrics = SingleLabelMetrics(num_classes=num_classes )
+        self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
+        self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
 
     def forward(self, image, targets):
         segmentations = self.explainer(image)
