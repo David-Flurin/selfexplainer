@@ -12,7 +12,7 @@ from compute_scores import compute_numbers
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -24,8 +24,8 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 
 datasets = ["TOY"]
 classifiers = ["resnet50"]
-resnet50_toy_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
-resnet50_toy_multi_checkpoint = ''
+resnet50_toy_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
+resnet50_toy_multi_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_multilabel.ckpt'
 resnet_50_oi_checkpoint = ''
 resnet_50_oi_large_checkpoint = ''
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
@@ -104,4 +104,5 @@ for dataset in datasets:
             # except:
             #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
 
-np.savez("results.npz", results=results)
+            np.savez(save_file, results=results)
+
