@@ -26,7 +26,7 @@ def get_parser():
     parser.add_argument('--epoch_length', default=1000, type=int, help='Number of training samples per epoch when using Toy dataset.')
     parser.add_argument('--test_samples', default=100, type=int, help='Number of test samples when using Toy dataset.')
     parser.add_argument('--rgb', default=True, type=str2bool, help='Whether the color dataset generates grayscale or color images')
-    parser.add_argument('--multiclass', default=False, type=str2bool, help='Whether the objective is multiclass or singleclass.')
+    parser.add_argument('--multilabel', default=False, type=str2bool, help='Whether the objective is multiclass or singleclass.')
 
 
     # Data processing parameters
