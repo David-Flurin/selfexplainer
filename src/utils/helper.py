@@ -1,3 +1,4 @@
+from wsgiref.simple_server import WSGIRequestHandler
 import torch
 import os
 import random
@@ -176,6 +177,7 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
             object_names = [item['name'] for item in objects[i]]
 
             for name in object_names:
+                
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 
@@ -324,7 +326,30 @@ class LogitStats():
 
 
 def get_class_weights(dataset):
-    if dataset == 'VOC2012':
+    if dataset == 'VOC':
+        stats = {
+            'aeroplane': '112', 
+            'bicycle': '116', 
+            'bird': '180', 
+            'boat': '81', 
+            'bottle': '139', 
+            'bus': '97', 
+            'car': '376', 
+            'cat': '163', 
+            'chair': '224', 
+            'cow': '69', 
+            'diningtable': '97', 
+            'dog': '203', 
+            'horse': '139', 
+            'motorbike': '120', 
+            'person': '1025', 
+            'pottedplant': '133', 
+            'sheep': '48', 
+            'sofa': '111', 
+            'train': '127', 
+            'tvmonitor': '128'
+        }
+    elif dataset == 'VOC2012':
         stats = {'aeroplane': 432,
         'bicycle': 353,
         'bird': 560,
