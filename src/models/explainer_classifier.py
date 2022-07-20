@@ -53,7 +53,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         if classifier_type == "vgg16":
             self.classifier = VGG16ClassifierModel(num_classes=num_classes)
         elif classifier_type == "resnet50":
-            self.classifier = Resnet50(num_classes=num_classes)
+            self.classifier = Resnet50ClassifierModel(num_classes=num_classes)
         else:
             raise Exception("Unknown classifier type " + classifier_type)
             
