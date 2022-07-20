@@ -156,7 +156,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         self.classifier = nn.Linear(in_features=num_filters, out_features=num_classes, bias=True)
 
     def setup_losses(self, dataset):
-        if dataset == "CUB":
+        if dataset in ["TOY", "OI"]:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()

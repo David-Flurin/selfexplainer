@@ -66,7 +66,7 @@ class ExplainerClassifierModel(pl.LightningModule):
     def setup_losses(self, dataset, class_mask_min_area, class_mask_max_area):
         self.total_variation_conv = TotalVariationConv()
 
-        if dataset == "CUB":
+        if dataset in ["TOY, OI"]:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
@@ -74,9 +74,9 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.class_mask_area_loss_fn = ClassMaskAreaLoss(min_area=class_mask_min_area, max_area=class_mask_max_area)
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        self.train_metrics = SingleLabelMetrics(num_classes=num_classes )
-        self.valid_metrics = SingleLabelMetrics(num_classes=num_classes)
-        self.test_metrics = SingleLabelMetrics(num_classes=num_classes)
+        self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
+        self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
     def forward(self, image, targets):
         segmentations = self.explainer(image)
@@ -96,7 +96,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations = self(image, targets)
 
-        if self.dataset == "CUB":
+        if self.dataset in ["OI", "TOY"]:
             labels = targets.argmax(dim=1)
             classification_loss_mask = self.classification_loss_fn(logits_mask, labels)
         else:
@@ -136,7 +136,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations = self(image, targets)
         
-        if self.dataset == "CUB":
+        if self.dataset in ["OI", "TOY"]:
             labels = targets.argmax(dim=1)
             classification_loss_mask = self.classification_loss_fn(logits_mask, labels)
         else:
