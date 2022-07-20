@@ -327,27 +327,27 @@ class LogitStats():
 
 def get_class_weights(dataset):
     if dataset == 'VOC':
-        stats = {
-            'aeroplane': '112', 
-            'bicycle': '116', 
-            'bird': '180', 
-            'boat': '81', 
-            'bottle': '139', 
-            'bus': '97', 
-            'car': '376', 
-            'cat': '163', 
-            'chair': '224', 
-            'cow': '69', 
-            'diningtable': '97', 
-            'dog': '203', 
-            'horse': '139', 
-            'motorbike': '120', 
-            'person': '1025', 
-            'pottedplant': '133', 
-            'sheep': '48', 
-            'sofa': '111', 
-            'train': '127', 
-            'tvmonitor': '128'
+        {
+            "aeroplane": 112,
+            "bicycle": 116,
+            "bird": 180,
+            "boat": 81,
+            "bottle": 139,
+            "bus": 97,
+            "car": 376,
+            "cat": 163,
+            "chair": 224,
+            "cow": 69,
+            "diningtable": 97,
+            "dog": 203,
+            "horse": 139,
+            "motorbike": 120,
+            "person": 1025,
+            "pottedplant": 133,
+            "sheep": 48,
+            "sofa": 111,
+            "train": 127,
+            "tvmonitor": 128
         }
         target_dict = get_class_dictionary(dataset)
         numeral_stats = {target_dict[k]:v for k,v in stats.items()}
