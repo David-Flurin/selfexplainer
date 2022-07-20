@@ -43,10 +43,8 @@ class SingleLabelMetrics(torchmetrics.Metric):
         self.recall = (self.true_positives / (self.true_positives + self.false_negatives)).mean()
         self.f_score = ((2 * self.true_positives) / (2 * self.true_positives + self.false_positives + self.false_negatives)).mean()
 
-        print('Acc', self.accuracy.item())
         r = torch.round(self.accuracy, decimals=2)
         #i = r.item()
-        print(r)
         return {'Accuracy': r, 'Precision': self.precision.item(), 'Recall': self.recall.item(), 'F-Score': self.f_score.item()}
 
 class MultiLabelMetrics(torchmetrics.Metric):

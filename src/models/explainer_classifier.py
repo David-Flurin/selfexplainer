@@ -46,6 +46,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.save_masks = save_masks
         self.save_all_class_masks = save_all_class_masks
         self.save_path = save_path
+        self.i = 0
 
     def setup_explainer(self, num_classes):
         self.explainer = Deeplabv3Resnet50ExplainerModel(num_classes=num_classes)
@@ -92,6 +93,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         return logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations
 
     def training_step(self, batch, batch_idx):
+        
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset=self.dataset)
         logits_mask, logits_inversed_mask, target_mask, non_target_mask, segmentations = self(image, targets)
@@ -119,9 +121,10 @@ class ExplainerClassifierModel(pl.LightningModule):
             masked_image = target_mask.detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-          
-            self.logger.experiment.add_image('Train Nontarget mask', non_target_mask['image'][2].detach().unsqueeze(1), self.i, dataformats='NCHW')
-
+            self.logger.experiment.add_image('Train Mask', target_mask.detach().unsqueeze(1), self.i, dataformats='NCHW')   
+            self.logger.experiment.add_image('Train Nontarget mask', non_target_mask.detach().unsqueeze(1), self.i, dataformats='NCHW')
+        
+        self.i += 1
         self.log('loss', loss)
         self.train_metrics(logits_mask, targets)
 

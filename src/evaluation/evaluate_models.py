@@ -127,7 +127,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path("data/multilabel/")
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -139,12 +139,12 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 dataset = "TOY_MULTI"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/selfexplainer/"
-checkpoints = ["3_passes_frozen_final"]
+checkpoints_base_path = "../checkpoints/TOY/multilabel/"
+checkpoints = ["1_pass",  "3_passes",  "3_passes_frozen_final",  "3_passes_frozen_first",  "aux_class_final",  "aux_class_first",  "aux_class_old"]
 
 load_file = ''
-save_file = 'results/results_toy_multilabel_auxhead_new.npz'
-compute_masks = False
+save_file = 'results/TOY/multilabel.npz'
+compute_masks = True
 
 
 #################################################################################################################################
