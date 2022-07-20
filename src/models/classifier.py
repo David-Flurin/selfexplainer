@@ -1,3 +1,4 @@
+from audioop import mul
 import torch
 import pytorch_lightning as pl
 
@@ -130,16 +131,19 @@ class VGG16ClassifierModel(pl.LightningModule):
 
 class Resnet50ClassifierModel(pl.LightningModule):
 
-    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, use_imagenet_pretraining=True, fix_classifier_backbone=True, metrics_threshold=0.0):
+    def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, use_imagenet_pretraining=True, fix_classifier_backbone=True, metrics_threshold=0.0, multilabel=True):
         super().__init__()
 
         self.setup_model(num_classes=num_classes, use_imagenet_pretraining=use_imagenet_pretraining, fix_classifier_backbone=fix_classifier_backbone)
+
+        self.multilabel = multilabel
 
         self.setup_losses(dataset=dataset)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
         self.dataset = dataset
         self.learning_rate = learning_rate
+
 
     def setup_model(self, num_classes, use_imagenet_pretraining, fix_classifier_backbone):
         backbone = models.resnet50(pretrained=use_imagenet_pretraining)
@@ -156,7 +160,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         self.classifier = nn.Linear(in_features=num_filters, out_features=num_classes, bias=True)
 
     def setup_losses(self, dataset):
-        if dataset in ["TOY", "OI"]:
+        if not self.multilabel:
             self.classification_loss_fn = nn.CrossEntropyLoss()
         else:
             self.classification_loss_fn = nn.BCEWithLogitsLoss()
@@ -177,7 +181,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         logits = self(x)
         targets = get_targets_from_annotations(y, dataset=self.dataset)
 
-        if self.dataset in ["TOY", "OI"]:
+        if not self.multilabel:
             labels = targets.argmax(dim=1)
             loss = self.classification_loss_fn(logits, labels)
         else:
