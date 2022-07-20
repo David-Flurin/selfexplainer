@@ -42,7 +42,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
-    if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI']:
+    if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE']:
         filename = annotations[0]['annotation']['filename']
 
     elif dataset == "COCO":

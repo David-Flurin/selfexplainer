@@ -9,7 +9,7 @@ import matplotlib as mpl
 
 from PIL import Image
 
-from .helper import get_small_target_dictionary, get_toy_target_dictionary, get_color_dictionary
+from .helper import get_class_dictionary, get_small_target_dictionary, get_toy_target_dictionary, get_color_dictionary
 
 def show_max_activation(image, segmentations, class_id):
     nat_image = get_unnormalized_image(image)
@@ -279,28 +279,8 @@ def show_image(image):
     plt.imshow(np.stack(image.squeeze(), axis=2))
 
 def get_target_labels(dataset, include_background_class):
-    if dataset in ['VOC',  'VOC2012', 'OI']:
-        if include_background_class:
-            targets = ['background', 'aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
-                    'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
-                    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-        else:
-            targets = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 
-                    'cat', 'chair', 'cow', 'diningtable', 'dog', 'horse', 'motorbike', 'person', 
-                    'pottedplant', 'sheep', 'sofa', 'train', 'tvmonitor']
-    elif dataset in ['SMALLVOC', 'OISMALL']:
-        targets = list(get_small_target_dictionary(include_background_class))
-    elif dataset in ['TOY', 'TOY_SAVED']:
-        targets = list(get_toy_target_dictionary(include_background_class, 'texture').keys())
+    return get_class_dictionary(dataset, include_background_class).keys()
 
-    elif dataset == 'COLOR':
-        targets = list(get_color_dictionary(include_background_class, rgb=True).keys())
-
-    elif dataset == 'MNIST':
-        targets = list(range(0,10))
-
-
-    return targets
 
 
 def save_background_logits(logits, path_file):
