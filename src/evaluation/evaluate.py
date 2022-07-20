@@ -76,6 +76,7 @@ for dataset in datasets:
                 segmentations_path = OI_LARGE_segmentations_path
                 model_path = resnet_50_oi_large_checkpoint
 
+
             d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
                                                                                                                             masks_path=masks_path, 
                                                                                                                             segmentations_path=segmentations_path, 

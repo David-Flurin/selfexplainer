@@ -22,10 +22,12 @@ class ExplainerClassifierModel(pl.LightningModule):
                  save_masked_images=False, save_masks=False, save_all_class_masks=False, save_path="./results/", multilabel=True):
 
         super().__init__()
+        self.multilabel = multilabel
 
         self.setup_explainer(num_classes=num_classes)
         self.setup_classifier(classifier_type=classifier_type, classifier_checkpoint=classifier_checkpoint, fix_classifier=fix_classifier, num_classes=num_classes)
 
+    
         self.setup_losses(dataset=dataset, class_mask_min_area=class_mask_min_area, class_mask_max_area=class_mask_max_area)
         self.setup_metrics(num_classes=num_classes, metrics_threshold=metrics_threshold)
 
@@ -49,7 +51,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.save_path = save_path
         self.i = 0
 
-        self.multilabel = multilabel
+        
 
     def setup_explainer(self, num_classes):
         self.explainer = Deeplabv3Resnet50ExplainerModel(num_classes=num_classes)
@@ -58,7 +60,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         if classifier_type == "vgg16":
             self.classifier = VGG16ClassifierModel(num_classes=num_classes)
         elif classifier_type == "resnet50":
-            self.classifier = Resnet50ClassifierModel(num_classes=num_classes)
+            self.classifier = Resnet50ClassifierModel(num_classes=num_classes, multilabel=self.multilabel)
         else:
             raise Exception("Unknown classifier type " + classifier_type)
             

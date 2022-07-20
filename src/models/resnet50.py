@@ -30,13 +30,11 @@ class Resnet50(pl.LightningModule):
 
         self.gpu = gpu
         self.weighted_sampling = weighted_sampling
-
         self.model = resnet50(pretrained=False, num_classes=num_classes)
 
         self.learning_rate = learning_rate
         self.dataset = dataset
         self.num_classes = num_classes
-
 
         self.multiclass = multiclass
 
