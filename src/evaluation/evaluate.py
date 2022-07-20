@@ -24,7 +24,7 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 
 datasets = ["TOY"]
 classifiers = ["resnet50"]
-resnet50_toy_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
+resnet50_toy_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
@@ -33,7 +33,7 @@ selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 load_file = ''
 save_file = 'results/toy_singlelabel_gradcam_rise.npz'
 
-methods = ["grad_cam, rise"]
+methods = ["grad_cam", "rise"]
 #################################################################################################################################
 
 try:
@@ -64,17 +64,10 @@ for dataset in datasets:
                 if dataset == "VOC":
                     data_path = data_base_path / "VOC2007"
                     segmentations_path = VOC_segmentations_path
-                    if classifier == "vgg16":
-                        model_path = vgg16_voc_checkpoint
-                    elif classifier == "resnet50":
-                        model_path = resnet50_voc_checkpoint
                 elif dataset == "TOY":
                     data_path = data_base_path / "TOY"
                     segmentations_path = TOY_segmentations_path
-                    if classifier == "vgg16":
-                        model_path = vgg16_coco_checkpoint
-                    elif classifier == "resnet50":
-                        model_path = resnet50_coco_checkpoint
+                    model_path = resnet50_toy_checkpoint
 
             d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
                                                                                                                             masks_path=masks_path, 

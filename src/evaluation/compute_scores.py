@@ -12,7 +12,8 @@ from pathlib import Path
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
 from data.dataloader import OIDataModule, ToyData_Saved_Module, VOCDataModule, VOC2012DataModule, COCODataModule, ToyDataModule
-#from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
+from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
+from models.resnet50 import Resnet50
 from utils.helper import get_class_dictionary
 
 from torchray.utils import get_device
@@ -40,13 +41,11 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
             model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
     elif dataset_name in ["TOY", "TOY_MULTI"]:
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name)
+        model = Resnet50.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name)
     elif dataset_name in ["OI", "OI_LARGE", "OI_SMALL"]:
         data_module = OIDataModule(data_path, test_batch_size=1)
         model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
-    elif dataset_name == "TOY":
-        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
+   
 
 
     data_module.setup()
