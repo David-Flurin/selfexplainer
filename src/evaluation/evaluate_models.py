@@ -83,7 +83,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
             continue
         
         image = image.to(device)
-        targets = get_targets_from_annotations(annotations, dataset=dataset, num_classes=num_classes)
+        targets = get_targets_from_annotations(annotations, dataset=dataset)
 
         start_time = default_timer()
         output = model(image, targets)
