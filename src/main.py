@@ -16,6 +16,7 @@ from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer, SelfExplainer_Slike
 from models.simple_model import Simple_Model
 from models.explainer_classifier import ExplainerClassifierModel
+from models.classifier import Resnet50ClassifierModel
 from plot import plot_metrics_from_file
 
 from models.mlp import MLP
@@ -258,6 +259,11 @@ elif args.model_to_train == "resnet50":
 elif args.model_to_train == 'simple':
     model = Simple_Model(
         num_classes=num_classes, pretrained=False, aux_classifier=args.aux_classifier, learning_rate=args.learning_rate, dataset = args.dataset, multiclass=args.multiclass
+    )
+elif args.model_to_train == "resnet50_steven":
+    model = Resnet50ClassifierModel(
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_imagenet_pretraining=args.use_imagenet_pretraining, 
+        fix_classifier_backbone=args.fix_classifier_backbone, metrics_threshold=args.metrics_threshold
     )
 else:
     raise Exception("Unknown model type: " + args.model_to_train)

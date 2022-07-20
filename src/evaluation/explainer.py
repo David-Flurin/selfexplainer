@@ -14,23 +14,40 @@ from utils.helper import *
 from utils.image_display import *
 
 ############################## Change to your settings ##############################
-dataset = 'VOC' # one of: ['VOC', 'COCO']
-data_base_path = '../../datasets/'
-classifier_type = 'vgg16' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '../checkpoints/explainer_vgg16_voc.ckpt'
-VOC_segmentations_directory = '../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
-COCO_segmentations_directory = './coco_segmentations/'
+dataset = 'TOY' # one of: ['VOC', 'COCO']
+data_base_path = Path('../../datasets/')
+classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
+explainer_classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/explainer/resnet50_toy_singlelabel.ckpt'
+VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
+VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
+TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
+TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
+OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
+OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
+
 #####################################################################################
 
-# Set up data module
 if dataset == "VOC":
+        num_classes = 20
+        data_path = Path(data_base_path) / "VOC2007"
+        data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+elif dataset == "VOC2012":
     num_classes = 20
-    data_path = Path(data_base_path) / "VOC2007"
-    data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == "COCO":
-    num_classes = 91
-    data_path = Path(data_base_path) / "COCO2014"
-    data_module = COCODataModule(data_path=data_path, test_batch_size=1)
+    data_path = Path(data_base_path) / "VOC2012"
+    data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
+elif dataset == "OI":
+    num_classes = 13
+    data_path = Path(data_base_path) / "OI"
+    data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+elif dataset == "OI_LARGE":
+    num_classes = 20
+    data_path = Path(data_base_path) / "OI_LARGE"
+    data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+elif dataset == "TOY":
+    num_classes = 8
+    data_path = Path(data_base_path) / "TOY"
+    data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
 else:
     raise Exception("Unknown dataset " + dataset)
 
@@ -52,9 +69,18 @@ for batch in tqdm(data_module.test_dataloader()):
 
     filename = get_filename_from_annotations(annotations, dataset=dataset)
     if dataset == "VOC":
-        segmentation_filename = VOC_segmentations_directory + os.path.splitext(filename)[0] + '.png'
-    elif dataset == "COCO":
-        segmentation_filename = COCO_segmentations_directory + os.path.splitext(filename)[0] + '.png'
+        segmentation_filename = VOC_segmentations_path / (os.path.splitext(filename)[0] + '.png')
+    elif dataset == "OI":
+        segmentation_filename = OI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+    elif dataset == "OI_LARGE":
+        segmentation_filename = OI_LARGE_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+    elif dataset == "OI_SMALL":
+        segmentation_filename = OI_SMALL_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+    elif dataset == "TOY":
+        segmentation_filename = TOY_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+    elif dataset == "TOY_MULTI":
+        segmentation_filename = TOY_MULTI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+
 
     if not os.path.exists(segmentation_filename):
         continue
@@ -67,8 +93,8 @@ for batch in tqdm(data_module.test_dataloader()):
     end_time = default_timer()
     total_time += end_time - start_time
 
-    save_mask(mask, save_path / filename)
-    save_masked_image(image, mask, save_path / "images" / filename)
+    save_mask(mask, save_path / filename, dataset=dataset)
+    save_masked_image(image, mask, save_path / "images" / filename, dataset=dataset)
 
 print("Total time for masking process of the Explainer with dataset {} and classifier {}: {} seconds".format(dataset, classifier_type, total_time))
 

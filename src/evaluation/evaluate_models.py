@@ -35,6 +35,10 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 13
         data_path = Path(data_base_path) / "OI"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "OI_LARGE":
+        num_classes = 20
+        data_path = Path(data_base_path) / "OI_LARGE"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
@@ -123,7 +127,7 @@ data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 VOC2012_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/VOC2012/VOCdevkit/VOC2012/SegmentationClass/")
 TOY_segmentations_path = Path("/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/")
-OI_segmentations_path = Path('/scratch/snx3000/dniederb/datasets/OI/test1/segmentations/')
+OI_segmentations_path = Path('/scratch/snx3000/dniederb/datasets/OI/test/segmentations/')
 
 dataset = "TOY"
 multilabel = True
