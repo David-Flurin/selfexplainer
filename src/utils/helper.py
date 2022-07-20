@@ -349,6 +349,8 @@ def get_class_weights(dataset):
             'train': '127', 
             'tvmonitor': '128'
         }
+        target_dict = get_class_dictionary(dataset)
+        numeral_stats = {target_dict[k]:v for k,v in stats.items()}
     elif dataset == 'VOC2012':
         stats = {'aeroplane': 432,
         'bicycle': 353,
