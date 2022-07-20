@@ -24,7 +24,7 @@ SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC20
 
 class Resnet50(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5,
-                 gpu=0, metrics_threshold=0.5,  multiclass=False, weighted_sampling=True):
+                 gpu=0, metrics_threshold=0.5,  multilabel=False, weighted_sampling=True):
 
         super().__init__()
 
@@ -36,7 +36,7 @@ class Resnet50(pl.LightningModule):
         self.dataset = dataset
         self.num_classes = num_classes
 
-        self.multiclass = multiclass
+        self.multilabel = multilabel
 
         self.test_i = 0
         self.val_i = 0
@@ -52,7 +52,7 @@ class Resnet50(pl.LightningModule):
     def setup_losses(self):
         pos_weights = torch.ones(self.num_classes, device=self.device)*self.num_classes
         class_weights = torch.Tensor(get_class_weights(self.dataset), device=self.device)
-        if not self.multiclass:
+        if not self.multilabel:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.CrossEntropyLoss()
             else:
@@ -69,9 +69,9 @@ class Resnet50(pl.LightningModule):
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI']:
-            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
-            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce', classwise=True, dataset=self.dataset)
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce', classwise=True, dataset=self.dataset)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)

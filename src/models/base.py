@@ -37,7 +37,7 @@ class BaseModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5, weighting_koeff=1., pretrained=False, use_similarity_loss=False, similarity_regularizer=1.0, use_background_loss=False, bg_loss_regularizer=1.0, use_weighted_loss=False,
     use_mask_area_loss=True, use_mask_variation_loss=True, mask_variation_regularizer=1.0, ncmask_total_area_regularizer=0.3, mask_area_constraint_regularizer=1.0, class_mask_min_area=0.05, 
                  class_mask_max_area=0.3, mask_total_area_regularizer=0.1, save_masked_images=False, use_perfect_mask=False, count_logits=False, save_masks=False, save_all_class_masks=False, 
-                 non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multiclass=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, similarity_loss_scheduling=500, background_loss_scheduling=500, mask_loss_scheduling=1000, use_loss_scheduling=False,
+                 non_target_threshold=0.3, background_loss='logits_ce', aux_classifier=False, multilabel=False, use_bounding_loss=False, similarity_loss_mode='rel', weighted_sampling=True, similarity_loss_scheduling=500, background_loss_scheduling=500, mask_loss_scheduling=1000, use_loss_scheduling=False,
                  gpu=0, profiler=None, metrics_threshold=0.5, save_path="./results/", objective='classification', class_loss='bce', frozen=False, freeze_every=20, background_activation_loss=False, bg_activation_regularizer=0.5, target_threshold=0.7, use_mask_logit_loss=False, mask_logit_loss_regularizer=1.0, mask_loss_weighting_params=[5, 0.1], object_loss_weighting_params=[2, 0.2]):
 
         super().__init__()
@@ -91,7 +91,7 @@ class BaseModel(pl.LightningModule):
         self.frozen = frozen
         self.freeze_every = freeze_every
 
-        self.multiclass = multiclass
+        self.multilabel = multilabel
         self.is_testing = False
 
         # self.attention_layer = None
@@ -145,7 +145,7 @@ class BaseModel(pl.LightningModule):
     def setup_losses(self, class_mask_min_area, class_mask_max_area, target_threshold, non_target_threshold):
         pos_weights = torch.ones(self.num_classes, device=self.device)*self.num_classes
         class_weights = torch.Tensor(get_class_weights(self.dataset), device=self.device)
-        if not self.multiclass:
+        if not self.multilabel:
             if self.weighted_sampling:
                 self.classification_loss_fn = nn.CrossEntropyLoss()
                 
@@ -175,9 +175,9 @@ class BaseModel(pl.LightningModule):
 
     def setup_metrics(self, num_classes, metrics_threshold):
         if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI', 'OI_LARGE']:
-            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
-            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce')
-            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multiclass else 'ce', classwise=True, dataset=self.dataset)
+            self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
+            self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
+            self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce', classwise=True, dataset=self.dataset)
         else:
             self.train_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
             self.valid_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
@@ -207,7 +207,7 @@ class BaseModel(pl.LightningModule):
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
             #if not self.is_testing:
-            if self.multiclass: 
+            if self.multilabel: 
                 i_masks = torch.sigmoid(output['image'][0])
                 # fig = plt.figure()
                 # for i in range(i_masks.size(0)):
@@ -438,7 +438,7 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.tensor(0., device=image.device)
         if self.use_similarity_loss:
             
-            if self.multiclass:
+            if self.multilabel:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
                 detached = output['image'][3].detach()
@@ -516,7 +516,7 @@ class BaseModel(pl.LightningModule):
             #if self.use_similarity_loss:
             #    self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
-            logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+            logit_fn = torch.sigmoid if self.multilabel else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
             #top_mask = torch.zeros_like(output['image'][1])
             # for b in range(output['image'][0].size(0)):
@@ -667,7 +667,7 @@ class BaseModel(pl.LightningModule):
         obj_back_loss = torch.zeros((1), device=loss.device)
         if self.use_similarity_loss:
             
-            if self.multiclass:
+            if self.multilabel:
                 sim_loss = similarity_loss_fn(output, target_vector, self.similarity_loss_fn, self.similarity_regularizer, mode=self.similarity_loss_mode)
             else:
                 detached = output['image'][3].detach()
@@ -737,7 +737,7 @@ class BaseModel(pl.LightningModule):
         self.logger.experiment.add_image('Val Nontarget mask', output['image'][2].unsqueeze(1), self.val_i, dataformats='NCHW')
 
         log_string = ''
-        logit_fn = torch.sigmoid if self.multiclass else lambda x: torch.nn.functional.softmax(x, dim=-1)
+        logit_fn = torch.sigmoid if self.multilabel else lambda x: torch.nn.functional.softmax(x, dim=-1)
 
         for b in range(image.size()[0]):
             log_string += f'Batch {b}:  \n'
@@ -793,7 +793,7 @@ class BaseModel(pl.LightningModule):
 
         if self.save_masked_images and image.size()[0] == 1 and self.test_i < 1000:
             filename = Path(self.save_path) / "masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
-            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid() if self.multiclass else torch.nn.functional.softmax(output['image'][3][0], dim=-1))
+            save_masked_image(image, output['image'][1], filename, self.dataset, output['image'][3][0].sigmoid() if self.multilabel else torch.nn.functional.softmax(output['image'][3][0], dim=-1))
             filename = Path(self.save_path) / "inverse_masked_image" / get_filename_from_annotations(annotations, dataset=self.dataset)
             inverse = torch.ones_like(output['image'][1]) - output['image'][1]
             save_masked_image(image, inverse, filename, self.dataset)
