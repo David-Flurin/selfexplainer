@@ -92,8 +92,8 @@ def get_OI_dictionary(include_background_class):
 def get_large_OI_dictionary(include_background_class):
     
 
-    target_dict = {'Flower':0, 'Fish':1, 'Monkey':2, 'Cake':3, 'Sculpture':4, 'Lizard':5, 'Mobile phone':6, 'Camera':7, 'Bread':8, 'Guitar':9,
-                     'Snake':10, 'Handbag':11, 'Pastry':12, 'Ball':13, 'Flag':14, 'Piano':15, 'Rabbit':16, 'Book':17, 'Mushroom':18, 'Dress':19}
+    target_dict = {'flower': 0, 'fish': 1, 'monkey': 2, 'cake': 3, 'sculpture': 4, 'lizard': 5, 'mobile phone': 6, 'camera': 7, 'bread': 8, 
+                    'guitar': 9, 'snake': 10, 'handbag': 11, 'pastry': 12, 'ball': 13, 'flag': 14, 'piano': 15, 'rabbit': 16, 'book': 17, 'mushroom': 18, 'dress': 19}
 
     if include_background_class:
         target_dict['background'] = len(target_dict.values())
