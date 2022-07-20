@@ -9,9 +9,10 @@ from models.explainer import Deeplabv3Resnet50ExplainerModel
 from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
 from models.resnet50 import Resnet50
 from utils.helper import get_targets_from_annotations, get_filename_from_annotations, extract_masks
-from utils.image_display import save_mask, save_masked_image, save_all_class_masks
+from utils.image_display import save_mask, save_masked_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss
 from utils.metrics import MultiLabelMetrics
+
 
 class ExplainerClassifierModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", classifier_type="vgg16", classifier_checkpoint=None, fix_classifier=True, learning_rate=1e-5, class_mask_min_area=0.05, 
@@ -113,6 +114,13 @@ class ExplainerClassifierModel(pl.LightningModule):
             mask_area_loss += self.mask_total_area_regularizer * target_mask.mean()
             mask_area_loss += self.ncmask_total_area_regularizer * non_target_mask.mean()
             loss += mask_area_loss
+
+        if self.i % 5 == 4:
+            masked_image = target_mask.detach().unsqueeze(1) * image
+            self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
+          
+            self.logger.experiment.add_image('Train Nontarget mask', non_target_mask['image'][2].detach().unsqueeze(1), self.i, dataformats='NCHW')
 
         self.log('loss', loss)
         self.train_metrics(logits_mask, targets)
