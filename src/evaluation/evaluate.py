@@ -25,6 +25,9 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 datasets = ["TOY"]
 classifiers = ["resnet50"]
 resnet50_toy_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_singlelabel.ckpt'
+resnet50_toy_multi_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_multilabel.ckpt'
+resnet_50_oi_checkpoint = ''
+resnet_50_oi_large_checkpoint = ''
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
@@ -50,24 +53,27 @@ for dataset in datasets:
         for method in methods:
             if not(method in results[dataset][classifier]):
                 results[dataset][classifier][method] = {}            
-            # try:
-            if method == 'selfexplainer':
-                if dataset == 'VOC':
-                    data_path = data_base_path / "VOC2007"
-                    model_path = selfexplainer_voc_checkpoint
-                    segmentations_path = VOC_segmentations_path
-                elif dataset == 'TOY':
-                    data_path = data_base_path / "TOY"
-                    model_path = selfexplainer_toy_checkpoint
-                    segmentations_path = TOY_segmentations_path
-            else:      
-                if dataset == "VOC":
-                    data_path = data_base_path / "VOC2007"
-                    segmentations_path = VOC_segmentations_path
-                elif dataset == "TOY":
-                    data_path = data_base_path / "TOY"
-                    segmentations_path = TOY_segmentations_path
-                    model_path = resnet50_toy_checkpoint
+          
+            if dataset == "VOC":
+                data_path = data_base_path / "VOC2007"
+                segmentations_path = VOC_segmentations_path
+                model_path = resnet50_voc_checkpoint
+            elif dataset == "TOY":
+                data_path = data_base_path / "TOY"
+                segmentations_path = TOY_segmentations_path
+                model_path = resnet50_toy_checkpoint
+            elif dataset == "TOY_MULTI":
+                data_path = data_base_path / "TOY_MULTI"
+                segmentations_path = TOY_MULTI_segmentations_path
+                model_path = resnet50_toy_multi_checkpoint
+            elif dataset == "OI":
+                data_path = data_base_path / "OI"
+                segmentations_path = OI_segmentations_path
+                model_path = resnet_50_oi_checkpoint
+            elif dataset == "OI_LARGE":
+                data_path = data_base_path / "OI_LARGE"
+                segmentations_path = OI_LARGE_segmentations_path
+                model_path = resnet_50_oi_large_checkpoint
 
             d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
                                                                                                                             masks_path=masks_path, 
