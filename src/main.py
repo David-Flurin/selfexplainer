@@ -253,7 +253,7 @@ elif args.model_to_train == "mlp":
 elif args.model_to_train == "resnet50":
     model = Resnet50(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, 
-       gpu=args.gpu, metrics_threshold=args.metrics_threshold, multiclass=args.multiclass, weighted_sampling=args.weighted_sampling
+       gpu=args.gpu, metrics_threshold=args.metrics_threshold, multilabel=args.multiclass, weighted_sampling=args.weighted_sampling
     )
 
 elif args.model_to_train == 'simple':
