@@ -23,6 +23,9 @@ classifier_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
 TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
 TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
+OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
+OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
+OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 #####################################################################################
     
@@ -43,6 +46,18 @@ elif dataset == 'TOY_MULTI':
     num_classes = 8
     data_path = Path(data_base_path) / "TOY_MULTI"
     data_module = ToyData_Saved_Module(data_path=data_path)
+elif dataset == 'OI_SMALL':
+    num_classes = 3
+    data_path = Path(data_base_path) / "OI_SMALL"
+    data_module = OISmallDataModule(data_path=data_path)
+elif dataset == 'OI':
+    num_classes = 13
+    data_path = Path(data_base_path) / "OI"
+    data_module = OIDataModule(data_path=data_path)
+elif dataset == 'OI_LARGE':
+    num_classes = 20
+    data_path = Path(data_base_path) / "OI_LARGE"
+    data_module = OIDataModule(data_path=data_path)
 else:
     raise Exception("Unknown dataset " + dataset)
 
