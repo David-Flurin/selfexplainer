@@ -22,10 +22,10 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 
-datasets = ["TOY"]
+datasets = ["TOY_MULTI"]
 classifiers = ["resnet50"]
 resnet50_toy_checkpoint = '../checkpoints/resnet50/toy_singlelabel.ckpt'
-resnet50_toy_multi_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/resnet50/toy_multilabel.ckpt'
+resnet50_toy_multi_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
 resnet_50_oi_checkpoint = ''
 resnet_50_oi_large_checkpoint = ''
 resnet50_voc_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_voc.ckpt"
@@ -36,7 +36,7 @@ selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 load_file = ''
 save_file = 'results/toy_multilabel_gradcam_rise.npz'
 
-multilabel = False
+multilabel = True
 methods = ["grad_cam", "rise"]
 #################################################################################################################################
 

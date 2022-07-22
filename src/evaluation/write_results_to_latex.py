@@ -5,7 +5,7 @@ from texttable import Texttable
 import sys
 import json
 
-metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'c_f1', 'a_f1s': 'a_f1s', 'aucs': 'aucs', 'd_IOU': 'd_IOU', 'c_IOU': 'c_IOU', 'sal': 'sal', 'over': 'over', 'background_c': 'background_c', 'mask_c': 'mask_c', 'sr': 'sr'}
+metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'Continuous F1', 'a_f1s': 'Average F1', 'aucs': 'aucs', 'd_IOU': 'Discrete IoU', 'c_IOU': 'Continuous IoU', 'sal': 'Saliency', 'over': 'over', 'background_c': 'background_c', 'mask_c': 'mask_c', 'sr': 'sr', 'classification_metrics': 'Classification metrics'}
 
 def find_checkpoint(result_dict):
     results = {}
@@ -20,7 +20,23 @@ def find_checkpoint(result_dict):
                 continue
     return results
 
-result_files = ['results/toy_singlelabel_gradcam_rise.npz', 'results/results_toy_singlelabel.npz']
+def merge(a, b, path=None):
+    "merges b into a"
+    if path is None: path = []
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merge(a[key], b[key], path + [str(key)])
+            elif a[key] == b[key]:
+                pass # same leaf value
+            else:
+                raise Exception('Conflict at %s' % '.'.join(path + [str(key)]))
+        else:
+            a[key] = b[key]
+    return a
+
+
+result_files = ['results/selfexplainer/VOC2007/3passes.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
@@ -29,8 +45,8 @@ except:
 
 
 mode = 'micro'
-checkpoint_dict = {"grad_cam": "GradCam", "rise": "Rise", "1_pass": "Simple Selfexplainer", "3_passes_frozen_final": "Selfexplainer"}
-metric_list = ['d_f1_25', 'd_f1_50', 'd_f1_75', 'd_f1', 'c_f1', 'a_f1s', 'aucs', 'd_IOU', 'c_IOU', 'sal', 'over', 'background_c', 'mask_c', 'sr']
+checkpoint_dict = {"3passes_01": "3passes_01", "3passes_02":"3passes_02", "3passes_03": "3passes_03", "3passes_05": "3passes_05"}
+metric_list = ['d_f1_25', 'd_f1_50', 'd_f1_75', 'd_f1', 'c_f1', 'a_f1s', 'aucs', 'd_IOU', 'c_IOU', 'sal', 'over', 'background_c', 'mask_c', 'sr', 'classification_metrics']
 
 
 table = Texttable()
@@ -39,13 +55,14 @@ column_align = ['l']
 results = {}
 for results_file in result_files:
     with np.load(results_file, allow_pickle=True) as results_file:
-        results = {**results, **(results_file["results"].item())}
+        int_results = results_file["results"].item()
+        results = merge(results, int_results)
 
 results = find_checkpoint(results)
 
 metric_names = [metrics_dict[m] for m in metric_list]
 if 'classification_metrics' in metric_list:
-    i = metric_names.index('classification_metrics')
+    i = metric_names.index('Classification metrics')
     metric_names = metric_names[:i] + ['F1', 'Precision', 'Recall'] + metric_names[i+1:]
 column_align += ['c' for i in range(len(metric_names))]
 table.set_cols_align(column_align)
@@ -59,7 +76,7 @@ for model in results:
     else:
         model_name = model
     metrics = [model_name]
-    for metric in metrics_dict.keys():
+    for metric in metric_list:
         if metric not in results[model]:
             metrics.append(None)
         if metric == 'classification_metrics':
@@ -75,14 +92,14 @@ for model in results:
     
 # Calculate best entry per metric and boldface it
 best_metrics = dict.fromkeys(metric_names,(-1000, -1))
-if 'sal' in best_metrics:
-    best_metrics['sal'] = (1000, -1)
+if 'Saliency' in best_metrics:
+    best_metrics['Saliency'] = (1000, -1)
 if 'background_c' in best_metrics:
     best_metrics['background_c'] = (1000, -1)
 
 for i, row in enumerate(rows[1:], 1):
     for j, m in enumerate(row[1:], 1):
-        if rows[0][j] in ['sal', 'background_c']:
+        if rows[0][j] in ['Saliency', 'background_c']:
             if m < best_metrics[rows[0][j]][0]:
                 best_metrics[rows[0][j]] = (m,i)
         else:

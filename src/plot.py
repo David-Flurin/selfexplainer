@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
 from matplotlib import pyplot as plt
+import matplotlib
 import numpy as np
 import json
 from utils.helper import get_class_dictionary
@@ -386,25 +387,27 @@ def plot_generator_distribution(num_samples):
         sizes[k] = sorted(v)
 
     
-# --------------Shapes plot---------------------    
+# --------------Shapes plot---------------------   
+    plt.rcParams["font.family"] = "Roboto Mono"
     labels = list(shapes.keys())
     x = np.arange(len(labels))  # the label locations
     width = 0.05  # the width of the bars
 
     
     fig, ax = plt.subplots()
-    fig.set_figwidth(15)
-    fig.set_figheight(8)
+    fig.set_figwidth(8)
+    fig.set_figheight(4)
 
     rects = []
     for i, shape in enumerate(shapes[list(shapes.keys())[0]].keys()):
-        rects.append(ax.bar(x + (-3.5+i)*(width+0.01), [shapes[f][shape] for f in labels], width, label=shape))
+        rects.append(ax.bar(x + (-3.5+i)*(width+0.01), [shapes[f][shape] for f in labels], width, label=shape, color='steelblue'))
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_ylabel('Metrics')
-    ax.set_title('Metrics per class')
+    ax.set_ylabel('Number of samples')
+    ax.set_xlabel('Class (Texture)')
+    ax.set_title('Distribution of object shapes per texture class')
     ax.set_xticks(x, labels)
-    ax.legend()
+    plt.axis([0, 8, 150, 175])
     #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     # for rect in rects:
@@ -583,7 +586,7 @@ def plot_toydata_distribution(data_path):
 #---------------------------------------------------
 
 
-# plot_toydata_distribution('/home/david/Documents/Master/Thesis/selfexplainer/datasets/TOY_MULTI')
+plot_generator_distribution(10000)
 
     
 

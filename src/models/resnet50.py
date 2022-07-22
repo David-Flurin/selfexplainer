@@ -7,8 +7,7 @@ from torch import  nn
 from torch.optim import Adam
 from pathlib import Path
 
-from torchvision.models.resnet import resnet50
-
+from torchvision import models
 #from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_targets_from_annotations, get_targets_from_segmentations, LogitStats, get_class_weights
@@ -30,7 +29,7 @@ class Resnet50(pl.LightningModule):
 
         self.gpu = gpu
         self.weighted_sampling = weighted_sampling
-        self.model = resnet50(pretrained=False, num_classes=num_classes)
+        self.model = models.resnet50(use_imagenet_pretraining=False, num_classes=num_classes)
 
         self.learning_rate = learning_rate
         self.dataset = dataset
