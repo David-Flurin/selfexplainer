@@ -203,7 +203,7 @@ class Resnet50ClassifierModel(pl.LightningModule):
         else:
             loss = self.classification_loss_fn(logits, targets)
 
-        self.log('val_loss', loss)
+        self.log('loss', loss)
         self.valid_metrics(logits, targets)
 
     def validation_epoch_end(self, outs):

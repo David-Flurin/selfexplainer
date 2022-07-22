@@ -177,7 +177,6 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
             object_names = [item['name'] for item in objects[i]]
 
             for name in object_names:
-                
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 

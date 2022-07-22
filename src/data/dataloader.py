@@ -182,7 +182,7 @@ class OISmallDataModule(pl.LightningDataModule):
 
 class OIDataModule(pl.LightningDataModule):
 
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
+    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=1, use_data_augmentation=False, weighted_sampling=False):
         super().__init__()
 
         self.type = data_path.name

@@ -50,7 +50,7 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
+    model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, weighted_sampling=False, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -96,13 +96,13 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 ############################################## Change to your settings ##########################################################
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "VOC2007"
+dataset = "VOC"
 multilabel = True
 checkpoints_base_path = "../checkpoints/resnet50/"
-checkpoints = ["voc2007"]
+checkpoints = ["voc2007_pretrained"]
 
 load_file = ''
-save_file = 'results/baselines/OI/resnet_voc2007.npz'
+save_file = 'results/baselines/VOC2007/resnet_voc2007_pretrained.npz'
 
 
 #################################################################################################################################
@@ -123,12 +123,19 @@ for checkpoint in checkpoints:
         # try:
         if dataset == 'VOC':
             data_path = data_base_path / "VOC2007"
-        if dataset == 'VOC2012':
+        elif dataset == 'VOC2012':
             data_path = data_base_path / "VOC2012"
         elif dataset == 'TOY':
             data_path = data_base_path / "TOY"
         elif dataset == 'TOY_MULTI':
             data_path = data_base_path / "TOY_MULTI"
+        elif dataset == 'OI_SMALL':
+            data_path = data_base_path / "OI_SMALL"
+        elif dataset == 'OI':
+            data_path = data_base_path / "OI"
+        elif dataset == 'OI_LARGE':
+            data_path = data_base_path / "OI_LARGE"
+
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 

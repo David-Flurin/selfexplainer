@@ -586,7 +586,7 @@ def plot_toydata_distribution(data_path):
 #---------------------------------------------------
 
 
-plot_generator_distribution(10000)
+#plot_generator_distribution(10000)
 
     
 

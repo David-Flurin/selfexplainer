@@ -253,7 +253,7 @@ elif args.model_to_train == "mlp":
 elif args.model_to_train == "resnet50":
     model = Resnet50(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, 
-       gpu=args.gpu, metrics_threshold=args.metrics_threshold, multilabel=args.multilabel, weighted_sampling=args.weighted_sampling
+       gpu=args.gpu, metrics_threshold=args.metrics_threshold, multilabel=args.multilabel, weighted_sampling=args.weighted_sampling, use_imagenet_pretraining=args.use_imagenet_pretraining, fix_classifier_backbone=args.fix_classifier_backbone
     )
 
 elif args.model_to_train == 'simple':
@@ -290,7 +290,7 @@ checkpoint_callback = ModelCheckpoint(
 )
 
 k_checkpoint_callback = ModelCheckpoint(
-    monitor='val_loss',
+    monitor='loss',
     save_top_k=10
 )
 

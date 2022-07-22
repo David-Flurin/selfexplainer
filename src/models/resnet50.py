@@ -23,14 +23,25 @@ SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC20
 
 class Resnet50(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", learning_rate=1e-5,
-                 gpu=0, metrics_threshold=0.5,  multilabel=False, weighted_sampling=True):
+                 gpu=0, metrics_threshold=0.5,  multilabel=False, weighted_sampling=True, use_imagenet_pretraining=True, fix_classifier_backbone=True):
 
         super().__init__()
 
         self.gpu = gpu
         self.weighted_sampling = weighted_sampling
-        self.model = models.resnet50(use_imagenet_pretraining=False, num_classes=num_classes)
+        self.model = models.resnet50(pretrained=use_imagenet_pretraining)
 
+        num_filters = self.model.fc.in_features
+        layers = list(self.model.children())[:-1]
+        self.feature_extractor = nn.Sequential(*layers)
+
+        if fix_classifier_backbone:
+            self.feature_extractor.eval()
+            for param in self.feature_extractor.parameters():
+                param.requires_grad = False
+
+        self.classifier = nn.Linear(in_features=num_filters, out_features=num_classes, bias=True)
+        
         self.learning_rate = learning_rate
         self.dataset = dataset
         self.num_classes = num_classes
@@ -77,7 +88,9 @@ class Resnet50(pl.LightningModule):
             self.test_metrics = MultiLabelMetrics(num_classes=num_classes, threshold=metrics_threshold)
 
     def forward(self, image):
-        return self.model(image)
+        features = self.feature_extractor(image).flatten(1)
+        x = self.classifier(features)
+        return x
         
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()

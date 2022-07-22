@@ -16,17 +16,16 @@ from models.resnet50 import Resnet50
 from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
-dataset = 'TOY_MULTI' # one of: ['VOC', 'TOY']
+dataset = 'OI' # one of: ['VOC', 'TOY']
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
+classifier_checkpoint = '../checkpoints/resnet50/oi.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
 TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
 TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
-OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
-OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
-OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
-
+OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segmentations/'
+OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
+OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
 #####################################################################################
     
 # Set up data module
@@ -88,7 +87,7 @@ class RISEModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset, num_classes=num_classes)
+        targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
         filename = get_filename_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
         if dataset == "VOC":
             segmentation_filename = VOC_segmentations_directory + os.path.splitext(filename)[0] + '.png'
@@ -96,6 +95,13 @@ class RISEModel(pl.LightningModule):
             segmentation_filename = TOY_segmentations_directory + filename + '.png'
         elif dataset == "TOY_MULTI":
             segmentation_filename = TOY_MULTI_segmentations_directory + filename + '.png'
+        elif dataset == "OI_SMALL":
+            segmentation_filename = OI_SMALL_segmentations_directory + filename + '.png'
+        elif dataset == "OI":
+            segmentation_filename = OI_segmentations_directory + filename + '.png'
+        elif dataset == "OI_LARGE":
+            segmentation_filename = OI_LARGE_segmentations_directory + filename + '.png'
+
         else:
             raise Exception("Illegal dataset: " + dataset)
 
