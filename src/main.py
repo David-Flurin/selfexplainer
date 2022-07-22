@@ -265,6 +265,11 @@ elif args.model_to_train == "resnet50_steven":
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_imagenet_pretraining=args.use_imagenet_pretraining, 
         fix_classifier_backbone=args.fix_classifier_backbone, metrics_threshold=args.metrics_threshold, multilabel=args.multilabel
     )
+elif args.model_to_train == "resnet50_steven_original":
+    model = Resnet50ClassifierModel(
+        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_imagenet_pretraining=args.use_imagenet_pretraining, 
+        fix_classifier_backbone=args.fix_classifier_backbone
+    )
 else:
     raise Exception("Unknown model type: " + args.model_to_train)
 
