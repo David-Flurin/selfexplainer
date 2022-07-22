@@ -12,7 +12,7 @@ from data.dataloader import *
 from utils.helper import *
 from utils.image_display import *
 from models.resnet50 import Resnet50
-
+from models.classifier import Resnet50ClassifierModel
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import *
 
@@ -20,7 +20,7 @@ from pytorch_grad_cam.utils.image import *
 dataset = 'VOC' # one of: ['VOC', 'TOY']
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
+classifier_checkpoint = '../checkpoints/resnet_steven/voc2007_pretrained.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
 TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
 TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
@@ -75,7 +75,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50ClassifierModel.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.feature_extractor[-2][-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
