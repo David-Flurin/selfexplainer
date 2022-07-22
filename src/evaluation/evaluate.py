@@ -12,7 +12,7 @@ from compute_scores import compute_numbers
 
 ############################################## Change to your settings ##########################################################
 masks_path = Path(".")
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -34,11 +34,15 @@ selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 load_file = ''
-save_file = 'results/toy_multilabel_gradcam_rise.npz'
+save_file = 'results/baselines/TOY/0_05_1.npz'
 
 multilabel = True
 methods = ["grad_cam", "rise"]
 #################################################################################################################################
+
+p = Path(save_file)
+if not p.parent.is_dir():
+    p.parent.mkdir(parents=True)
 
 try:
     results = np.load(load_file, allow_pickle=True)["results"].item()

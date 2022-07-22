@@ -1,7 +1,11 @@
 import numpy as np
 from statistics import mean
+import sys
 
-with np.load("results.npz", allow_pickle=True) as file:
+filename = sys.argv[1]
+
+
+with np.load(filename, allow_pickle=True) as file:
 	results = file["results"].item()
 	for dataset in results:
 		print("\n" + dataset + "\n")

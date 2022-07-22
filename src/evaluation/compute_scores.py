@@ -41,7 +41,7 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
             model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
     elif dataset_name in ["TOY", "TOY_MULTI"]:
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = Resnet50.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI')
+        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI')
     elif dataset_name in ["OI", "OI_LARGE", "OI_SMALL"]:
         data_module = OIDataModule(data_path, test_batch_size=1)
         model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
@@ -56,16 +56,16 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
 def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, multilabel, aux_classifier):
     if dataset_name == "VOC":
         data_module = VOCDataModule(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multiclass=multilabel, pretrained=False, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multilabel=multilabel, pretrained=False, aux_classifier=aux_classifier)
     elif dataset_name == "VOC2012":
         data_module = VOC2012DataModule(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multiclass=multilabel, pretrained=False, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multilabel=multilabel, pretrained=False, aux_classifier=aux_classifier)
     elif dataset_name == "TOY":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multiclass=multilabel, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
     elif dataset_name == "TOY_MULTI":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multiclass=multilabel, aux_classifier=aux_classifier)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
 
 
     data_module.setup()
@@ -148,8 +148,6 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             logits = model.forward(x)
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
             x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(device) * x
-            plt.imshow(x_masked[0].permute(1,2,0))
-            plt.show()
             logits_mask = model.forward(x_masked)
             p_mask = torch.nn.functional.softmax(logits_mask, dim=1).detach().cpu().numpy().squeeze()
             x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(device) * x
@@ -302,13 +300,9 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
     sr = []
 
 
-    if method == 'selfexplainer' or model_name == 'selfexplainer':
-        eval_func = selfexplainer_evaluation
-    else:
-        eval_func = gen_evaluation
 
 
-    for mask, seg_mask, p, p_mask, p_background, category_id, x in eval_func(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, aux_classifier=aux_classifier):
+    for mask, seg_mask, p, p_mask, p_background, category_id, x in gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, aux_classifier=aux_classifier):
 
 #         sparsity.append(prob_sparsity(p))
 #         sparsity_masked.append(prob_sparsity(p_mask))

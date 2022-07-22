@@ -14,10 +14,10 @@ from utils.helper import *
 from utils.image_display import *
 
 ############################## Change to your settings ##############################
-dataset = 'TOY' # one of: ['VOC', 'COCO']
-data_base_path = Path('../../datasets/')
+dataset = 'TOY_MULTI' # one of: ['VOC', 'COCO']
+data_base_path = Path('/scratch/snx3000/dniederb/datasets/')
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/explainer/resnetsteven_toy_singlelabel.ckpt'
+explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/toy_multilabel.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -49,6 +49,10 @@ elif dataset == "TOY":
     num_classes = 8
     data_path = Path(data_base_path) / "TOY"
     data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+elif dataset == "TOY_MULTI":
+    num_classes = 8
+    data_path = Path(data_base_path) / "TOY_MULTI"
+    data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
 else:
     raise Exception("Unknown dataset " + dataset)
 
@@ -69,19 +73,7 @@ for batch in tqdm(data_module.test_dataloader()):
     image, annotations = batch
 
     filename = get_filename_from_annotations(annotations, dataset=dataset)
-    if dataset == "VOC":
-        segmentation_filename = VOC_segmentations_path / (os.path.splitext(filename)[0] + '.png')
-    elif dataset == "OI":
-        segmentation_filename = OI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
-    elif dataset == "OI_LARGE":
-        segmentation_filename = OI_LARGE_segmentations_path /(os.path.splitext(filename)[0] + '.png')
-    elif dataset == "OI_SMALL":
-        segmentation_filename = OI_SMALL_segmentations_path /(os.path.splitext(filename)[0] + '.png')
-    elif dataset == "TOY":
-        segmentation_filename = TOY_segmentations_path /(os.path.splitext(filename)[0] + '.png')
-    elif dataset == "TOY_MULTI":
-        segmentation_filename = TOY_MULTI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
-
+    segmentation_filename = TOY_MULTI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
 
     if not os.path.exists(segmentation_filename):
         continue
