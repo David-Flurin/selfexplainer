@@ -43,10 +43,14 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
         data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "TOY_MULTI":
+        num_classes = 8
+        data_path = Path(data_base_path) / "TOY_MULTI"
+        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multiclass=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
+    model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -70,10 +74,6 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
         start_time = default_timer()
-        from matplotlib import pyplot as plt
-        plt.imshow(image[0].permute(1,2,0))
-        plt.show()
-        torch.save(image,'eval_tensor.pt')
         logits = model(image)
         pred = logits_fn(logits)
         preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
@@ -94,18 +94,22 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "TOY"
-multilabel = False
+dataset = "VOC2007"
+multilabel = True
 checkpoints_base_path = "../checkpoints/resnet50/"
-checkpoints = ["toy_singlelabel"]
+checkpoints = ["voc2007"]
 
 load_file = ''
-save_file = 'results/resnet_toy_singlelabel.npz'
+save_file = 'results/baselines/OI/resnet_voc2007.npz'
 
 
 #################################################################################################################################
+
+p = Path(save_file)
+if not p.parent.is_dir():
+    p.parent.mkdir(parents=True)
 
 try:
     results = np.load(load_file, allow_pickle=True)["results"].item()
@@ -123,6 +127,8 @@ for checkpoint in checkpoints:
             data_path = data_base_path / "VOC2012"
         elif dataset == 'TOY':
             data_path = data_base_path / "TOY"
+        elif dataset == 'TOY_MULTI':
+            data_path = data_base_path / "TOY_MULTI"
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'
 

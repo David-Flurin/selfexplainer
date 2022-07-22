@@ -126,7 +126,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/multilabel/")
+masks_path = Path("data/VOC2007/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -136,18 +136,22 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "TOY_MULTI"
+dataset = "VOC"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/TOY/multilabel/"
-checkpoints = ["aux_class_first"]
+checkpoints_base_path = "../checkpoints/VOC2007/"
+checkpoints = ["1pass"]
 
-load_file = ''
-save_file = 'results/TOY/multilabel.npz'
+load_file = 'results/VOC2007/3passes.npz'
+save_file = 'results/VOC2007/all.npz'
 compute_masks = True
 
 
 #################################################################################################################################
+
+p = Path(save_file)
+if not p.parent.is_dir():
+    p.parent.mkdir(parents=True)
 
 try:
     results = np.load(load_file, allow_pickle=True)["results"].item()
