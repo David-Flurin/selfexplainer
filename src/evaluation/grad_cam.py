@@ -18,15 +18,16 @@ from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
 dataset = 'VOC' # one of: ['VOC', 'TOY']
-data_base_path = '/scratch/snx3000/dniederb/datasets/'
+data_base_path = Path("../../datasets/")
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
-VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
-TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
-TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
-OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segmentations/'
-OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
-OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
+VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
+VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
+TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
+TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
+OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
+OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 #####################################################################################
     
@@ -75,7 +76,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.feature_extractor[-2][-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -95,18 +96,18 @@ class GradCAMModel(pl.LightningModule):
         targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
         filename = get_filename_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
         if dataset == "VOC":
-            segmentation_filename = VOC_segmentations_directory + os.path.splitext(filename)[0] + '.png'
+            segmentation_filename = VOC_segmentations_path / (os.path.splitext(filename)[0] + '.png')
         elif dataset == "TOY":
-            segmentation_filename = TOY_segmentations_directory + filename + '.png'
+            segmentation_filename = TOY_segmentations_path / (filename + '.png')
         elif dataset == "TOY_MULTI":
-            segmentation_filename = TOY_MULTI_segmentations_directory + filename + '.png'
+            segmentation_filename = TOY_MULTI_segmentations_path / (filename + '.png')
         
         elif dataset == "OI_SMALL":
-            segmentation_filename = OI_SMALL_segmentations_directory + filename + '.png'
+            segmentation_filename = OI_SMALL_segmentations_path / (filename + '.png')
         elif dataset == "OI":
-            segmentation_filename = OI_segmentations_directory + filename + '.png'
+            segmentation_filename = OI_segmentations_path / (filename + '.png')
         elif dataset == "OI_LARGE":
-            segmentation_filename = OI_LARGE_segmentations_directory + filename + '.png'
+            segmentation_filename = OI_LARGE_segmentations_path / (filename + '.png')
         else:
             raise Exception("Illegal dataset: " + dataset)
 
