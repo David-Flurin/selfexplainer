@@ -78,7 +78,7 @@ class Resnet50(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OI_SMALL', 'OI', 'OI_LARGE']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce', classwise=True, dataset=self.dataset)
@@ -95,7 +95,7 @@ class Resnet50(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         #GPUtil.showUtilization()
         
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY', 'OI_LARGE']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'TOY', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -130,7 +130,7 @@ class Resnet50(pl.LightningModule):
             self.log('lr', g['lr'], prog_bar=True)
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI_LARGE', 'OI']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI_LARGE', 'OI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -158,7 +158,7 @@ class Resnet50(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'TOY', 'OI_LARGE']:
+        if self.dataset in ['VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'TOY', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
