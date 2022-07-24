@@ -368,25 +368,30 @@ def stack_hist(ax, stacked_data, sty_cycle, bottoms=None,
 
 def plot_generator_distribution(num_samples):
     g = Generator(pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'foreground.txt'), pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'background.txt'))
-    shapes = {k: {} for k in g.f_texture_names}
-    sizes = {k: [] for k in g.f_texture_names}
-    bg_tex = {k: {} for k in g.f_texture_names}
+    # shapes = {k: {} for k in g.f_texture_names}
+    # sizes = {k: [] for k in g.f_texture_names}
+    # bg_tex = {k: {} for k in g.f_texture_names}
 
-    for i in tqdm(range(num_samples)):
-        s = g.generate_sample(1)
-        f_tex = s['objects'][0][1]
-        shape = s['objects'][0][0]
-        radius = s['objects'][0][2]
-        b_tex = s['background']
+    # for i in tqdm(range(num_samples)):
+    #     s = g.generate_sample(1)
+    #     f_tex = s['objects'][0][1]
+    #     shape = s['objects'][0][0]
+    #     radius = s['objects'][0][2]
+    #     b_tex = s['background']
 
-        shapes[f_tex][shape] = shapes[f_tex].get(shape, 0) + 1
-        sizes[f_tex].append(radius)
-        bg_tex[f_tex][b_tex] = bg_tex[f_tex].get(b_tex, 0) + 1
+    #     shapes[f_tex][shape] = shapes[f_tex].get(shape, 0) + 1
+    #     sizes[f_tex].append(radius)
+    #     bg_tex[f_tex][b_tex] = bg_tex[f_tex].get(b_tex, 0) + 1
 
-    for k,v in sizes.items():
-        sizes[k] = sorted(v)
+    # for k,v in sizes.items():
+    #     sizes[k] = sorted(v)
 
-    
+    # np.savez('generator_100000.npz', shapes=shapes, sizes=sizes, bg_tex=bg_tex)
+    # quit()
+    result = np.load('generator_100000.npz', allow_pickle=True)
+    shapes = result['shapes'].item()
+    sizes = result['sizes'].item()
+    bg_tex = result['bg_tex'].item()
 # --------------Shapes plot---------------------   
     plt.rcParams["font.family"] = "Roboto Mono"
     labels = list(shapes.keys())
@@ -404,17 +409,22 @@ def plot_generator_distribution(num_samples):
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Number of samples')
-    ax.set_xlabel('Class (Texture)')
+    ax.set_xlabel('Classes (Texture)')
     ax.set_title('Distribution of object shapes per texture class')
     ax.set_xticks(x, labels)
-    plt.axis([0, 8, 150, 175])
+    plt.axis([-1, 8, 1400, 1700])
+
+
+    mean = int(num_samples/64)
+    plt.axhline(y = mean, color = 'k', linewidth=0.5, linestyle = 'dashed')    
+    plt.text(7.5,mean+3,'mean')
     #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     # for rect in rects:
     #     ax.bar_label(rect, padding=3, fmt='%.2f')
 
     fig.tight_layout()
-    plt.show()
+    plt.savefig('shape_distribution.png')
     plt.close()
 #-------------------------------------------------
 
@@ -425,25 +435,31 @@ def plot_generator_distribution(num_samples):
 
     
     fig, ax = plt.subplots()
-    fig.set_figwidth(15)
-    fig.set_figheight(8)
+    fig.set_figwidth(8)
+    fig.set_figheight(4)
 
     rects = []
     for i, b_tex in enumerate(bg_tex[list(bg_tex.keys())[0]].keys()):
-        rects.append(ax.bar(x + (-6.5+i)*(width+0.01), [bg_tex[f][b_tex] for f in labels], width, label=b_tex))
+        rects.append(ax.bar(x + (-6.5+i)*(width+0.01), [bg_tex[f][b_tex] for f in labels], width, label=b_tex, color='tomato'))
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_ylabel('Metrics')
-    ax.set_title('Metrics per class')
+    ax.set_ylabel('Number of samples')
+    ax.set_xlabel('Classes (Textures)')
+    ax.set_title('Distribution of background textures per texture class')
     ax.set_xticks(x, labels)
-    ax.legend()
+    plt.axis([-1, 8, 800, 1000])
+
+
+    mean = int(num_samples/(14*8))
+    plt.axhline(y = mean, color = 'k', linewidth=0.5, linestyle = 'dashed')    
+    plt.text(7.5,mean+3,'mean')
     #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
     # for rect in rects:
     #     ax.bar_label(rect, padding=3, fmt='%.2f')
 
     fig.tight_layout()
-    plt.show()
+    plt.savefig('bgtex_distribution.png')
     plt.close()
 #---------------------------------------------------
 
@@ -459,19 +475,21 @@ def plot_generator_distribution(num_samples):
     # Fixing random state for reproducibility
     np.random.seed(19680801)
 
-    stack_data = np.random.randn(4, 12250)
-    dict_data = dict(zip((c['label'] for c in label_cycle), stack_data))
-
-    fig, ax = plt.subplots(figsize=(9, 4.5), tight_layout=True)
+    fig, ax = plt.subplots(figsize=(8, 4), tight_layout=True)
 
     arts = stack_hist(ax, sizes, color_cycle,
                     hist_func=hist_func,
                     plot_kwargs=dict(edgecolor='w'))
 
-    ax.set_xlabel('object radius')
-    ax.set_ylabel('number of objects')
+    ax.set_xlabel('Object radius')
+    ax.set_ylabel('Number of objects')
+    ax.set_title('Distribution of object size per texture class')
+    mean = int(num_samples/51)
+    plt.axhline(y = mean, color = 'k', linewidth=0.5, linestyle = 'dashed')    
+    plt.text(30,mean+3,'mean')
+    
 
-    plt.show()
+    plt.savefig('size_distribution.png')
 #---------------------------------------------------
 
 def plot_toydata_distribution(data_path):
@@ -586,7 +604,7 @@ def plot_toydata_distribution(data_path):
 #---------------------------------------------------
 
 
-#plot_generator_distribution(10000)
+plot_generator_distribution(100000)
 
     
 

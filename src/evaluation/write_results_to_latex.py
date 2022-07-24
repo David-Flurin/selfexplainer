@@ -36,17 +36,19 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['results/selfexplainer/VOC2007/3passes.npz']
+result_files = ['results/selfexplainer/ablation/toy_single.npz', 'results/selfexplainer/TOY/results_toy_singlelabel.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
 except:
     checkpoint_dict = None
 
+find_best_metric = False
+
 
 mode = 'micro'
-checkpoint_dict = {"3passes_01": "3passes_01", "3passes_02":"3passes_02", "3passes_03": "3passes_03", "3passes_05": "3passes_05"}
-metric_list = ['d_f1_25', 'd_f1_50', 'd_f1_75', 'd_f1', 'c_f1', 'a_f1s', 'aucs', 'd_IOU', 'c_IOU', 'sal', 'over', 'background_c', 'mask_c', 'sr', 'classification_metrics']
+checkpoint_dict = {"toy_single_wo_background": "Without background entropy loss", "toy_single_wo_sim":"Without object similarity loss", "toy_single_wo_mask": "Without mask area losses", "3_passes_frozen_final":'Normal selfexplainer'}
+metric_list = ['a_f1s', 'c_f1', 'd_IOU', 'c_IOU', 'sal', 'classification_metrics']
 
 
 table = Texttable()
@@ -91,22 +93,23 @@ for model in results:
     rows.append(metrics)
     
 # Calculate best entry per metric and boldface it
-best_metrics = dict.fromkeys(metric_names,(-1000, -1))
-if 'Saliency' in best_metrics:
-    best_metrics['Saliency'] = (1000, -1)
-if 'background_c' in best_metrics:
-    best_metrics['background_c'] = (1000, -1)
+if find_best_metric:
+    best_metrics = dict.fromkeys(metric_names,(-1000, -1))
+    if 'Saliency' in best_metrics:
+        best_metrics['Saliency'] = (1000, -1)
+    if 'background_c' in best_metrics:
+        best_metrics['background_c'] = (1000, -1)
 
-for i, row in enumerate(rows[1:], 1):
-    for j, m in enumerate(row[1:], 1):
-        if rows[0][j] in ['Saliency', 'background_c']:
-            if m < best_metrics[rows[0][j]][0]:
-                best_metrics[rows[0][j]] = (m,i)
-        else:
-            if m > best_metrics[rows[0][j]][0]:
-                best_metrics[rows[0][j]] = (m,i)
-for metric, (best_m, best_idx) in best_metrics.items():
-    rows[best_idx][rows[0].index(metric)] = f'\\bfseries{{{float(rows[best_idx][rows[0].index(metric)]):.3f}}}'
+    for i, row in enumerate(rows[1:], 1):
+        for j, m in enumerate(row[1:], 1):
+            if rows[0][j] in ['Saliency', 'background_c']:
+                if m < best_metrics[rows[0][j]][0]:
+                    best_metrics[rows[0][j]] = (m,i)
+            else:
+                if m > best_metrics[rows[0][j]][0]:
+                    best_metrics[rows[0][j]] = (m,i)
+    for metric, (best_m, best_idx) in best_metrics.items():
+        rows[best_idx][rows[0].index(metric)] = f'\\bfseries{{{float(rows[best_idx][rows[0].index(metric)]):.3f}}}'
 table.add_rows(rows)
 latex_table = latextable.draw_latex(table, caption='Different models on Toy dataset')
 

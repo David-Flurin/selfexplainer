@@ -84,7 +84,11 @@ def segmented_generator(data_module, segmentations_path):
             objects = [object[1] for object in meta[0]['objects']]
             category_id = [target_dict[e] for e in objects]
         except:
-            filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
+            fn = meta[0]['annotation']["filename"]
+            if fn[-4] == '.':
+                filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
+            else:
+                filename = Path(meta[0]['annotation']["filename"]+".png")
             target_dict = get_class_dictionary('VOC', include_background_class=False)
             objects = meta[0]['annotation']['object']
             category_id = [target_dict[e["name"]] for e in objects]
