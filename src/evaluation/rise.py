@@ -16,10 +16,10 @@ from models.resnet50 import Resnet50
 from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
-dataset = 'OI' # one of: ['VOC', 'TOY']
+dataset = 'OI_LARGE' # one of: ['VOC', 'TOY']
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/oi.ckpt'
+classifier_checkpoint = '../checkpoints/resnet50/oi_large_pretrained.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
 TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
 TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"

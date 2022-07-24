@@ -96,13 +96,13 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 ############################################## Change to your settings ##########################################################
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "VOC"
-multilabel = True
+dataset = "OI_LARGE"
+multilabel = False
 checkpoints_base_path = "../checkpoints/resnet50/"
-checkpoints = ["voc2007_pretrained"]
+checkpoints = ["oi_large_pretrained"]
 
 load_file = ''
-save_file = 'results/baselines/VOC2007/resnet_voc2007_pretrained.npz'
+save_file = 'results/baselines/OI_LARGE/resnet_oi_large_pretrained.npz'
 
 
 #################################################################################################################################

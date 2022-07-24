@@ -174,7 +174,7 @@ class BaseModel(pl.LightningModule):
 
 
     def setup_metrics(self, num_classes, metrics_threshold):
-        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OISMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['COLOR', 'TOY', 'TOY_SAVED', 'SMALLVOC',  'VOC2012', 'VOC', 'OI_SMALL', 'OI', 'OI_LARGE']:
             self.train_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.valid_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce')
             self.test_metrics = ClassificationMultiLabelMetrics(metrics_threshold, num_classes=num_classes, gpu=self.gpu, loss='bce' if self.multilabel else 'ce', classwise=True, dataset=self.dataset)
@@ -367,7 +367,7 @@ class BaseModel(pl.LightningModule):
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
         
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -625,7 +625,7 @@ class BaseModel(pl.LightningModule):
         self.frozen = False
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -781,7 +781,7 @@ class BaseModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         self.test_i += 1
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE', 'TOY_SAVED', 'TOY_MULTI']:
+        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'TOY_SAVED', 'TOY_MULTI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
