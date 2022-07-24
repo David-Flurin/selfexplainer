@@ -62,9 +62,9 @@ elif args.dataset == "VOC2012":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation, weighted_sampling=args.weighted_sampling
     )
     num_classes = 20
-elif args.dataset == "OISMALL":
+elif args.dataset == "OI_SMALL":
     data_path = main_dir / args.data_base_path / 'OI_SMALL'
-    data_module = OISmallDataModule(
+    data_module = OIDataModule(
         data_path=data_path, train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, 
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation, weighted_sampling=args.weighted_sampling
     )
@@ -290,7 +290,7 @@ checkpoint_callback = ModelCheckpoint(
 )
 
 k_checkpoint_callback = ModelCheckpoint(
-    monitor='loss',
+    monitor='loss' if args.dataset == 'TOY' else 'val_loss',
     save_top_k=10
 )
 

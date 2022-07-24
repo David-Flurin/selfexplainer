@@ -42,7 +42,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 # Only returns 1 filename, not an array of filenames
 # Ônly used with batch size 1
 def get_filename_from_annotations(annotations, dataset):
-    if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OISMALL', 'OI', 'OI_LARGE']:
+    if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
         filename = annotations[0]['annotation']['filename']
 
     elif dataset == "COCO":
@@ -100,7 +100,7 @@ def get_large_OI_dictionary(include_background_class):
 
     return target_dict
 
-def get_small_target_dictionary(include_background_class):
+def get_small_OI_dictionary(include_background_class):
     if include_background_class:
         target_dict = {'background' : 0, 'cat' : 1, 'dog' : 2, 'bird' : 3}
     else:
@@ -141,8 +141,8 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         return get_OI_dictionary(include_background_class=include_background_class)
     elif dataset == 'OI_LARGE':
         return get_large_OI_dictionary(include_background_class=include_background_class)
-    elif dataset in ['SMALLVOC', 'OISMALL']:
-        return get_small_target_dictionary(include_background_class=include_background_class)
+    elif dataset in ['SMALLVOC', 'OI_SMALL']:
+        return get_small_OI_dictionary(include_background_class=include_background_class)
     elif dataset in ['TOY', 'TOY_SAVED', 'TOY_MULTI']:
         return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
     elif dataset == 'COLOR':
@@ -180,8 +180,8 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
                 index = target_dict[name]
                 target_vectors[i][index] = 1.0
 
-    elif dataset in ["SMALLVOC", 'OISMALL']:
-        target_dict = get_small_target_dictionary(include_background_class)
+    elif dataset in ["SMALLVOC", 'OI_SMALL']:
+        target_dict = get_class_dictionary(dataset, include_background_class)
         objects = [item['annotation']['object'] for item in annotations]
 
         batch_size = len(objects)
@@ -373,6 +373,14 @@ def get_class_weights(dataset):
         'tvmonitor': 392}
         target_dict = get_class_dictionary(dataset)
         numeral_stats = {target_dict[k]:v for k,v in stats.items()}
+    elif dataset == 'OI_SMALL':
+        stats = {
+            'cat': 11116,
+            'dog': 14283,
+            'bird': 17730,
+        }
+        target_dict = get_class_dictionary(dataset)
+        numeral_stats = {k:stats[k] for k,v in target_dict.items()}
     elif dataset == 'OI':
         stats = {
             'person': 207352,

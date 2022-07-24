@@ -78,10 +78,11 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
 
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
-
+        
+        '''
         if not os.path.exists(segmentation_filename):
             continue
-        
+        '''
         image = image.to(device)
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
@@ -126,7 +127,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/VOC2007/")
+masks_path = Path("data/OI/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -136,14 +137,14 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "VOC"
-multilabel = True
+dataset = "OI"
+multilabel = False
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/VOC2007/"
-checkpoints = ["1pass"]
+checkpoints_base_path = "../checkpoints/OI//"
+checkpoints = ["1_pass" ]
 
-load_file = 'results/VOC2007/3passes.npz'
-save_file = 'results/VOC2007/all.npz'
+load_file = 'r'
+save_file = 'results/selfexplainer/OI/1pass.npz'
 compute_masks = True
 
 
@@ -175,6 +176,15 @@ for checkpoint in checkpoints:
         elif dataset == 'TOY_MULTI':
             data_path = data_base_path / "TOY_MULTI"
             segmentations_path = TOY_MULTI_segmentations_path
+        elif dataset == 'OI_SMALL':
+            data_path = data_base_path / "OI_SMALL"
+            segmentations_path = OI_SMALL_segmentations_path
+        elif dataset == 'OI':
+            data_path = data_base_path / "OI"
+            segmentations_path = OI_segmentations_path
+        elif dataset == 'OI_LARGE':
+            data_path = data_base_path / "OI_LARGE"
+            segmentations_path = OI_LARGE_segmentations_path
             
         model_name = checkpoint
         model_path = checkpoints_base_path + checkpoint + '.ckpt'

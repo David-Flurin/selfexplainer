@@ -141,7 +141,7 @@ class Resnet50(pl.LightningModule):
 
 
         loss = self.classification_loss_fn(output, target_vector)
-
+        self.log('val_loss', float(loss))
         self.valid_metrics(output, target_vector.int())
         self.val_i += 1
         return loss

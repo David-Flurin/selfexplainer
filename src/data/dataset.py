@@ -117,6 +117,8 @@ class OIDataset(Dataset):
             self.t_class_list = ['Person', 'Cat', 'Dog', 'Bird', 'Horse', 'Sheep', 'Aeroplane', 'Bus', 'Car', 'Motorbike', 'Train', 'Bottle', 'Sofa']
         elif root.parts[-2] == 'OI_LARGE':
             self.t_class_list = ['Flower', 'Fish', 'Monkey', 'Cake', 'Sculpture', 'Lizard', 'Mobile phone', 'Camera', 'Bread', 'Guitar', 'Snake', 'Handbag', 'Pastry', 'Ball', 'Flag', 'Piano', 'Rabbit', 'Book', 'Mushroom', 'Dress']
+        elif root.parts[-2] == 'OI_SMALL':
+            self.t_class_list = ['Cat', 'Dog', 'Bird']
         else:
             raise ValueError(f'OI dataset type not known.')
 

@@ -32,7 +32,7 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
         if model_name == "vgg16":
             model = VGG16ClassifierModel.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
         elif model_name == "resnet50":
-            model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
+            model = Resnet50.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
     elif dataset_name == "COCO":
         data_module = COCODataModule(data_path, test_batch_size=1)
         if model_name == "vgg16":
@@ -42,11 +42,17 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
     elif dataset_name in ["TOY", "TOY_MULTI"]:
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
         model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI')
-    elif dataset_name in ["OI", "OI_LARGE", "OI_SMALL"]:
+    elif dataset_name == 'OI_SMALL':
         data_module = OIDataModule(data_path, test_batch_size=1)
-        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
-   
-
+        model = Resnet50.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name)
+    elif dataset_name == 'OI':
+        data_module = OIDataModule(data_path, test_batch_size=1)
+        model = Resnet50.load_from_checkpoint(model_path, num_classes=13, dataset=dataset_name)
+    elif dataset_name == 'OI_LARGE':
+        data_module = OIDataModule(data_path, test_batch_size=1)
+        model = Resnet50.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
+    else:
+        raise ValueError('Unknown dataset')
 
     data_module.setup()
 
@@ -66,13 +72,22 @@ def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, 
     elif dataset_name == "TOY_MULTI":
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
+    elif dataset_name == "OI_SMALL":
+        data_module = OISMALL_DataModule(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
+    elif dataset_name == "OI":
+        data_module = OIDataModule(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=13, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
+    elif dataset_name == "OI_LARGE":
+        data_module = OIDataModule(data_path, test_batch_size=1)
+        model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
 
 
     data_module.setup()
 
     return model, data_module
 
-def segmented_generator(data_module, segmentations_path):
+def segmented_generator(data_module, segmentations_path, dataset_name):
     """Generator that return all the segmented images"""
     for s in tqdm(data_module.test_dataloader()):
         img, meta = s
@@ -80,12 +95,16 @@ def segmented_generator(data_module, segmentations_path):
         assert(len(x)==1)
         try:
             filename = Path(meta[0]["filename"]+".png")
-            target_dict = get_class_dictionary('TOY', include_background_class=False)
+            target_dict = get_class_dictionary(dataset_name, include_background_class=False)
             objects = [object[1] for object in meta[0]['objects']]
             category_id = [target_dict[e] for e in objects]
         except:
-            filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
-            target_dict = get_class_dictionary('VOC', include_background_class=False)
+            fn = meta[0]['annotation']["filename"]
+            if fn[-4] == '.':
+                filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
+            else:
+                filename = Path(meta[0]['annotation']["filename"]+".png")            
+            target_dict = get_class_dictionary(dataset_name, include_background_class=False)
             objects = meta[0]['annotation']['object']
             category_id = [target_dict[e["name"]] for e in objects]
         segmentation_filename =  segmentations_path / filename
@@ -120,7 +139,7 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
         model = model.to(device)
         model.eval()
 
-    for x, category_id, filename in segmented_generator(data_module, segmentations_path):
+    for x, category_id, filename in segmented_generator(data_module, segmentations_path, dataset_name):
         seg_mask = open_segmentation_mask(segmentations_path / filename, dataset_name)
         if method in ["0.5", "0", "1", "perfect"]:
             if method=="0":
@@ -168,8 +187,7 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
         masks_path_method = get_path_mask(masks_path, dataset_name, model_name, method)
 
     
-    
-    for x, category_id, filename in segmented_generator(data_module, segmentations_path):
+    for x, category_id, filename in segmented_generator(data_module, segmentations_path, dataset_name):
         seg_mask = open_segmentation_mask(segmentations_path / filename, dataset_name)
         if method in ["0.5", "0", "1", "perfect"]:
             if method=="0":
@@ -205,7 +223,6 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
         x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(model.device) * x
         logits_background = model.forward(x_background)['image'][3]
         p_background = logits_fn(logits_background).detach().cpu().numpy().squeeze()
-
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 
 
@@ -233,7 +250,6 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     background_c = []
     mask_c = []
     sr = []
-
     print(model_path)
 
     model, data_module = get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, multilabel, aux_classifier)
