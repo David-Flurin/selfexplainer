@@ -178,8 +178,7 @@ if args.model_to_train == "selfexplainer":
 elif args.model_to_train == "explainer":
     model = ExplainerClassifierModel(
         num_classes=num_classes, dataset=args.dataset, classifier_type=args.classifier_type, classifier_checkpoint=args.classifier_checkpoint, fix_classifier=args.fix_classifier, learning_rate=args.learning_rate, 
-        class_mask_min_area=args.class_mask_min_area, class_mask_max_area=args.class_mask_max_area, entropy_regularizer=args.entropy_regularizer, use_mask_variation_loss=args.use_mask_variation_loss, 
-        mask_variation_regularizer=args.mask_variation_regularizer, use_mask_area_loss=args.use_mask_area_loss, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, 
+        class_mask_min_area=args.class_mask_min_area, class_mask_max_area=args.class_mask_max_area, use_mask_area_loss=args.use_mask_area_loss, 
         mask_total_area_regularizer=args.mask_total_area_regularizer, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, 
         save_masked_images=args.save_masked_images, save_masks=args.save_masks,
         save_all_class_masks=args.save_all_class_masks, save_path=args.save_path, multilabel=args.multilabel
