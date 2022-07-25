@@ -127,7 +127,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/OI/")
+masks_path = Path("data/OI_LARGE/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -137,14 +137,14 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "OI"
+dataset = "OI_LARGE"
 multilabel = False
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/OI//"
-checkpoints = ["1_pass" ]
+checkpoints_base_path = "../checkpoints/OI_LARGE/"
+checkpoints = ["1pass" ]
 
-load_file = 'r'
-save_file = 'results/selfexplainer/OI/1pass.npz'
+load_file = ''
+save_file = 'results/selfexplainer/OI_LARGE/1pass.npz'
 compute_masks = True
 
 

@@ -14,10 +14,10 @@ from utils.helper import *
 from utils.image_display import *
 
 ############################## Change to your settings ##############################
-dataset = 'TOY_MULTI' # one of: ['VOC', 'COCO']
+dataset = 'OI' # one of: ['VOC', 'COCO']
 data_base_path = Path('/scratch/snx3000/dniederb/datasets/')
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/toy_multilabel.ckpt'
+explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/oi_pretrained.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
