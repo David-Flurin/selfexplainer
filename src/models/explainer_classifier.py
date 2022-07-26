@@ -17,7 +17,7 @@ from utils.metrics import MultiLabelMetrics, SingleLabelMetrics
 
 class ExplainerClassifierModel(pl.LightningModule):
     def __init__(self, num_classes=20, dataset="VOC", classifier_type="vgg16", classifier_checkpoint=None, fix_classifier=True, learning_rate=1e-5, class_mask_min_area=0.05, 
-                 class_mask_max_area=0.3, entropy_regularizer=1.0, use_mask_variation_loss=True, mask_variation_regularizer=1.0, use_mask_area_loss=True, 
+                 class_mask_max_area=0.3, entropy_regularizer=3.0, use_mask_variation_loss=True, mask_variation_regularizer=1.0, use_mask_area_loss=True, 
                  mask_area_constraint_regularizer=1.0, mask_total_area_regularizer=0.1, ncmask_total_area_regularizer=0.3, metrics_threshold=-1.0,
                  save_masked_images=False, save_masks=False, save_all_class_masks=False, save_path="./results/", multilabel=True):
 
@@ -33,6 +33,9 @@ class ExplainerClassifierModel(pl.LightningModule):
 
         self.dataset = dataset
         self.classifier_type = classifier_type
+
+        print('Entropy regularizer:', entropy_regularizer)
+        print('mask_total_area_regularizer:', mask_total_area_regularizer)
 
         # Hyperparameters
         self.learning_rate = learning_rate
@@ -60,7 +63,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         if classifier_type == "vgg16":
             self.classifier = VGG16ClassifierModel(num_classes=num_classes)
         elif classifier_type == "resnet50":
-            self.classifier = Resnet50(num_classes=num_classes, multilabel=self.multilabel)
+            self.classifier = Resnet50(num_classes=num_classes, multilabel=self.multilabel, weighted_sampling=False)
         else:
             raise Exception("Unknown classifier type " + classifier_type)
             

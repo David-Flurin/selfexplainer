@@ -22,19 +22,20 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 
-datasets = ["OI_LARGE"]
+datasets = ["OI_SMALL"]
 classifiers = ["resnet50"]
 resnet50_toy_checkpoint = '../checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_toy_multi_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
 resnet_50_oi_checkpoint = '../checkpoints/resnet50/oi_pretrained.ckpt'
 resnet_50_oi_large_checkpoint = '../checkpoints/resnet50/oi_large_pretrained.ckpt'
+resnet_50_oi_small_checkpoint = '../checkpoints/resnet50/oi_small_pretrained.ckpt'
 resnet50_voc_checkpoint = "../checkpoints/resnet50/voc2007_pretrained.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 load_file = ''
-save_file = 'results/baselines/OI_LARGE/gradcam_rise.npz'
+save_file = 'results/baselines/OI_SMALL/gradcam_rise.npz'
 
 multilabel = False
 methods = ["grad_cam", "rise"]
@@ -79,7 +80,10 @@ for dataset in datasets:
                 data_path = data_base_path / "OI_LARGE"
                 segmentations_path = OI_LARGE_segmentations_path
                 model_path = resnet_50_oi_large_checkpoint
-
+            elif dataset == 'OI_SMALL':
+                data_path = data_base_path / 'OI_SMALL'
+                segmentations_path = OI_SMALL_segmentations_path
+                model_path = resnet_50_oi_small_checkpoint
 
             d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
                                                                                                                             masks_path=masks_path, 

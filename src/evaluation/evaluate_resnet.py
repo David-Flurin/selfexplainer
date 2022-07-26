@@ -39,6 +39,10 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         num_classes = 20
         data_path = Path(data_base_path) / "OI_LARGE"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "OI_SMALL":
+        num_classes = 3
+        data_path = Path(data_base_path) / "OI_SMALL"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
     elif dataset == "TOY":
         num_classes = 8
         data_path = Path(data_base_path) / "TOY"
@@ -99,10 +103,10 @@ data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 dataset = "OI_LARGE"
 multilabel = False
 checkpoints_base_path = "../checkpoints/resnet50/"
-checkpoints = ["oi_large_pretrained"]
+checkpoints = ["oi_large_sanity"]
 
 load_file = ''
-save_file = 'results/baselines/OI_LARGE/resnet_oi_large_pretrained.npz'
+save_file = 'results/baselines/OI_LARGE/resnet_oi_large_sanity.npz'
 
 
 #################################################################################################################################
