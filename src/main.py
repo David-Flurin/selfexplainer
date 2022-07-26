@@ -276,7 +276,7 @@ else:
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
     #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
-    monitor='loss',
+    monitor='loss' if args.dataset == 'TOY' else 'val_loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
@@ -294,7 +294,7 @@ k_checkpoint_callback = ModelCheckpoint(
 )
 
 profiler = AdvancedProfiler(dirpath=main_dir, filename='selfexplainer_model_report')
-if args.dataset in ['OISMALL', 'OI', 'OI_LARGE']:
+if args.dataset in ['OI_SMALL', 'OI', 'OI_LARGE']:
     trainer = pl.Trainer(
         logger = logger,
         callbacks = [early_stop_callback, k_checkpoint_callback],

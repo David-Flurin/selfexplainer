@@ -34,6 +34,9 @@ class ExplainerClassifierModel(pl.LightningModule):
         self.dataset = dataset
         self.classifier_type = classifier_type
 
+        print('Entropy regularizer:', entropy_regularizer)
+        print('mask_total_area_regularizer:', mask_total_area_regularizer)
+
         # Hyperparameters
         self.learning_rate = learning_rate
         self.entropy_regularizer = entropy_regularizer
@@ -60,7 +63,7 @@ class ExplainerClassifierModel(pl.LightningModule):
         if classifier_type == "vgg16":
             self.classifier = VGG16ClassifierModel(num_classes=num_classes)
         elif classifier_type == "resnet50":
-            self.classifier = Resnet50(num_classes=num_classes, multilabel=self.multilabel)
+            self.classifier = Resnet50(num_classes=num_classes, multilabel=self.multilabel, weighted_sampling=False)
         else:
             raise Exception("Unknown classifier type " + classifier_type)
             

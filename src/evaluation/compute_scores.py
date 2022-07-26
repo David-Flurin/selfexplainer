@@ -73,7 +73,7 @@ def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, 
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
     elif dataset_name == "OI_SMALL":
-        data_module = OISMALL_DataModule(data_path, test_batch_size=1)
+        data_module = OIDataModule(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
     elif dataset_name == "OI":
         data_module = OIDataModule(data_path, test_batch_size=1)
@@ -153,7 +153,6 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
             else:
                 raise ValueError("Something went wrong!")
 
-        
         else:
             try:
                 npz_name = Path(str(filename)[:-4] + ".npz")

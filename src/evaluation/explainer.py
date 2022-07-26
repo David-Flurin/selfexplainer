@@ -14,10 +14,10 @@ from utils.helper import *
 from utils.image_display import *
 
 ############################## Change to your settings ##############################
-dataset = 'TOY_MULTI' # one of: ['VOC', 'COCO']
+dataset = 'VOC' # one of: ['VOC', 'COCO']
 data_base_path = Path('/scratch/snx3000/dniederb/datasets/')
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/toy_multilabel.ckpt'
+explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/voc2007.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -33,6 +33,7 @@ if dataset == "VOC":
         num_classes = 20
         data_path = Path(data_base_path) / "VOC2007"
         data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+        segmentations_path = VOC_segmentations_path
 elif dataset == "VOC2012":
     num_classes = 20
     data_path = Path(data_base_path) / "VOC2012"
@@ -73,7 +74,7 @@ for batch in tqdm(data_module.test_dataloader()):
     image, annotations = batch
 
     filename = get_filename_from_annotations(annotations, dataset=dataset)
-    segmentation_filename = TOY_MULTI_segmentations_path /(os.path.splitext(filename)[0] + '.png')
+    segmentation_filename = segmentations_path /(os.path.splitext(filename)[0] + '.png')
 
     if not os.path.exists(segmentation_filename):
         continue
