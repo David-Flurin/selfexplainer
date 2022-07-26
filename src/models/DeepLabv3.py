@@ -13,7 +13,7 @@ class Deeplabv3Resnet50Model(pl.LightningModule):
     def __init__(self, pretrained=False, num_classes=20, aux_classifier=False):
         super().__init__()
         if pretrained:
-            self.model = models.segmentation.deeplabv3_resnet50(pretrained=pretrained, num_classes=21, aux_loss = aux_classifier)
+            self.model = models.segmentation.deeplabv3(pretrained=pretrained, num_classes=21, aux_loss = aux_classifier)
             self.model.aux_classifier[4] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
             self.model.classifier[4] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
         else:

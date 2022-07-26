@@ -36,7 +36,7 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['results/baselines/VOC2007/gradcam_rise.npz', 'results/selfexplainer/VOC2007/1pass.npz', 'results/selfexplainer/VOC2007/3passes.npz']
+result_files = ['results/baselines/OI_LARGE/resnet_oi_large_pretrained.npz', 'results/selfexplainer/OI_LARGE/all_passes.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
@@ -47,9 +47,9 @@ find_best_metric = True
 
 
 mode = 'micro'
-checkpoint_dict = {"grad_cam": "GradCAM", "rise":"RISE", "1pass": "Simple selfexplainer", "3passes_01":'Selfexplainer'}
-metric_list = ['mask_c', 'background_c', 'd_IOU', 'c_IOU', 'sal']
-
+checkpoint_dict = {"oi_large_pretrained": "Resnet50", "1pass": "Simple selfexplainer", "3passes_mask_03":'Selfexplainer'}
+#metric_list = ['mask_c', 'background_c', 'd_IOU', 'c_IOU', 'sal']
+metric_list = ['classification_metrics']
 
 table = Texttable()
 column_align = ['l']
