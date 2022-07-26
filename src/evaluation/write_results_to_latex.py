@@ -5,7 +5,7 @@ from texttable import Texttable
 import sys
 import json
 
-metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'Continuous F1', 'a_f1s': 'Average F1', 'aucs': 'aucs', 'd_IOU': 'Discrete IoU', 'c_IOU': 'Continuous IoU', 'sal': 'Saliency', 'over': 'over', 'background_c': 'background_c', 'mask_c': 'mask_c', 'sr': 'sr', 'classification_metrics': 'Classification metrics'}
+metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'Continuous F1', 'a_f1s': 'Average F1', 'aucs': 'aucs', 'd_IOU': 'Discrete IoU', 'c_IOU': 'Continuous IoU', 'sal': 'Saliency', 'over': 'over', 'background_c': 'Background cov.', 'mask_c': 'Mask cov.', 'sr': 'sr', 'classification_metrics': 'Classification metrics'}
 
 def find_checkpoint(result_dict):
     results = {}
@@ -36,19 +36,19 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['results/selfexplainer/ablation/toy_single.npz', 'results/selfexplainer/TOY/results_toy_singlelabel.npz']
+result_files = ['results/baselines/VOC2007/gradcam_rise.npz', 'results/selfexplainer/VOC2007/1pass.npz', 'results/selfexplainer/VOC2007/3passes.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
 except:
     checkpoint_dict = None
 
-find_best_metric = False
+find_best_metric = True
 
 
 mode = 'micro'
-checkpoint_dict = {"toy_single_wo_background": "Without background entropy loss", "toy_single_wo_sim":"Without object similarity loss", "toy_single_wo_mask": "Without mask area losses", "3_passes_frozen_final":'Normal selfexplainer'}
-metric_list = ['a_f1s', 'c_f1', 'd_IOU', 'c_IOU', 'sal', 'classification_metrics']
+checkpoint_dict = {"grad_cam": "GradCAM", "rise":"RISE", "1pass": "Simple selfexplainer", "3passes_01":'Selfexplainer'}
+metric_list = ['mask_c', 'background_c', 'd_IOU', 'c_IOU', 'sal']
 
 
 table = Texttable()
@@ -97,12 +97,12 @@ if find_best_metric:
     best_metrics = dict.fromkeys(metric_names,(-1000, -1))
     if 'Saliency' in best_metrics:
         best_metrics['Saliency'] = (1000, -1)
-    if 'background_c' in best_metrics:
-        best_metrics['background_c'] = (1000, -1)
+    if 'Background cov.' in best_metrics:
+        best_metrics['Background cov.'] = (1000, -1)
 
     for i, row in enumerate(rows[1:], 1):
         for j, m in enumerate(row[1:], 1):
-            if rows[0][j] in ['Saliency', 'background_c']:
+            if rows[0][j] in ['Saliency', 'Background cov.']:
                 if m < best_metrics[rows[0][j]][0]:
                     best_metrics[rows[0][j]] = (m,i)
             else:
