@@ -18,9 +18,9 @@ from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
 dataset = 'VOC' # one of: ['VOC', 'TOY']
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+data_base_path = Path("../../datasets/")
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/stevens_voc.ckpt'
+classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -79,7 +79,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50ClassifierModel.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.feature_extractor[-2][-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -139,15 +139,13 @@ class GradCAMModel(pl.LightningModule):
             target_classes = [index for index, value in enumerate(targets[0]) if value == 1.0]
             intersection = set(target_classes) & set(masks_for_classes)
             if intersection:
-                for target_class in intersection:
-                    for mask_class in masks_for_classes:
-                        saliency = torch.tensor(self(image, mask_class)[0, :])
-                        saliency.nan_to_num(nan=0.0)
+                for mask_class in masks_for_classes:
+                    saliency = torch.tensor(self(image, mask_class)[0, :])
+                    saliency = saliency.nan_to_num(nan=0.0)
 
-                        save_mask(saliency, save_path / "class_masks" 
-                                                      / "target_class_{}".format(target_class)
-                                                      / "masks_for_class_{}".format(mask_class)
-                                                      / filename)
+                    save_mask(saliency, save_path / "class_masks" 
+                                                    / "masks_for_class_{}".format(mask_class)
+                                                    / filename, dataset=dataset)
 
 model = GradCAMModel(num_classes=num_classes)
 trainer = pl.Trainer(gpus=[0] if torch.cuda.is_available() else 0)
