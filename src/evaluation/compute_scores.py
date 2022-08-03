@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1
+from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1, inverted_saliency, extended_saliency
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
 from data.dataloader import OIDataModule, ToyData_Saved_Module, VOCDataModule, VOC2012DataModule, COCODataModule, ToyDataModule
 from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
@@ -244,6 +244,8 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     d_IOU = []
     c_IOU = []
     sal = []
+    inv_sal = []
+    ext_sal = []
 
     over = []
     background_c = []
@@ -278,6 +280,9 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
         sal.append(saliency(p_mask, category_id, mask))
+        inv_sal.append(inverted_saliency(p_background, category_id, mask))
+        ext_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
+
 
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))
