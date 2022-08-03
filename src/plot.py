@@ -1,4 +1,5 @@
 import os
+from cv2 import sqrt
 
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
@@ -13,6 +14,7 @@ from toy_dataset.generator import Generator
 import pathlib
 from xml.etree import cElementTree as ElementTree
 
+from math import sqrt
 import itertools
 from functools import partial
 
@@ -416,6 +418,13 @@ def plot_generator_distribution(num_samples):
 
 
     mean = int(num_samples/64)
+    diff = []
+    for shape in shapes:
+        for t in shapes[shape]:
+            diff.append(abs(shapes[shape][t]-mean)**2)
+    std = sqrt(sum(diff) / 64)
+    print(std)
+
     plt.axhline(y = mean, color = 'k', linewidth=0.5, linestyle = 'dashed')    
     plt.text(7.5,mean+3,'mean')
     #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
@@ -451,6 +460,12 @@ def plot_generator_distribution(num_samples):
 
 
     mean = int(num_samples/(14*8))
+    diff = []
+    for tex in bg_tex:
+        for t in bg_tex[tex]:
+            diff.append(abs(bg_tex[tex][t]-mean)**2)
+    std = sqrt(sum(diff) / (14*8))
+    print(std)
     plt.axhline(y = mean, color = 'k', linewidth=0.5, linestyle = 'dashed')    
     plt.text(7.5,mean+3,'mean')
     #ax.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
