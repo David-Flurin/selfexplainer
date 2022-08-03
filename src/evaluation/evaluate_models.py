@@ -83,10 +83,10 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
         
-        '''
+        
         if not os.path.exists(segmentation_filename):
             continue
-        '''
+        
         image = image.to(device)
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
@@ -131,7 +131,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/OI_LARGE")
+masks_path = Path("data/OI_LARGE/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -145,10 +145,11 @@ dataset = "OI_LARGE"
 multilabel = False
 classifiers = ["resnet50"]
 checkpoints_base_path = "../checkpoints/OI_LARGE/"
-checkpoints = ["3passes_mask_02", '3passes_mask_03' ]
 
-load_file = 'results/selfexplainer/OI_LARGE/3passes.ckpt'
-save_file = 'results/selfexplainer/OI_LARGE/3passes.ckpt'
+checkpoints = ["1pass_k1" ]
+
+load_file = ''
+save_file = 'results/selfexplainer/OI_LARGE/1koeff_1pass.npz'
 compute_masks = True
 
 

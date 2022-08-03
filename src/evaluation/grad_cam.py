@@ -17,10 +17,10 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
-dataset = 'OI_SMALL' # one of: ['VOC', 'TOY']
+dataset = 'VOC' # one of: ['VOC', 'TOY']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/oi_small_pretrained.ckpt'
+classifier_checkpoint = '../checkpoints/resnet50/stevens_voc.ckpt'
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -76,7 +76,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50ClassifierModel.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
             self.target_layer = self.model.feature_extractor[-2][-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -110,9 +110,11 @@ class GradCAMModel(pl.LightningModule):
             segmentation_filename = OI_LARGE_segmentations_path / (filename + '.png')
         else:
             raise Exception("Illegal dataset: " + dataset)
-
+        
+        '''
         if not os.path.exists(segmentation_filename):
             return
+        '''
         assert(targets.size()[0] == 1)
 
         start_time = default_timer()
