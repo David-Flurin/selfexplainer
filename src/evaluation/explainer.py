@@ -17,7 +17,7 @@ from utils.image_display import *
 dataset = 'VOC' # one of: ['VOC', 'COCO']
 data_base_path = Path('/scratch/snx3000/dniederb/datasets/')
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/voc2007.ckpt'
+explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints/explainer/voc2007_steven.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')

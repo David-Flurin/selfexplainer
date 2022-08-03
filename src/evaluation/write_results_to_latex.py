@@ -36,7 +36,7 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['results/selfexplainer/VOC2007/1koeff_3passes_01_later.npz']
+result_files = ['results/selfexplainer/OI/1koeff_1pass.npz', 'results/selfexplainer/OI/1koeff_3passes_02.npz']
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
@@ -47,7 +47,7 @@ find_best_metric = True
 
 
 mode = 'micro'
-checkpoint_dict = {'3passes_01_later': 'Selfexplainer'}
+checkpoint_dict = {'1pass_k1': 'Simple Self-explainer', '3passes_1koeff_mask02': 'Self-explainer'}
 metric_list = ['mask_c', 'background_c', 'd_IOU', 'c_IOU', 'sal']
 #metric_list = ['classification_metrics']
 

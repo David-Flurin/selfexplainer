@@ -20,13 +20,13 @@ from PIL import Image
 from tqdm import tqdm
 
 ############################## Change to your settings ##############################
-mask_base_path = '.'
+mask_base_path = '/scratch/snx3000/dniederb/evaluation_data/singlelabel/'
 
-dataset = 'VOC' # one of: ['VOC', 'TOY']
-data_base_path = Path("../../datasets/")
-classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
+dataset = 'TOY' # one of: ['VOC', 'TOY']
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+classifier_type = 'selfexplainer' # one of: ['vgg16', 'resnet50']
 
-method = 'grad_cam'
+method = '1_pass'
 
 #####################################################################################
     
@@ -87,5 +87,5 @@ for batch in tqdm(data_module.test_dataloader()):
         assert(saliencies.ndim == 2)
 
         masked_img = show_cam_on_image(get_unnormalized_image(image[0]).permute(1,2,0).numpy(), saliencies, use_rgb=True)
-        Image.fromarray(masked_img).save(save_path / ('images_overlaid/' + filename + '.jpg'))
+        Image.fromarray(masked_img).save(save_path / ('images_overlaid/' + filename + '.png'))
         

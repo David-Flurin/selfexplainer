@@ -40,6 +40,50 @@ Piotr", Dabkowski and Gal.
             pclass += pvec[e]
     return np.log(a) - np.log(pclass)
 
+def inverted_saliency(pvec, c, mask):
+    """
+    Continuous saliency measure. 
+    
+    Adaptation from "Real Time Image Saliency for Black Box Classifiers
+Piotr", Dabkowski and Gal.
+
+    For pvec of the masked image, the lower the better for the masked image.
+    
+    This measure does not make sense for the inverse masked image.
+    """
+    a = np.maximum(np.mean(mask), 0.05)
+    if isinstance(c, int):
+        pclass = pvec[c]
+    else:
+        pclass = 0
+        for e in c:
+            pclass += pvec[e]
+    return np.log(a) + np.log(pclass)
+
+def extended_saliency(pvec, inv_pvec, c, mask):
+    """
+    Extended saliency measure. 
+    
+    Adaptation from "Real Time Image Saliency for Black Box Classifiers
+Piotr", Dabkowski and Gal.
+
+    For pvec of the masked image, the lower the better for the masked image.
+    
+    This measure does not make sense for the inverse masked image.
+    """
+    a = np.maximum(np.mean(mask), 0.05)
+    if isinstance(c, int):
+        pclass = pvec[c]
+        inv_pclass = inv_pvec[c]
+    else:
+        pclass = 0
+        inv_pclass = 0
+        for e in c:
+            pclass += pvec[e]
+            inv_pclass += inv_pvec[e]
+        
+    return np.log(a) - np.log(pclass) + np.log(inv_pclass)
+
 def continuous_IOU(mask, seg):
     ### this is no longer the IoU but 1 + the Soergel distance (which is 1 - this ratio below)
     #intersection = np.sum(mask * seg)

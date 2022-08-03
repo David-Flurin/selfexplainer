@@ -83,10 +83,10 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
         
-        '''
+        
         if not os.path.exists(segmentation_filename):
             continue
-        '''
+        
         image = image.to(device)
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 

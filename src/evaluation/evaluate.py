@@ -11,7 +11,7 @@ import pandas as pd
 from compute_scores import compute_numbers
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path(".")
+masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/baselines/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -22,7 +22,7 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 
-datasets = ["OI_SMALL"]
+datasets = ["OI_LARGE"]
 classifiers = ["resnet50"]
 resnet50_toy_checkpoint = '../checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_toy_multi_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
@@ -35,7 +35,7 @@ selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 load_file = ''
-save_file = 'results/baselines/OI_SMALL/gradcam_rise.npz'
+save_file = 'results/baselines/OI_LARGE/gradcam_rise.npz'
 
 multilabel = False
 methods = ["grad_cam", "rise"]
