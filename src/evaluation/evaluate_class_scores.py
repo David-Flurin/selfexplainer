@@ -61,6 +61,7 @@ classifier.eval()
 for param in classifier.parameters():
     param.requires_grad_(False)
 
+selfexplainer = None
 if 'selfexplainer' in methods:
     selfexplainer = SelfExplainer.load_from_checkpoint(selfexplainer_checkpoint, 
                         num_classes=num_classes, 
@@ -68,10 +69,10 @@ if 'selfexplainer' in methods:
                         dataset=dataset, 
                         pretrained=False, 
                         aux_classifier=False)
-selfexplainer.to(device)
-selfexplainer.eval()
-for param in selfexplainer.parameters():
-    param.requires_grad_(False)
+    selfexplainer.to(device)
+    selfexplainer.eval()
+    for param in selfexplainer.parameters():
+        param.requires_grad_(False)
 
 
 
@@ -95,6 +96,8 @@ try:
 except:
     results = {}
 
+
+'''
 all_scores = {k:[] for k in [target_dict[obj] for obj in mask_objects]}
 all_scores_selfexplainer = {k:[] for k in [target_dict[obj] for obj in mask_objects]}
 for batch in tqdm(data_module.test_dataloader()):
@@ -133,8 +136,7 @@ for target_class in [target_dict[obj] for obj in mask_objects]:
             results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores[target_class])
         else:
             results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores_selfexplainer[target_class])
-
-    print(results)
+'''
 
 for method in methods:
     if method not in results:
