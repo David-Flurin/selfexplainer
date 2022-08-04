@@ -13,15 +13,17 @@ from torchray.utils import get_device
 
 from models.classifier import Resnet50ClassifierModel
 from models.resnet50 import Resnet50
-from utils.helper import get_class_dictionary
+from utils.helper import get_class_dictionary, get_filename_from_annotations
+
+from data.dataloader import VOCDataModule
 
 
 dataset = 'VOC'
 num_classes = 20
 data_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
-classifier_checkpoint = Path('../checkpoints/resnet50/voc2007_pretrained.ckpt')
+classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
 
-
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 masks_base_path = Path('.')
 
 methods = ['grad_cam']
@@ -41,6 +43,15 @@ transformer = T.Compose([ T.Resize(size=(224,224)),
 
 
 model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset=dataset)
+
+if dataset == "VOC":
+    num_classes = 20
+    data_path = Path(data_base_path) / "VOC2007"
+    data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+else:
+    raise ValueError('Dataset not known')
+data_module.setup()
+
 
 device = get_device()
 model.to(device)
@@ -67,35 +78,28 @@ try:
 except:
     results = {}
 
+all_scores = {k:[] for k in [target_dict[obj] for obj in mask_objects]}
+for batch in tqdm(data_module.test_dataloader()):
+    image, annotations = batch
+    filename = get_filename_from_annotations(annotations, dataset=dataset)    #Only need filenames from the directory, and not masks, therefore we can just take any method here
 
-for target_class in mask_classes:
-    #Only need filenames from the directory, and not masks, therefore we can just take any method here
-    masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, 'resnet50' if methods[0] != 'selfexplainer' else 'selfexplainer', methods[0]) 
-                                 / 'class_masks'
-                                 / 'masks_for_class_{}'.format(target_class))
+    image = image.to(device)
 
-    #clear_output(wait=True)
-    print("Evaluating classifier on unmasked {} images".format(inv_target_dict[target_class]))
-
-    all_scores = []
-    for filename in tqdm(masks_dir.glob('*.npz'), total=class_count_dict[inv_target_dict[target_class]]):
-        jpeg_filename = os.path.splitext(filename.name)[0] + '.jpg'
-        image = Image.open(data_path / jpeg_filename).convert("RGB")
-        image = transformer(image).unsqueeze(0)
-        image = image.to(device)
-
-        output_probs = torch.nn.Softmax(dim=1)(model(image))[0]
+    output_probs = torch.nn.Softmax(dim=1)(model(image))[0]
+    for target_class in [target_dict[obj] for obj in mask_objects]:
         target_prob = output_probs[target_class].cpu().numpy()
-        all_scores.append(target_prob)
+        all_scores[target_class].append(target_prob)
+        
 
+for target_class in [target_dict[obj] for obj in mask_objects]:
     for method in methods:
         if method not in results:
             results[method] = {}
         if inv_target_dict[target_class] not in results[method]:
             results[method][inv_target_dict[target_class]] = {}
-        
+            
         results[method][inv_target_dict[target_class]]['no_mask'] = {}
-        results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores)
+        results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores[target_class])
 
     print(results)
 
