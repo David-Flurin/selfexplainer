@@ -13,6 +13,7 @@ from torchray.utils import get_device
 
 from models.classifier import Resnet50ClassifierModel
 from models.resnet50 import Resnet50
+from models.selfexplainer import SelfExplainer
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations
 
 from data.dataloader import VOCDataModule
@@ -20,8 +21,9 @@ from data.dataloader import VOCDataModule
 
 dataset = 'VOC'
 num_classes = 20
-data_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
+img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
 classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
+selfexplainer_checkpoint = ''
 
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 masks_base_path = Path('.')
@@ -42,7 +44,7 @@ transformer = T.Compose([ T.Resize(size=(224,224)),
 
 
 
-model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset=dataset)
+classifier = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset=dataset)
 
 if dataset == "VOC":
     num_classes = 20
@@ -54,10 +56,25 @@ data_module.setup()
 
 
 device = get_device()
-model.to(device)
-model.eval()
-for param in model.parameters():
+classifier.to(device)
+classifier.eval()
+for param in classifier.parameters():
     param.requires_grad_(False)
+
+if 'selfexplainer' in methods:
+    selfexplainer = SelfExplainer.load_from_checkpoint(selfexplainer_checkpoint, 
+                        num_classes=num_classes, 
+                        multilabel=True if dataset in ['VOC', 'TOY_MULTI'] else False, 
+                        dataset=dataset, 
+                        pretrained=False, 
+                        aux_classifier=False)
+selfexplainer.to(device)
+selfexplainer.eval()
+for param in selfexplainer.parameters():
+    param.requires_grad_(False)
+
+
+
 
 
 mask_classes = [target_dict[obj] for obj in mask_objects]
@@ -79,6 +96,7 @@ except:
     results = {}
 
 all_scores = {k:[] for k in [target_dict[obj] for obj in mask_objects]}
+all_scores_selfexplainer = {k:[] for k in [target_dict[obj] for obj in mask_objects]}
 for batch in tqdm(data_module.test_dataloader()):
     image, annotations = batch
     filename = get_filename_from_annotations(annotations, dataset=dataset)    #Only need filenames from the directory, and not masks, therefore we can just take any method here
@@ -87,13 +105,21 @@ for batch in tqdm(data_module.test_dataloader()):
 
     image = image.to(device)
 
-    output_probs = torch.nn.Softmax(dim=1)(model(image))[0]
+    output_probs = torch.nn.Softmax(dim=1)(classifier(image))[0]
     intersection = set(target_classes) & set([target_dict[obj] for obj in mask_objects])
     if intersection:
         for target_class in intersection:
             target_prob = output_probs[target_class].cpu().numpy()
             all_scores[target_class].append(target_prob)
-        
+
+    if 'selfexplainer' in methods:
+        output_probs = torch.nn.Softmax(dim=1)(selfexplainer(image))[0]
+        intersection = set(target_classes) & set([target_dict[obj] for obj in mask_objects])
+        if intersection:
+            for target_class in intersection:
+                target_prob = output_probs[target_class].cpu().numpy()
+                all_scores_selfexplainer[target_class].append(target_prob)
+            
 
 for target_class in [target_dict[obj] for obj in mask_objects]:
     for method in methods:
@@ -103,7 +129,10 @@ for target_class in [target_dict[obj] for obj in mask_objects]:
             results[method][inv_target_dict[target_class]] = {}
             
         results[method][inv_target_dict[target_class]]['no_mask'] = {}
-        results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores[target_class])
+        if method != 'selfexplainer':
+            results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores[target_class])
+        else:
+            results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores_selfexplainer[target_class])
 
     print(results)
 
@@ -128,13 +157,13 @@ for method in methods:
             all_scores = []
             for filename in tqdm(masks_dir.glob('*.npz'), total=class_count_dict[inv_target_dict[target_class]]):
                 jpeg_filename = os.path.splitext(filename.name)[0] + '.jpg'
-                image = Image.open(data_path / jpeg_filename).convert("RGB")
+                image = Image.open(img_path / jpeg_filename).convert("RGB")
                 image = transformer(image).unsqueeze(0)
                 image = image.to(device)
 
                 mask = np.load(filename)['arr_0']
                 mask = torch.tensor(np.reshape(mask, [1,1, *mask.shape]), device=device)
-                score = compute_results(model=model, image=image, mask=mask, class_id=target_class)
+                score = compute_results(model=classifier if method != 'selfexplainer' else selfexplainer, image=image, mask=mask, class_id=target_class)
                 all_scores.append(score)
 
             results[method][inv_target_dict[target_class]][inv_target_dict[mask_class]]['mean_probs'] = np.mean(all_scores)
