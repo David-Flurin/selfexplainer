@@ -136,9 +136,9 @@ for batch in tqdm(data_module.test_dataloader()):
                         score = compute_results(model=classifier if method != 'selfexplainer' else selfexplainer, image=image, mask=mask, class_id=target_class)
                         all_scores[method][target_class_name][mask_class].append(score)
 
-     i += 1
-     if i >5:
-         break
+    i += 1
+    if i >5:
+        break
 
 results = {}
 for method in all_scores:
