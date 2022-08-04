@@ -88,9 +88,11 @@ for batch in tqdm(data_module.test_dataloader()):
     image = image.to(device)
 
     output_probs = torch.nn.Softmax(dim=1)(model(image))[0]
-    for target_class in target_classes:
-        target_prob = output_probs[target_class].cpu().numpy()
-        all_scores[target_class].append(target_prob)
+    intersection = set(target_classes) & set([target_dict[obj] for obj in mask_objects])
+    if intersection:
+        for target_class in intersection:
+            target_prob = output_probs[target_class].cpu().numpy()
+            all_scores[target_class].append(target_prob)
         
 
 for target_class in [target_dict[obj] for obj in mask_objects]:
