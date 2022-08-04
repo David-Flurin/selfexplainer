@@ -130,6 +130,74 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
     return classification_metrics
 
+def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, masks_for_classes, aux_classifier, multilabel):
+    # Set up data module
+    if dataset == "VOC":
+        num_classes = 20
+        data_path = Path(data_base_path) / "VOC2007"
+        data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "VOC2012":
+        num_classes = 20
+        data_path = Path(data_base_path) / "VOC2012"
+        data_module = VOC2012DataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == 'OI_SMALL':
+        num_classes = 3
+        data_path = Path(data_base_path) / "OI_SMALL"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)    
+    elif dataset == 'OI':
+        num_classes = 13
+        data_path = Path(data_base_path) / "OI"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "OI_LARGE":
+        num_classes = 20
+        data_path = Path(data_base_path) / "OI_LARGE"
+        data_module = OIDataModule(data_path=data_path, test_batch_size=1)
+    elif dataset == "TOY":
+        num_classes = 8
+        data_path = Path(data_base_path) / "TOY"
+        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "TOY_MULTI":
+        num_classes = 8
+        data_path = Path(data_base_path) / "TOY_MULTI"
+        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    else:
+        raise Exception("Unknown dataset " + dataset)
+
+    save_path = save_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+
+    model = SelfExplainer.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
+    device = get_device()
+    model.to(device)
+    model.eval()
+
+    data_module.setup()
+
+    total_time = 0.0
+    print(checkpoint_base_path+checkpoint+".ckpt")
+
+    logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
+
+    for batch in tqdm(data_module.test_dataloader()):
+        image, annotations = batch
+
+        filename = get_filename_from_annotations(annotations, dataset=dataset)
+        
+        image = image.to(device)
+        targets = get_targets_from_annotations(annotations, dataset=dataset)
+
+        target_classes = [index for index, value in enumerate(targets[0]) if value == 1.0]
+        intersection = set(target_classes) & set(masks_for_classes)
+        if intersection:
+            output = model(image, targets)
+            for mask_class in masks_for_classes:
+                mask = output['image'][0][0][mask_class].sigmoid()
+                save_mask(mask, save_path / "class_masks" 
+                                                / "masks_for_class_{}".format(mask_class)
+                                                / filename, dataset=dataset)
+
+
 ############################################## Change to your settings ##########################################################
 masks_path = Path("data/OI_SMALL/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
@@ -151,6 +219,9 @@ checkpoints = ["3passes_1koeff_01" ]
 load_file = ''
 save_file = 'results/selfexplainer/OI_SMALL/1koeff_3passes.npz'
 compute_masks = True
+class_masks = True
+
+masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
 
 #################################################################################################################################
@@ -198,6 +269,10 @@ for checkpoint in checkpoints:
             aux_classifier=True
         else:
             aux_classifier=False
+
+        if class_masks:
+            compute_class_masks(masks_path, dataset, checkpoint, checkpoints_base_path, masks_for_classes, aux_classifier, multilabel=multilabel)
+            quit()
         
         if compute_masks:
             classification_metrics = compute_masks_and_f1(masks_path, dataset, checkpoint, checkpoints_base_path, segmentations_path, aux_classifier, multilabel=multilabel)
