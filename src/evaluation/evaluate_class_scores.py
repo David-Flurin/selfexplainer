@@ -1,29 +1,32 @@
 import os
 import torch
+import sys
+sys.path.insert(0, os.path.abspath(".."))
+
 import numpy as np
 import pandas as pd
 import torchvision.transforms as T
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 from PIL import Image
 from pathlib import Path
 from torchray.utils import get_device
-from IPython.display import clear_output, display, Latex
-from utils.helper import get_class_dictionary
 
 from models.classifier import Resnet50ClassifierModel
+from models.resnet50 import Resnet50
+from utils.helper import get_class_dictionary
 
 
 dataset = 'VOC'
 num_classes = 20
-data_path = Path('../datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
-classifier_type = 'vgg16'
-classifier_checkpoint = Path('../src/checkpoints/pretrained_classifiers/vgg16_voc.ckpt')
+data_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
+classifier_checkpoint = Path('../checkpoints/resnet50/voc2007_pretrained.ckpt')
 
-masks_base_path = Path('../src/evaluation/masks/')
 
-methods = ['explainer', 'grad_cam', 'rise', 'rt_saliency']
+masks_base_path = Path('.')
 
-mask_objects = ['bottle', 'car', 'cat', 'dog', 'person']
+methods = ['grad_cam']
+
+mask_objects = ['aeroplane', 'bird', 'bottle', 'car', 'cat', 'cow', 'diningtable', 'dog', 'horse', 'person']
 target_dict = get_class_dictionary(dataset)
 inv_target_dict = {value: key for key, value in target_dict.items()}
 
@@ -37,7 +40,7 @@ transformer = T.Compose([ T.Resize(size=(224,224)),
 
 
 
-model = Resnet50ClassifierModel.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset=dataset)
+model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset=dataset)
 
 device = get_device()
 model.to(device)
@@ -67,11 +70,11 @@ except:
 
 for target_class in mask_classes:
     #Only need filenames from the directory, and not masks, therefore we can just take any method here
-    masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, classifier_type, "explainer") 
+    masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, 'resnet50' if methods[0] != 'selfexplainer' else 'selfexplainer', methods[0]) 
                                  / 'class_masks'
                                  / 'masks_for_class_{}'.format(target_class))
 
-    clear_output(wait=True)
+    #clear_output(wait=True)
     print("Evaluating classifier on unmasked {} images".format(inv_target_dict[target_class]))
 
     all_scores = []
@@ -94,6 +97,7 @@ for target_class in mask_classes:
         results[method][inv_target_dict[target_class]]['no_mask'] = {}
         results[method][inv_target_dict[target_class]]['no_mask']['mean_probs'] = np.mean(all_scores)
 
+    print(results)
 
 for method in methods:
     if method not in results:
@@ -104,11 +108,11 @@ for method in methods:
         for mask_class in mask_classes:
             results[method][inv_target_dict[target_class]][inv_target_dict[mask_class]] = {}
 
-            masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, classifier_type, method)
+            masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, 'resnet50' if method != 'selfexplainer' else 'selfexplainer', method)
                                          / 'class_masks'
                                          / 'masks_for_class_{}'.format(mask_class))
 
-            clear_output(wait=True)
+            #clear_output(wait=True)
             print("Evaluating method {} for {} images with {} masks".format(method, 
                                                                             inv_target_dict[target_class],
                                                                             inv_target_dict[mask_class]))
