@@ -16,7 +16,6 @@ from data.dataloader import VOCDataModule
 dataset = 'VOC'
 num_classes = 20
 data_base_path = Path("../../datasets/")
-data_path = Path('../datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
 
 classifier_type = 'vgg16'
 classifier_checkpoint = Path('../src/checkpoints/pretrained_classifiers/vgg16_voc.ckpt')
