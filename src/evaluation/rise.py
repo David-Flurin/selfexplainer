@@ -17,6 +17,7 @@ from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
 dataset = 'VOC' # one of: ['VOC', 'TOY']
+save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
@@ -26,6 +27,10 @@ TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULT
 OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segmentations/'
 OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
 OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
+
+mode = 'classes'
+masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
+
 #####################################################################################
     
 # Set up data module
@@ -62,7 +67,7 @@ else:
 
 total_time = 0.0
 
-save_path = Path('{}_{}_{}/'.format(dataset, classifier_type, "rise"))
+save_path = save_base_path / '{}_{}_{}/'.format(dataset, classifier_type, "rise")
 if not os.path.isdir(save_path):
     os.makedirs(save_path)
 
@@ -89,41 +94,59 @@ class RISEModel(pl.LightningModule):
         image, annotations = batch
         targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
         filename = get_filename_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
-        if dataset == "VOC":
-            segmentation_filename = VOC_segmentations_directory + os.path.splitext(filename)[0] + '.png'
-        elif dataset == "TOY":
-            segmentation_filename = TOY_segmentations_directory + filename + '.png'
-        elif dataset == "TOY_MULTI":
-            segmentation_filename = TOY_MULTI_segmentations_directory + filename + '.png'
-        elif dataset == "OI_SMALL":
-            segmentation_filename = OI_SMALL_segmentations_directory + filename + '.png'
-        elif dataset == "OI":
-            segmentation_filename = OI_segmentations_directory + filename + '.png'
-        elif dataset == "OI_LARGE":
-            segmentation_filename = OI_LARGE_segmentations_directory + filename + '.png'
+        if mode == 'seg': 
+            if dataset == "VOC":
+                segmentation_filename = VOC_segmentations_directory + os.path.splitext  (filename)[0] + '.png'
+            elif dataset == "TOY":
+                segmentation_filename = TOY_segmentations_directory + filename + '.png'
+            elif dataset == "TOY_MULTI":
+                segmentation_filename = TOY_MULTI_segmentations_directory + filename + '.png'
+            elif dataset == "OI_SMALL":
+                segmentation_filename = OI_SMALL_segmentations_directory + filename + '.png'
+            elif dataset == "OI":
+                segmentation_filename = OI_segmentations_directory + filename + '.png'
+            elif dataset == "OI_LARGE":
+                segmentation_filename = OI_LARGE_segmentations_directory + filename + '.png'
 
-        else:
-            raise Exception("Illegal dataset: " + dataset)
+            else:
+                raise Exception("Illegal dataset: " + dataset)
 
-        start_time = default_timer()
-        saliency = self(image)
-        saliencies = torch.zeros(num_classes, 224, 224)
-        for class_index in range(num_classes):
-            if targets[0][class_index] == 1.0:
-                class_sal = saliency[:, class_index].squeeze()
-                min_val = class_sal.min()
-                max_val = class_sal.max()
-                class_sal = class_sal - min_val
-                class_sal = torch.mul(class_sal, 1 / (max_val - min_val))
-                class_sal = class_sal.clamp(0, 1)
-                saliencies[class_index] = class_sal
+            start_time = default_timer()
+            saliency = self(image)
+            saliencies = torch.zeros(num_classes, 224, 224)
+            for class_index in range(num_classes):
+                if targets[0][class_index] == 1.0:
+                    class_sal = saliency[:, class_index].squeeze()
+                    min_val = class_sal.min()
+                    max_val = class_sal.max()
+                    class_sal = class_sal - min_val
+                    class_sal = torch.mul(class_sal, 1 / (max_val - min_val))
+                    class_sal = class_sal.clamp(0, 1)
+                    saliencies[class_index] = class_sal
 
-        saliency_map = saliencies.amax(dim=0)
-        end_time = default_timer()
-        global total_time
-        total_time += end_time - start_time
+            saliency_map = saliencies.amax(dim=0)
+            end_time = default_timer()
+            global total_time
+            total_time += end_time - start_time
 
-        save_mask(saliency_map, save_path / filename, dataset=dataset)
+            save_mask(saliency_map, save_path / filename, dataset=dataset)
+
+        elif mode == 'classes':
+            target_classes = [index for index, value in enumerate(targets[0]) if value == 1.0]
+            intersection = set(target_classes) & set(masks_for_classes)
+            if intersection:
+                saliency = self(image)
+                for mask_class in masks_for_classes:
+                    class_sal = saliency[:, mask_class].squeeze()
+                    min_val = class_sal.min()
+                    max_val = class_sal.max()
+                    class_sal = class_sal - min_val
+                    class_sal = torch.mul(class_sal, 1 / (max_val - min_val))
+                    class_sal = class_sal.clamp(0, 1)
+
+                    save_mask(class_sal, save_path / "class_masks" 
+                                                       / "masks_for_class_{}".format(mask_class)
+                                                       / filename, dataset=dataset)
 
 model = RISEModel(num_classes=num_classes)
 trainer = pl.Trainer(gpus=[0] if torch.cuda.is_available() else 0)
