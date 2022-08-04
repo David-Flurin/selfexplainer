@@ -18,7 +18,7 @@ from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
 dataset = 'VOC' # one of: ['VOC', 'TOY']
-data_base_path = Path("../../datasets/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')

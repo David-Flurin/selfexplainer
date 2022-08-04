@@ -131,8 +131,8 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     return classification_metrics
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/VOC")
-data_base_path = Path("../../datasets/")
+masks_path = Path("data/OI_SMALL/")
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -141,15 +141,16 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "VOC"
-multilabel = True
+dataset = "OI_SMALL"
+multilabel = False
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/selfexplainer/"
-checkpoints = ["3passes_01" ]
+checkpoints_base_path = "../checkpoints/OI_SMALL/"
+
+checkpoints = ["3passes_1koeff_01" ]
 
 load_file = ''
-save_file = 'results/selfexplainer/VOC/3passes.ckpt'
-compute_masks = False
+save_file = 'results/selfexplainer/OI_SMALL/1koeff_3passes.npz'
+compute_masks = True
 
 
 #################################################################################################################################

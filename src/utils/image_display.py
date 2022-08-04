@@ -39,7 +39,7 @@ def save_mask(mask, filename, dataset):
 
     img = mask.detach().cpu().numpy().squeeze()
 
-    plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
+    #plt.imsave(path_file + ".png", img, cmap='gray', vmin=0, vmax=1, format="png")
     np.savez_compressed(path_file + ".npz", img)
 
 def save_masked_image(image, mask, filename, dataset, probs=None):
