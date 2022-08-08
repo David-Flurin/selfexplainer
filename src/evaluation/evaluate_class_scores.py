@@ -23,12 +23,14 @@ dataset = 'VOC'
 num_classes = 20
 img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
 classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
-selfexplainer_checkpoint = ''
+selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/3passes_01_later.ckpt')
 
+load_file = ''
+save_file = 'results/class_masks/VOC2007/selfexplainer_3passes.npz'
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-masks_base_path = Path('.')
+masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
 
-methods = ['grad_cam']
+methods = ['3passes_01_later']
 
 mask_classes = ['aeroplane', 'bird', 'bottle', 'car', 'cat', 'cow', 'diningtable', 'dog', 'horse', 'person']
 target_dict = get_class_dictionary(dataset)
@@ -126,7 +128,7 @@ for batch in tqdm(data_module.test_dataloader()):
             for target_class in intersection:
                 target_class_name = inv_target_dict[target_class]
                 for mask_class in mask_classes:
-                        masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, 'resnet50' if method != 'selfexplainer' else 'selfexplainer', method)
+                        masks_dir = (masks_base_path / '{}_{}_{}'.format(dataset, 'resnet50' if method in ['gradcam', 'rise', 'explainer'] else 'selfexplainer', method)
                                          / 'class_masks'
                                          / 'masks_for_class_{}'.format(target_dict[mask_class]))
 
@@ -136,34 +138,25 @@ for batch in tqdm(data_module.test_dataloader()):
                         score = compute_results(model=classifier if method != 'selfexplainer' else selfexplainer, image=image, mask=mask, class_id=target_class)
                         all_scores[method][target_class_name][mask_class].append(score)
 
-    i += 1
-    if i >5:
-        break
 
-results = {}
-for method in all_scores:
-    results[method] = {}
-    for target_class_name in all_scores[method]:
-        results[method][target_class_name] = {}
-        for mask_name in all_scores[method][target_class_name]:
-            results[method][target_class_name][mask_class] = np.mean(all_scores[method][target_class_name][mask_class])
-   
-    print(results)
 
 try:
-    results = np.load('class_scores_results.npz', allow_pickle=True)['results'].item()
+    results = np.load(load_file, allow_pickle=True)['results'].item()
 except:
     results = {}
 
-            
+
 for method in all_scores:
     results[method] = {}
     for target_class_name in all_scores[method]:
         results[method][target_class_name] = {}
-        for mask_name in all_scores[method][target_class_name]:
+        for mask_class in all_scores[method][target_class_name]:
             results[method][target_class_name][mask_class] = np.mean(all_scores[method][target_class_name][mask_class])
    
-    print(results)
+print(results)
+
+
+            
 
 # for method in methods:
 #     if method not in results:
@@ -197,4 +190,4 @@ for method in all_scores:
 
 #             results[method][inv_target_dict[target_class]][inv_target_dict[mask_class]]['mean_probs'] = np.mean(all_scores)
 
-np.savez('class_scores_results.npz', results=results)
+np.savez(save_file, results=results)

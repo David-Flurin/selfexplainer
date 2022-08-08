@@ -199,7 +199,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
 
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("data/OI_SMALL/")
+masks_path = Path(".")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -212,14 +212,14 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 dataset = "OI_SMALL"
 multilabel = False
 classifiers = ["resnet50"]
-checkpoints_base_path = "../checkpoints/OI_SMALL/"
+checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/OI_SMALL/'
 
-checkpoints = ["3passes_1koeff_01" ]
+checkpoints = ["1koeff_3passes_02_later" ]
 
 load_file = ''
-save_file = 'results/selfexplainer/OI_SMALL/1koeff_3passes.npz'
+save_file = 'results/selfexplainer/OI_SMALL/1koeff_3passes_02_later.npz'
 compute_masks = True
-class_masks = True
+class_masks = False
 
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
