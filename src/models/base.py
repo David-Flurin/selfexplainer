@@ -203,7 +203,7 @@ class BaseModel(pl.LightningModule):
             i_mask = perfect_mask
 
         
-        if self.use_similarity_loss:
+        if targets != None and self.use_similarity_loss:
             # plt.imshow(masked_image[0].detach().permute(1,2,0))
             # plt.show()
             #if not self.is_testing:
@@ -244,7 +244,7 @@ class BaseModel(pl.LightningModule):
                 output['object_0'] = self._forward(i_mask.unsqueeze(1) * image, targets)
             
         
-        if self.use_background_loss:   
+        if targets != None and self.use_background_loss:   
             target_mask_inversed = torch.ones_like(i_mask) - i_mask
             if image.dim() > 3:
                 target_mask_inversed = target_mask_inversed.unsqueeze(1)
@@ -265,7 +265,10 @@ class BaseModel(pl.LightningModule):
             '''
             output['background'] = self._forward(inverted_masked_image, targets, frozen=self.frozen)
             
-        return output
+        if len(output) == 1:
+            return output['image']
+        else:
+            return output
 
     def _forward(self, image, targets, frozen=False):
         if self.aux_classifier:

@@ -21,16 +21,16 @@ from data.dataloader import VOCDataModule
 
 dataset = 'VOC'
 num_classes = 20
-img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
-classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
-selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/3passes_01_later.ckpt')
+img_path = Path('../../datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
+classifier_checkpoint = Path('/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/voc2007_pretrained.ckpt')
+selfexplainer_checkpoint = Path('/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/selfexplainer/3passes_01_later.ckpt')
 
 load_file = ''
 save_file = 'results/class_masks/VOC2007/selfexplainer_3passes.npz'
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
+data_base_path = Path("../../datasets/")
+masks_base_path = Path('data')
 
-methods = ['3passes_01_later']
+methods = ['3passes_01']
 
 mask_classes = ['aeroplane', 'bird', 'bottle', 'car', 'cat', 'cow', 'diningtable', 'dog', 'horse', 'person']
 target_dict = get_class_dictionary(dataset)
@@ -64,7 +64,7 @@ for param in classifier.parameters():
     param.requires_grad_(False)
 
 selfexplainer = None
-if 'selfexplainer' in methods:
+if set(methods) - set(['gradcam', 'rise', 'explainer']):
     selfexplainer = SelfExplainer.load_from_checkpoint(selfexplainer_checkpoint, 
                         num_classes=num_classes, 
                         multilabel=True if dataset in ['VOC', 'TOY_MULTI'] else False, 
@@ -109,18 +109,18 @@ for batch in tqdm(data_module.test_dataloader()):
         for target_class in intersection:
             target_prob = output_probs[target_class].cpu().numpy()
             for method in methods:
-                if method == 'selfexplainer':
+                if method not in ['gradcam', 'rise', 'explainer']:
                     continue
                 all_scores[method][inv_target_dict[target_class]]['None'].append(target_prob)
 
 
-    if 'selfexplainer' in methods:
-        output_probs = torch.nn.Softmax(dim=1)(selfexplainer(image))[0]
+    if set(methods) - set(['gradcam', 'rise', 'explainer']):
+        output_probs = torch.nn.Softmax(dim=1)(selfexplainer(image)[3])[0]
         intersection = set(target_classes) & set([target_dict[obj] for obj in mask_classes])
         if intersection:
             for target_class in intersection:
                 target_prob = output_probs[target_class].cpu().numpy()
-                all_scores['selfexplainer'][inv_target_dict[target_class]]['None'].append(target_prob)
+                all_scores[method][inv_target_dict[target_class]]['None'].append(target_prob)
 
     intersection = set(target_classes) & set([target_dict[obj] for obj in mask_classes])
     if intersection:
@@ -135,7 +135,17 @@ for batch in tqdm(data_module.test_dataloader()):
 
                         mask = np.load(masks_dir / (filename[:-3]+'npz'))['arr_0']
                         mask = torch.tensor(np.reshape(mask, [1,1, *mask.shape]), device=device)
-                        score = compute_results(model=classifier if method != 'selfexplainer' else selfexplainer, image=image, mask=mask, class_id=target_class)
+                        if method in ['gradcam', 'rise', 'explainer']:
+                            score = compute_results(model=classifier, image=image, mask=mask, class_id=target_class)
+                        else:
+                                thresholds = np.arange(0.1, 1.0, 0.1)
+                                outputs = []
+                                for threshold in thresholds:
+                                    thresh_mask = (mask > threshold).float()
+                                    masked_image = thresh_mask * image
+                                    output_probs = torch.nn.Softmax(dim=1)(model(masked_image)[3])
+                                    outputs.append(output_probs[0][target_class].cpu().numpy())
+
                         all_scores[method][target_class_name][mask_class].append(score)
 
 
