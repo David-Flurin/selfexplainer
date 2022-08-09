@@ -55,7 +55,8 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    model = Resnet50ClassifierModel.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, learning_rate=1e-4, use_imagenet_pretraining=False, fix_classifier_backbone=True, metrics_threshold=0.0)
+    #model = Resnet50ClassifierModel.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, learning_rate=1e-4, use_imagenet_pretraining=False, fix_classifier_backbone=True, metrics_threshold=0.0)
+    model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, weighted_sampling=False, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
     model.eval()
@@ -101,14 +102,15 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 ############################################## Change to your settings ##########################################################
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "OI_SMALL"
+dataset = "OI_LARGE"
 multilabel = False
-checkpoints_base_path = "/users/dniederb/nn-explainer/src/results/classifier_training/OI_SMALL/tb_logs/fit/NN Explainer/version_0/checkpoints/"
+checkpoints_base_path = "/scratch/snx3000/dniederb/experiments/thesis/resnet50/OI_LARGE/check/tb_logs/Selfexplainer/version_0/checkpoints/"
 
-checkpoints = ["epoch=1-step=4933"]
+
+checkpoints = ["epoch=1-step=26070"]
 
 load_file = ''
-save_file = 'resnet_steven_oismall_sanity.npz'
+save_file = 'resnet50_oilarge_check.npz'
 
 
 #################################################################################################################################
