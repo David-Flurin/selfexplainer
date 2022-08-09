@@ -195,3 +195,4 @@ def overlap(mask, seg_mask):
     "Return proportion where mask and groundtruth match. "
     
     return 1 - np.average(np.absolute(seg_mask - mask))
+
