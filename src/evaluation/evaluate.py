@@ -91,7 +91,8 @@ for dataset in datasets:
                                                                                                                             dataset_name=dataset, 
                                                                                                                             model_name=classifier, 
                                                                                                                             model_path=model_path, 
-                                                                                                                            method=method)
+                                                                                                                            method=method,
+                                                                                                                            multilabel=multilabel)
 
 
             d = {}

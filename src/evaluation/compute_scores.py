@@ -125,7 +125,7 @@ def open_segmentation_mask(segmentation_filename, dataset_name):
 def get_path_mask(masks_path, dataset_name, model_name, method):
     return masks_path / Path('{}_{}_{}/'.format(dataset_name, model_name, method))
 
-def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, **kwargs):
+def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, multilabel=False, **kwargs):
     # Load the model and data
     model, data_module = get_model_and_data(data_path, dataset_name, model_name, model_path)
     # Path of the masks
@@ -162,6 +162,8 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
         if compute_p:
+            logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
+
             x = x.to(device)
             logits = model.forward(x)
             p = torch.nn.functional.softmax(logits, dim=1).detach().cpu().numpy().squeeze()
@@ -244,8 +246,10 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     d_IOU = []
     c_IOU = []
     sal = []
-    inv_sal = []
-    ext_sal = []
+    bg_sal = []
+    combined_sal = []
+    combined_sal_wo_mean = []
+
 
     over = []
     background_c = []
@@ -280,8 +284,9 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
         sal.append(saliency(p_mask, category_id, mask))
-        inv_sal.append(inverted_saliency(p_background, category_id, mask))
-        ext_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
+        bg_sal.append(inverted_saliency(p_background, category_id, mask))
+        combined_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
+        combined_sal_wo_mean.append(extended_saliency(p_mask, p_background, category_id, mask))
 
 
         over.append(overlap(mask, seg_mask))
@@ -294,7 +299,7 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr
 
         
-def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=True, aux_classifier=False):
+def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, multilabel=multilabel, compute_p=True, aux_classifier=False):
 #     sparsity = []
 #     sparsity_masked = []
 #     sparsity_background = []
@@ -313,6 +318,9 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
     d_IOU = []
     c_IOU = []
     sal = []
+    bg_sal = []
+    combined_sal = []
+    combined_sal_wo_mean = []
 
     over = []
     background_c = []
@@ -322,7 +330,7 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
 
 
 
-    for mask, seg_mask, p, p_mask, p_background, category_id, x in gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, aux_classifier=aux_classifier):
+    for mask, seg_mask, p, p_mask, p_background, category_id, x in gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, multilabel=multilabel, aux_classifier=aux_classifier):
 
 #         sparsity.append(prob_sparsity(p))
 #         sparsity_masked.append(prob_sparsity(p_mask))
@@ -342,6 +350,9 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
         sal.append(saliency(p_mask, category_id, mask))
+        bg_sal.append(inverted_saliency(p_background, category_id, mask))
+        combined_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
+        combined_sal_wo_mean.append(extended_saliency(p_mask, p_background, category_id, mask))
 
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))

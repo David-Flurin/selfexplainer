@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from sklearn.metrics import roc_auc_score
 
@@ -38,29 +39,25 @@ Piotr", Dabkowski and Gal.
         pclass = 0
         for e in c:
             pclass += pvec[e]
-    return np.log(a) - np.log(pclass)
+    return np.log(a) - np.log(pclass.mean())
 
-def inverted_saliency(pvec, c, mask):
+def background_saliency(pvec, mask):
     """
-    Continuous saliency measure. 
-    
-    Adaptation from "Real Time Image Saliency for Black Box Classifiers
-Piotr", Dabkowski and Gal.
+    Continuous saliency measure for the inverse masked image.
 
-    For pvec of the masked image, the lower the better for the masked image.
-    
-    This measure does not make sense for the inverse masked image.
+
     """
     a = np.maximum(np.mean(mask), 0.05)
-    if isinstance(c, int):
-        pclass = pvec[c]
-    else:
-        pclass = 0
-        for e in c:
-            pclass += pvec[e]
-    return np.log(a) + np.log(pclass)
 
-def extended_saliency(pvec, inv_pvec, c, mask):
+    avg_probs = np.array([1/pvec.size]*pvec.size)
+    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
+    
+    entropy = (-pvec * np.log(pvec)).sum()
+    normalized_entropy = entropy / max_entropy
+
+    return np.log(a) - np.log(normalized_entropy)
+
+def combined_saliency(pvec, inv_pvec, c, mask):
     """
     Extended saliency measure. 
     
@@ -72,6 +69,13 @@ Piotr", Dabkowski and Gal.
     This measure does not make sense for the inverse masked image.
     """
     a = np.maximum(np.mean(mask), 0.05)
+
+    avg_probs = np.array([1/inv_pvec.size]*inv_pvec.size)
+    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
+    
+    entropy = (-inv_pvec * np.log(inv_pvec)).sum()
+    normalized_entropy = entropy / max_entropy
+
     if isinstance(c, int):
         pclass = pvec[c]
         inv_pclass = inv_pvec[c]
@@ -81,8 +85,39 @@ Piotr", Dabkowski and Gal.
         for e in c:
             pclass += pvec[e]
             inv_pclass += inv_pvec[e]
-        
-    return np.log(a) - np.log(pclass) + np.log(inv_pclass)
+
+    return np.log(a) - (np.log(pclass.mean()) + np.log(normalized_entropy)).mean()
+
+def combined_saliency_wo_mean(pvec, inv_pvec, c, mask):
+    """
+    Extended saliency measure. 
+    
+    Adaptation from "Real Time Image Saliency for Black Box Classifiers
+Piotr", Dabkowski and Gal.
+
+    For pvec of the masked image, the lower the better for the masked image.
+    
+    This measure does not make sense for the inverse masked image.
+    """
+    a = np.maximum(np.mean(mask), 0.05)
+
+    avg_probs = np.array([1/inv_pvec.size]*inv_pvec.size)
+    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
+    
+    entropy = (-inv_pvec * np.log(inv_pvec)).sum()
+    normalized_entropy = entropy / max_entropy
+
+    if isinstance(c, int):
+        pclass = pvec[c]
+        inv_pclass = inv_pvec[c]
+    else:
+        pclass = 0
+        inv_pclass = 0
+        for e in c:
+            pclass += pvec[e]
+            inv_pclass += inv_pvec[e]
+
+    return np.log(a) - np.log(pclass.mean()) + np.log(normalized_entropy)
 
 def continuous_IOU(mask, seg):
     ### this is no longer the IoU but 1 + the Soergel distance (which is 1 - this ratio below)
@@ -196,3 +231,16 @@ def overlap(mask, seg_mask):
     
     return 1 - np.average(np.absolute(seg_mask - mask))
 
+
+
+t = np.array([0.22, 0.22, 0.22, 0.34])
+t1 = np.array([0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.19])
+p = np.array([0.05, 0.05, 0.05, 0.85])
+p1 = np.array([0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.82])
+m = np.zeros((100, 100))
+m[0:40, 0:40] = np.ones((40,40))
+print(background_saliency(t, m))
+print(combined_saliency(p, t, 3, m))
+
+print(background_saliency(t1, m))
+print(combined_saliency(p1, t1, 9, m))
