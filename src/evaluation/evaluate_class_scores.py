@@ -143,7 +143,7 @@ for batch in tqdm(data_module.test_dataloader()):
                                 for threshold in thresholds:
                                     thresh_mask = (mask > threshold).float()
                                     masked_image = thresh_mask * image
-                                    output_probs = torch.nn.Softmax(dim=1)(model(masked_image)[3])
+                                    output_probs = torch.nn.Softmax(dim=1)(selfexplainer(masked_image)[3])
                                     outputs.append(output_probs[0][target_class].cpu().numpy())
 
                         all_scores[method][target_class_name][mask_class].append(score)

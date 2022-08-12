@@ -1,5 +1,6 @@
 import os
 from cv2 import sqrt
+import cv2
 
 import pandas as pd
 from tensorflow.python.summary.summary_iterator import summary_iterator
@@ -13,6 +14,7 @@ from matplotlib.ticker import FormatStrFormatter
 from toy_dataset.generator import Generator
 import pathlib
 from xml.etree import cElementTree as ElementTree
+from utils.weighting import softmax_weighting
 
 from math import sqrt
 import itertools
@@ -618,7 +620,49 @@ def plot_toydata_distribution(data_path):
 #     plt.show()
 #---------------------------------------------------
 
+def plot_attention_pooling(mask_size):
+    
+    tot_attr = mask_size**2 * 0.1
+    avg_mask = np.ones((mask_size, mask_size)) * 0.1
+    kernel = cv2.getGaussianKernel(int(mask_size/1.5), 0.2*((int(mask_size/1.5)-1)/2 - 1) + 1.5)
+    kernel = np.dot(kernel, kernel.T)
+    narrow_mask = np.zeros((mask_size, mask_size))
+    idx = mask_size // 6
+    narrow_mask[idx:idx*5, idx:idx*5] = tot_attr * kernel
+    kernel = cv2.getGaussianKernel(mask_size//3, 0.2*((mask_size//3-1)/3 - 1) + 4.5)
+    kernel = np.dot(kernel, kernel.T)
+    narrower_mask = np.zeros((mask_size, mask_size))
+    idx = mask_size // 6
+    narrower_mask[idx*2:idx*4, idx*2:idx*4] = tot_attr * kernel
 
+    plt.tick_params(
+    axis='both',          # changes apply to the x-axis
+    which='both',      # both major and minor ticks are affected
+    bottom=False,      # ticks along the bottom edge are off
+    top=False,
+    left=False,         # ticks along the top edge are off
+    labelbottom=False,
+    labelleft = False)
+
+    weight = lambda x: softmax_weighting(torch.from_numpy(x).unsqueeze(0).unsqueeze(0), 1).sum()
+    #plt.figure(figsize=(mask_size, mask_size))
+    plt.imshow(avg_mask, cmap='jet',  vmin=0, vmax=2)
+    plt.tight_layout
+    plt.savefig('../../../figures/attention_pooling/avg_mask.png')
+    print(weight(avg_mask))
+    print(avg_mask.sum())
+    plt.imshow(narrow_mask, cmap='jet',  vmin=0, vmax=5)
+    plt.savefig('../../../figures/attention_pooling/narrow_mask.png')
+    print(weight(narrow_mask))
+    print(narrow_mask.sum())
+    plt.imshow(narrower_mask, cmap='jet',  vmin=0, vmax=10)
+    plt.savefig('../../../figures/attention_pooling/narrower_mask.png')
+    print(weight(narrower_mask))
+    print(narrower_mask.sum())
+
+
+
+plot_attention_pooling(240)
 #plot_generator_distribution(100000)
 
     
