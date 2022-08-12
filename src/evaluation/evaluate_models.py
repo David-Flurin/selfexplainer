@@ -92,8 +92,8 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
 
         start_time = default_timer()
         output = model(image, targets)
-        mask = output['image'][1]
-        logits = (output['image'][3])
+        mask = output[1]
+        logits = (output[3])
         pred = logits_fn(logits)
         preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
         #thresh_preds.append(pred.detach().cpu().squeeze().numpy() > 0.5)
@@ -199,7 +199,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
 
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path(".")
+masks_path = Path("/scratch/snx3000/dniederb/evaluation_data")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -209,16 +209,16 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "OI_SMALL"
-multilabel = False
+dataset = "VOC"
+multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/OI_SMALL/'
+checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/'
 
-checkpoints = ["1koeff_3passes_02_later" ]
+checkpoints = ["3passes_01_later" ]
 
 load_file = ''
-save_file = 'results/selfexplainer/OI_SMALL/1koeff_3passes_02_later.npz'
-compute_masks = True
+save_file = 'results/selfexplainer/VOC2007/1koeff_3passes_01_later.npz'
+compute_masks = False
 class_masks = False
 
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
