@@ -211,16 +211,16 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
 
 
 
-        logits_fn = torch.sigmoid if multilabel else lambda y: torch.nn.functional.softmax(y, dim=1)
+        logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
         x = x.to(model.device)
-        logits = model.forward(x)['image'][3]
+        logits = model.forward(x)[3]
         p = logits_fn(logits).detach().cpu().numpy().squeeze()
 
         x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(model.device) * x
-        logits_mask = model.forward(x_masked)['image'][3]
+        logits_mask = model.forward(x_masked)[3]
         p_mask = logits_fn(logits_mask).detach().cpu().numpy().squeeze()
         x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(model.device) * x
-        logits_background = model.forward(x_background)['image'][3]
+        logits_background = model.forward(x_background)[3]
         p_background = logits_fn(logits_background).detach().cpu().numpy().squeeze()
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 

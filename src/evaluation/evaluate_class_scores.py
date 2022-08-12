@@ -21,18 +21,18 @@ from data.dataloader import VOCDataModule
 
 dataset = 'VOC'
 num_classes = 20
-img_path = Path('../../datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
-classifier_checkpoint = Path('/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/resnet50/voc2007_pretrained.ckpt')
-selfexplainer_checkpoint = Path('/home/david/Documents/Master/Thesis/selfexplainer/src/checkpoints/selfexplainer/3passes_01_later.ckpt')
+img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
+classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
+selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/3passes_01_later.ckpt')
 
 load_file = ''
-save_file = 'results/class_masks/VOC2007/selfexplainer_3passes.npz'
-data_base_path = Path("../../datasets/")
-masks_base_path = Path('data')
+save_file = 'results/class_masks/VOC2007/explainer.npz'
+data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
 
-methods = ['3passes_01']
+methods = ['explainer']
 
-mask_classes = ['aeroplane', 'bird', 'bottle', 'car', 'cat', 'cow', 'diningtable', 'dog', 'horse', 'person']
+mask_classes = ['bottle', 'car', 'cat', 'dog', 'person']
 target_dict = get_class_dictionary(dataset)
 inv_target_dict = {value: key for key, value in target_dict.items()}
 
@@ -103,7 +103,7 @@ for batch in tqdm(data_module.test_dataloader()):
 
     image = image.to(device)
 
-    output_probs = torch.nn.Softmax(dim=1)(classifier(image))[0]
+    output_probs = torch.sigmoid(classifier(image))[0]
     intersection = set(target_classes) & set([target_dict[obj] for obj in mask_classes])
     if intersection:
         for target_class in intersection:
@@ -145,7 +145,7 @@ for batch in tqdm(data_module.test_dataloader()):
                                     masked_image = thresh_mask * image
                                     output_probs = torch.nn.Softmax(dim=1)(selfexplainer(masked_image)[3])
                                     outputs.append(output_probs[0][target_class].cpu().numpy())
-
+                                score = np.mean(outputs)
                         all_scores[method][target_class_name][mask_class].append(score)
 
 
