@@ -49,13 +49,29 @@ def background_saliency(pvec, mask):
     """
     a = np.maximum(np.mean(mask), 0.05)
 
+    max_entropy = -np.log(1/pvec.size)
+
+    entropy = (-pvec * np.log(pvec)).sum()
+    normalized_entropy = entropy / max_entropy
+
+    return np.log(a) - np.log(normalized_entropy), np.log(normalized_entropy)
+
+
+def background_entropy(pvec, mask):
+    """
+    Continuous saliency measure for the inverse masked image.
+
+
+    """
+    a = np.maximum(np.mean(mask), 0.05)
+
     avg_probs = np.array([1/pvec.size]*pvec.size)
     max_entropy = (-avg_probs * np.log(avg_probs)).sum()
     
     entropy = (-pvec * np.log(pvec)).sum()
     normalized_entropy = entropy / max_entropy
 
-    return np.log(a) - np.log(normalized_entropy)
+    return np.log(a) - normalized_entropy, normalized_entropy, entropy
 
 def combined_saliency(pvec, inv_pvec, c, mask):
     """
@@ -233,14 +249,14 @@ def overlap(mask, seg_mask):
 
 
 
-t = np.array([0.22, 0.22, 0.22, 0.34])
-t1 = np.array([0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.19])
-p = np.array([0.05, 0.05, 0.05, 0.85])
-p1 = np.array([0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.82])
-m = np.zeros((100, 100))
-m[0:40, 0:40] = np.ones((40,40))
-print(background_saliency(t, m))
-print(combined_saliency(p, t, 3, m))
+# t = np.array([0.22, 0.22, 0.22, 0.34])
+# t1 = np.array([0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.19])
+# p = np.array([0.05, 0.05, 0.05, 0.85])
+# p1 = np.array([0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.82])
+# m = np.zeros((100, 100))
+# m[0:40, 0:40] = np.ones((40,40))
+# print(background_saliency(t, m))
+# print(combined_saliency(p, t, 3, m))
 
-print(background_saliency(t1, m))
-print(combined_saliency(p1, t1, 9, m))
+# print(background_saliency(t1, m))
+# print(combined_saliency(p1, t1, 9, m))

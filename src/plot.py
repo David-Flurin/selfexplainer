@@ -16,6 +16,8 @@ import pathlib
 from xml.etree import cElementTree as ElementTree
 from utils.weighting import softmax_weighting
 
+from utils.assessment_metrics import background_saliency, background_entropy
+
 from math import sqrt
 import itertools
 from functools import partial
@@ -662,9 +664,53 @@ def plot_attention_pooling(mask_size):
 
 
 
-plot_attention_pooling(240)
+# plot_attention_pooling(240)
 #plot_generator_distribution(100000)
 
+
+def plot_deletion_metrics():
+    bg_sal = []
+    log_entropy = []
+    bg_ent = []
+    entropy = []
+    unnormalized_entropy = []
+    ts = []
+    m = np.zeros((100, 100))
+    for t in np.arange(10, 1, -0.2):
+        p = torch.ones(10)
+        p[9] = t
+        o = torch.nn.functional.softmax(p, dim=0).numpy()
+        m[0:32, 0:32] = np.ones((32, 32))
+        sal, log = background_saliency(o, m)
+        bg_sal.append(sal)
+        log_entropy.append(log)
+        bg_e, ent, un_entropy = background_entropy(o, m)
+        bg_ent.append(bg_e)
+        entropy.append(ent)
+        ts.append(t)
+        unnormalized_entropy.append(un_entropy)
+
+    fig, ax1 = plt.subplots()
+    ax1.plot(ts, bg_sal, color='red', label='log(area) - log(norm.entropy)')
+    ax1.plot(ts, bg_ent, color='blue', label='log(area) - norm.entropy')
+    plt.xlabel('t: [t, 1, 1, 1, 1, 1, 1, 1, 1, 1]')
+
+    plt.legend()
+    fig.tight_layout()
+    plt.show()
+
+    plt.xlabel = 'Logit value'
+    fig, ax1 = plt.subplots()
+    ax1.plot(ts, log_entropy, color='red', label=' log(norm.entropy)')
+    ax1.plot(ts, entropy, color='blue', label=' norm.entropy')
+    ax1.plot(ts, unnormalized_entropy, color='green', label='unnorm.entropy')
+    plt.xlabel = 't: [t, 1, 1, 1, 1, 1, 1, 1, 1, 1]'
+
+    plt.legend()
+    fig.tight_layout()
+    plt.show()
+
+plot_deletion_metrics()
     
 
 
