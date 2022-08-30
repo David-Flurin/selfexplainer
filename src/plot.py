@@ -662,7 +662,7 @@ def plot_attention_pooling(mask_size):
 
 
 
-plot_attention_pooling(240)
+#plot_attention_pooling(240)
 #plot_generator_distribution(100000)
 
     

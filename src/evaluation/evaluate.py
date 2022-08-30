@@ -22,22 +22,22 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 
-datasets = ["OI_LARGE"]
+datasets = ["TOY_MULTI"]
 classifiers = ["resnet50"]
-resnet50_toy_checkpoint = '../checkpoints/resnet50/toy_singlelabel.ckpt'
-resnet50_toy_multi_checkpoint = '../checkpoints/resnet50/toy_multilabel.ckpt'
-resnet_50_oi_checkpoint = '../checkpoints/resnet50/oi_pretrained.ckpt'
-resnet_50_oi_large_checkpoint = '../checkpoints/resnet50/oi_large_pretrained.ckpt'
-resnet_50_oi_small_checkpoint = '../checkpoints/resnet50/oi_small_pretrained.ckpt'
-resnet50_voc_checkpoint = "../checkpoints/resnet50/voc2007_pretrained.ckpt"
+resnet50_toy_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/toy_singlelabel.ckpt'
+resnet50_toy_multi_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/toy_multilabel.ckpt'
+resnet_50_oi_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/oi_pretrained.ckpt'
+resnet_50_oi_large_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/oi_large_pretrained.ckpt'
+resnet_50_oi_small_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/oi_small_pretrained.ckpt'
+resnet50_voc_checkpoint = "/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt"
 resnet50_coco_checkpoint = "../checkpoints/pretrained_classifiers/resnet50_coco.ckpt"
 selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 load_file = ''
-save_file = 'results/baselines/OI_LARGE/gradcam_rise.npz'
+save_file = 'results/baselines/TOY_MULTI/newer_saliency/gradcam_rise.npz'
 
-multilabel = False
+multilabel = True
 methods = ["grad_cam", "rise"]
 #################################################################################################################################
 
@@ -85,7 +85,7 @@ for dataset in datasets:
                 segmentations_path = OI_SMALL_segmentations_path
                 model_path = resnet_50_oi_small_checkpoint
 
-            d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
+            d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy,bg_entropy, entropy,  over, background_c, mask_c, sr = compute_numbers(data_path=data_path,
                                                                                                                             masks_path=masks_path, 
                                                                                                                             segmentations_path=segmentations_path, 
                                                                                                                             dataset_name=dataset, 
@@ -106,6 +106,15 @@ for dataset in datasets:
             d["d_IOU"] = d_IOU
             d["c_IOU"] = c_IOU
             d["sal"] = sal
+            d["bg_sal"] = bg_sal
+            d["combined_sal"] = combined_sal
+            d["combined_sal_wo_mean"] = combined_sal_wo_mean
+            d['log_a'] = log_a
+            d['log_pmask'] = log_pmask
+            d['log_entropy'] = log_entropy
+            d['background_entropy'] = bg_entropy
+            d['normalized entropy'] = entropy
+
             d["over"] = over
             d["background_c"] = background_c
             d["mask_c"] = mask_c

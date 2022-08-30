@@ -405,7 +405,10 @@ class BaseModel(pl.LightningModule):
 
 
         if self.objective == 'classification':
+            if self.use_similarity_loss or self.use_background_loss:
                 classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            else:
+                classification_loss_initial = self.classification_loss_fn(output[3], target_vector)
 
         elif self.objective == 'segmentation':
             targets = targets.to(torch.float64)
@@ -465,26 +468,26 @@ class BaseModel(pl.LightningModule):
         
 
         mask_loss = torch.tensor(0., device=image.device)
-        mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1])) #+ self.total_variation_conv(s_mask))
+        mask_variation_loss = self.mask_variation_regularizer * (self.total_variation_conv(output['image'][1] if 'image' in output else output[1])) #+ self.total_variation_conv(s_mask))
         self.log('TV mask loss', mask_variation_loss.item(), on_epoch=False)
         if self.use_mask_variation_loss:
             mask_loss += mask_variation_loss
 
 
-        bounding_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
+        bounding_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0] if 'image' in output else output[0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
         self.log('Bounding area loss', bounding_area_loss.item(), on_epoch=False)
         if self.use_bounding_loss:
             mask_loss += bounding_area_loss
 
-        mask_area_loss = self.mask_total_area_regularizer * (output['image'][1].mean()) #+ output['object'][1].mean())
-        mask_area_loss += self.ncmask_total_area_regularizer * (output['image'][2].mean()) #+ output['object'][2].mean())
+        mask_area_loss = self.mask_total_area_regularizer * ((output['image'][1] if 'image' in output else output[1]).mean()) #+ output['object'][1].mean())
+        mask_area_loss += self.ncmask_total_area_regularizer * ((output['image'][2] if 'image' in output else output[2]).mean()) #+ output['object'][2].mean())
         self.log('Mean area loss', mask_area_loss.item(), on_epoch=False)
         if self.use_mask_area_loss:
             mask_loss += mask_area_loss
 
 
         if self.use_mask_logit_loss:
-            mask_logit_loss = self.mask_logit_loss_regularizer * self.classification_loss_fn(output['image'][4], target_vector)
+            mask_logit_loss = self.mask_logit_loss_regularizer * self.classification_loss_fn(output['image'][4] if 'image' in output else output[4], target_vector)
             self.log('Mask logit loss', mask_logit_loss.item(), on_epoch=False)
             loss += mask_logit_loss
 
@@ -512,10 +515,10 @@ class BaseModel(pl.LightningModule):
         
         
         if self.i % 5 == 4:
-            masked_image = output['image'][1].detach().unsqueeze(1) * image
+            masked_image = (output['image'][1] if 'image' in output else output[1]).detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
-            self.logger.experiment.add_image('Train 1PassOutput', output['image'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Train 1PassOutput', (output['image'][1] if 'image' in output else output[1]).detach().unsqueeze(1), self.i, dataformats='NCHW')
             #if self.use_similarity_loss:
             #    self.logger.experiment.add_image('Train 2PassOutput', output['object_0'][1].detach().unsqueeze(1), self.i, dataformats='NCHW')
             log_string = ''
@@ -531,14 +534,14 @@ class BaseModel(pl.LightningModule):
             #             max_area = area
             #             max = i
             #     top_mask[b] = output['image'][0][b][max]
-            self.logger.experiment.add_image('Train Nontarget mask', output['image'][2].detach().unsqueeze(1), self.i, dataformats='NCHW')
+            self.logger.experiment.add_image('Train Nontarget mask', (output['image'][2] if 'image' in output else output[2]).detach().unsqueeze(1), self.i, dataformats='NCHW')
             
             log_string += f'Batch {0}:  \n'
-            logits_list = [f'{i:.3f}' for i in output['image'][3].detach().tolist()[0]] 
+            logits_list = [f'{i:.3f}' for i in (output['image'][3] if 'image' in output else output[3]).detach().tolist()[0]] 
             logits_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(logits_list)
             log_string += f'1Pass:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{logits_string}  \n'
 
-            probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3]).detach()[0]]
+            probs_list = [f'{i:.2f}' for i in logit_fn(output['image'][3] if 'image' in output else output[3]).detach()[0]]
             probs_string = ",&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;".join(probs_list)
             log_string += f'1Pass Probs:&nbsp;&nbsp;{probs_string}  \n'
 
@@ -572,7 +575,7 @@ class BaseModel(pl.LightningModule):
 
         self.log('loss', float(loss.item()), on_epoch=False)
         
-        self.train_metrics(output['image'][3].detach(), target_vector.int())
+        self.train_metrics((output['image'][3] if 'image' in output else output[3]).detach(), target_vector.int())
 
 
         #DEBUG

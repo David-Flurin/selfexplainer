@@ -39,7 +39,9 @@ Piotr", Dabkowski and Gal.
         pclass = 0
         for e in c:
             pclass += pvec[e]
-    return np.log(a) - np.log(pclass.mean())
+       
+        #normalized_pclass = pclass / len(c)
+    return np.log(a) - np.log(pclass), np.log(a), np.log(pclass)
 
 def background_saliency(pvec, mask):
     """
@@ -49,13 +51,28 @@ def background_saliency(pvec, mask):
     """
     a = np.maximum(np.mean(mask), 0.05)
 
-    avg_probs = np.array([1/pvec.size]*pvec.size)
-    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
-    
+    max_entropy = -np.log(1/pvec.size)
+ 
     entropy = (-pvec * np.log(pvec)).sum()
     normalized_entropy = entropy / max_entropy
 
-    return np.log(a) - np.log(normalized_entropy)
+    #return np.log(a) - np.log(normalized_entropy), np.log(normalized_entropy)
+    return np.log(a) - normalized_entropy, normalized_entropy
+
+def background_entropy(pvec, mask):
+    """
+    Continuous saliency measure for the inverse masked image.
+
+
+    """
+    a = np.maximum(np.mean(mask), 0.05)
+
+    max_entropy = -np.log(1/pvec.size)
+
+    entropy = (-pvec * np.log(pvec)).sum()
+    normalized_entropy = entropy / max_entropy
+
+    return  -normalized_entropy - np.log(1-a), normalized_entropy
 
 def combined_saliency(pvec, inv_pvec, c, mask):
     """
@@ -70,23 +87,20 @@ Piotr", Dabkowski and Gal.
     """
     a = np.maximum(np.mean(mask), 0.05)
 
-    avg_probs = np.array([1/inv_pvec.size]*inv_pvec.size)
-    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
-    
+    max_entropy = -np.log(1/inv_pvec.size)
+ 
     entropy = (-inv_pvec * np.log(inv_pvec)).sum()
     normalized_entropy = entropy / max_entropy
 
     if isinstance(c, int):
         pclass = pvec[c]
-        inv_pclass = inv_pvec[c]
     else:
         pclass = 0
-        inv_pclass = 0
         for e in c:
             pclass += pvec[e]
-            inv_pclass += inv_pvec[e]
+        #normalized_pclass = pclass / len(c)
 
-    return np.log(a) - (np.log(pclass.mean()) + np.log(normalized_entropy)).mean()
+    return np.log(a) - (np.log(pclass) + np.log(normalized_entropy))*0.5
 
 def combined_saliency_wo_mean(pvec, inv_pvec, c, mask):
     """
@@ -101,23 +115,21 @@ Piotr", Dabkowski and Gal.
     """
     a = np.maximum(np.mean(mask), 0.05)
 
-    avg_probs = np.array([1/inv_pvec.size]*inv_pvec.size)
-    max_entropy = (-avg_probs * np.log(avg_probs)).sum()
-    
+    max_entropy = -np.log(1/inv_pvec.size)
     entropy = (-inv_pvec * np.log(inv_pvec)).sum()
     normalized_entropy = entropy / max_entropy
 
     if isinstance(c, int):
         pclass = pvec[c]
-        inv_pclass = inv_pvec[c]
     else:
         pclass = 0
-        inv_pclass = 0
         for e in c:
             pclass += pvec[e]
-            inv_pclass += inv_pvec[e]
+        #normalized_pclass = pclass / len(c)
 
-    return np.log(a) - np.log(pclass.mean()) + np.log(normalized_entropy)
+    #return np.log(a) - np.log(pclass) - np.log(normalized_entropy)
+    return np.log(a) - np.log(pclass) - normalized_entropy
+
 
 def continuous_IOU(mask, seg):
     ### this is no longer the IoU but 1 + the Soergel distance (which is 1 - this ratio below)
@@ -232,7 +244,7 @@ def overlap(mask, seg_mask):
     return 1 - np.average(np.absolute(seg_mask - mask))
 
 
-
+'''
 t = np.array([0.22, 0.22, 0.22, 0.34])
 t1 = np.array([0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.09, 0.19])
 p = np.array([0.05, 0.05, 0.05, 0.85])
@@ -244,3 +256,4 @@ print(combined_saliency(p, t, 3, m))
 
 print(background_saliency(t1, m))
 print(combined_saliency(p1, t1, 9, m))
+'''
