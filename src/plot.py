@@ -16,6 +16,8 @@ import pathlib
 from xml.etree import cElementTree as ElementTree
 from utils.weighting import softmax_weighting
 
+from utils.assessment_metrics import background_saliency, background_entropy
+
 from math import sqrt
 import itertools
 from functools import partial
@@ -624,12 +626,12 @@ def plot_attention_pooling(mask_size):
     
     tot_attr = mask_size**2 * 0.1
     avg_mask = np.ones((mask_size, mask_size)) * 0.1
-    kernel = cv2.getGaussianKernel(int(mask_size/1.5), 0.2*((int(mask_size/1.5)-1)/2 - 1) + 1.5)
+    kernel = cv2.getGaussianKernel(int(mask_size/1.5), 0.1*((int(mask_size/1.5)-1)/2 - 1) + 1.5)
     kernel = np.dot(kernel, kernel.T)
     narrow_mask = np.zeros((mask_size, mask_size))
     idx = mask_size // 6
     narrow_mask[idx:idx*5, idx:idx*5] = tot_attr * kernel
-    kernel = cv2.getGaussianKernel(mask_size//3, 0.2*((mask_size//3-1)/3 - 1) + 4.5)
+    kernel = cv2.getGaussianKernel(mask_size//3, 0.1*((mask_size//3-1)/3 - 1) + 1.5)
     kernel = np.dot(kernel, kernel.T)
     narrower_mask = np.zeros((mask_size, mask_size))
     idx = mask_size // 6
@@ -644,7 +646,7 @@ def plot_attention_pooling(mask_size):
     labelbottom=False,
     labelleft = False)
 
-    weight = lambda x: softmax_weighting(torch.from_numpy(x).unsqueeze(0).unsqueeze(0), 1).sum()
+    weight = lambda x: softmax_weighting(torch.from_numpy(x).unsqueeze(0).unsqueeze(0), 2).sum()
     #plt.figure(figsize=(mask_size, mask_size))
     plt.imshow(avg_mask, cmap='jet',  vmin=0, vmax=2)
     plt.tight_layout
@@ -665,6 +667,75 @@ def plot_attention_pooling(mask_size):
 #plot_attention_pooling(240)
 #plot_generator_distribution(100000)
 
-    
 
+def plot_deletion_metrics():
+    bg_sal = []
+    log_entropy = []
+    bg_ent = []
+    entropy = []
+    unnormalized_entropy = []
+    ts = []
+    m = np.zeros((100, 100))
+    for t in np.arange(10, 1, -0.2):
+        p = torch.ones(10)
+        p[9] = t
+        o = torch.nn.functional.softmax(p, dim=0).numpy()
+        m[0:32, 0:32] = np.ones((32, 32))
+        sal, log = background_saliency(o, m)
+        bg_sal.append(sal)
+        log_entropy.append(log)
+        bg_e, ent, un_entropy = background_entropy(o, m)
+        bg_ent.append(bg_e)
+        entropy.append(ent)
+        ts.append(t)
+        unnormalized_entropy.append(un_entropy)
+
+    fig, ax1 = plt.subplots()
+    ax1.plot(ts, bg_sal, color='red', label='log(area) - log(norm.entropy)')
+    ax1.plot(ts, bg_ent, color='blue', label='log(area) - norm.entropy')
+    plt.xlabel('t: [t, 1, 1, 1, 1, 1, 1, 1, 1, 1]')
+
+    plt.legend()
+    fig.tight_layout()
+    plt.show()
+
+    plt.xlabel = 'Logit value'
+    fig, ax1 = plt.subplots()
+    ax1.plot(ts, log_entropy, color='red', label=' log(norm.entropy)')
+    ax1.plot(ts, entropy, color='blue', label=' norm.entropy')
+    ax1.plot(ts, unnormalized_entropy, color='green', label='unnorm.entropy')
+    plt.xlabel = 't: [t, 1, 1, 1, 1, 1, 1, 1, 1, 1]'
+
+    plt.legend()
+    fig.tight_layout()
+    plt.show()
+
+
+# qrand = np.sort(np.random.rand(60))[::-1]
+# qmask = np.zeros(100)
+# qmask[0:10] = 1
+# qmask[10:70] = qrand
+# qmask[70:] = 0
+# qmin = np.zeros(100)
+# qmin[0:10] = 1
+# qmax = np.zeros(100)
+# qmax[0:50] = 1
+# qmask_rest = np.zeros(100)
+# qmask_rest[50:70] = qrand[40:]
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), np.zeros(100), width=1.1, color='black')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmin, width=1.1, color='red')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmax, width=1.1, color='blue')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmask_rest, width=1.1, color='black')
+# plt.yticks([0,1])
+# plt.show()
 

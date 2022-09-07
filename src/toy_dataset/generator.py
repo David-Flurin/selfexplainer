@@ -1,20 +1,14 @@
-from email import generator
-from multiprocessing.sharedctypes import Value
+import os
 from os import mkdir
 from os.path import join
-import os
 import shutil
-import cv2
-from torch import _shape_as_tensor, randint, square
+from torch import randint
 from .shapes import *
 import matplotlib.pyplot as plt
-from matplotlib import colors
 from random import randint, sample, choice
 from tqdm import tqdm
 from pathlib import Path
 import xml.etree.ElementTree as ET
-import pickle
-
 import hashlib
 
 
@@ -29,8 +23,6 @@ def string_to_rgb(s):
     b = int(h_str[8:12]) % 256
     return np.array([r,g,b])
 
-
-
 class Generator:
 
     shapes = [Circle, Triangle, Square, Pentagon, Hexagon, Heart, Cross, Star]
@@ -39,7 +31,6 @@ class Generator:
     img_size = (224,224)
     min_radius = 30
     max_radius = 80
-
 
     def __init__(self, f_textures, b_textures):
 
@@ -79,32 +70,29 @@ class Generator:
             sample = self.generate_sample(1)
             self.__save(sample)
             
-
-
-
-
         
     def generate_sample(self, num_objects):
-        if num_objects > len(self.shapes):
-            raise ValueError(f'Number of objects cannot exceed total available shapes ({len(self.shapes)})')
+        if num_objects > 2:
+            raise ValueError(f'Currently not more objects than 2 are supported.')
 
-        # if num_objects > 1:
-        #     self.max_radius = int(self.max_radius * 0.75)
         self.max_radius = max(self.max_radius, self.min_radius)
         idx = sample(range(0, len(self.shapes)), num_objects)
         return self.__generate(get_i(idx, self.shapes))
 
     
-    def create(self, number_per_shape, proportions, multiclass=False):
+    def create_set(self, number_per_shape, proportions, multiclass=False):
+        '''Create a set of samples.
+        Parameters:
+            number_per_shape (int)       -- Number of samples generates for each shape
+            proportions (List of float)  -- Proportions of samples for train, validation and test set 
+            multilabel (bool)            -- Whether to have multilabel samples in the dataset or not
+        '''
 
         proportions = [float(x) for x in proportions]
         if len(proportions) != 3 or sum(proportions) != 1.0:
             raise ValueError('\'Proportions\' must have three elements (Train, Val, Test) and must sum to 1')
 
-
         self.__directories()
-
-
         samples_shape = {}
         samples_texture = {}
         with tqdm(total=number_per_shape*len(self.shapes)) as pbar:
@@ -131,12 +119,8 @@ class Generator:
                             samples_texture[o[1]] += [filename]
                         except KeyError:
                             samples_texture [o[1]] = [filename]
-                    
                     pbar.update()
                     i += 1
-        
-        
-        
 
         train = []
         val = []
@@ -157,7 +141,6 @@ class Generator:
             self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', f'{k}_train.txt'), get_i(train_idx, v))
             self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', f'{k}_val.txt'), get_i(val_idx, v))
             self.__write_sample_list(Path(self.base, 'imagesets', 'shapes', f'{k}_test.txt'), get_i(test_idx, v))
-            
             
             train += (get_i(train_idx, v))
             val += (get_i(val_idx, v))
@@ -208,15 +191,12 @@ class Generator:
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'train.txt'), train)
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'val.txt'), val)
         self.__write_sample_list(Path(self.base, 'imagesets', 'textures', 'test.txt'), test)
-        
 
                     
     def __write_sample_list(self, filename, list):
         with open(filename, 'w') as f:
             for sample in list:
                 f.write(f'{sample}\n')
-
-    
 
     def __generate(self, shapes):
         shape_obj = []
@@ -235,7 +215,7 @@ class Generator:
 
 
     def __save(self, sample, filename):
-        
+
         annotation = ET.Element('annotation')
         xml_filename = ET.SubElement(annotation, 'filename')
         xml_filename.text = filename
@@ -250,22 +230,17 @@ class Generator:
         background = ET.SubElement(annotation, 'background')
         background.text = sample['background']
 
-        # from matplotlib import pyplot as plt
-        # plt.imshow(sample['image'])
-        # plt.show()
-
         plt.imsave(join(self.base, 'images', f'{filename}.png'), sample['image'], format='png')
         plt.imsave(join(self.base, 'segmentations', 'shapes', f'{filename}.png'), sample['seg_shape']/255., format='png')
         plt.imsave(join(self.base, 'segmentations', 'textures', f'{filename}.png'), sample['seg_tex']/255., format='png')
 
-
         tree = ET.ElementTree(annotation)
         tree.write(join(self.base, 'annotations', f'{filename}.xml'))
 
-
-
-
     def __randomize(self, size, objects):
+        '''Generate objects with randomized radius, location and textures. 
+            If objects==2, two objects are generated, which are not overlapping.
+        '''
         if objects == 1:
             radius =  randint(self.min_radius, min((size-30)/2, self.max_radius))
             center_x = randint(20 + radius, size - 20 - radius)
@@ -301,9 +276,6 @@ class Generator:
                [radius_2, center_x_2, center_y_2, rotation_2, f_tex_idx_2, b_tex_idx_2] 
             ]
 
-        #return 41, 159, 108, 15, 1, 1
-
-
     def __directories(self):
         if os.path.exists(self.base) and os.path.isdir(self.base):
             shutil.rmtree(self.base)
@@ -335,14 +307,12 @@ class Generator:
         return img, seg_tex, seg_shape
 
 
-
     def __crop_texture(self, tex, img_size):
         t_h, t_w, _ = tex.shape
         assert(t_h > img_size[0] and t_w > img_size[1])
 
         x = randint(0, t_h - img_size[0] -1)
         y = randint(0, t_w - img_size[1] -1)
-
         cropped = tex[x:x+img_size[0], y:y+img_size[1]]
         return cropped
 

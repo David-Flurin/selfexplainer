@@ -4,8 +4,9 @@ import latextable
 from texttable import Texttable
 import sys
 import json
+import os 
 
-metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'Continuous F1', 'a_f1s': 'Average F1', 'aucs': 'aucs', 'd_IOU': 'Discrete IoU', 'c_IOU': 'Continuous IoU', 'sal': 'Saliency', 'over': 'over', 'background_c': 'Background cov.', 'mask_c': 'Mask cov.', 'sr': 'sr', 'classification_metrics': 'Classification metrics'}
+metrics_dict = {'d_f1_25': 'd_f1_25', 'd_f1_50': 'd_f1_50', 'd_f1_75': 'd_f1_75', 'd_f1': 'd_f1', 'c_f1': 'Continuous F1', 'a_f1s': 'Average F1', 'aucs': 'aucs', 'd_IOU': 'Discrete IoU', 'c_IOU': 'Continuous IoU', 'sal': 'Insertion', 'bg_sal': 'Deletion', 'background_entropy':'Deletion', 'combined_sal_wo_mean': 'Combined', 'over': 'over', 'background_c': 'Background cov.', 'mask_c': 'Mask cov.', 'sr': 'sr', 'classification_metrics': 'Classification metrics'}
 
 def find_checkpoint(result_dict):
     results = {}
@@ -36,7 +37,10 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['results/selfexplainer/OI/1koeff_1pass.npz', 'results/selfexplainer/OI/1koeff_3passes_02.npz']
+result_files = ['/home/david/Documents/Master/Thesis/selfexplainer/src/evaluation/results/selfexplainer/VOC2007/sanity_check/3passes_2503.npz']
+for f in result_files:
+    if not os.path.isfile(f):
+        raise FileNotFoundError(f)
 
 try:
     checkpoint_dict = json.loads(sys.argv[2])
@@ -47,8 +51,8 @@ find_best_metric = True
 
 
 mode = 'micro'
-checkpoint_dict = {'1pass_k1': 'Simple Self-explainer', '3passes_1koeff_mask02': 'Self-explainer'}
-metric_list = ['mask_c', 'background_c', 'd_IOU', 'c_IOU', 'sal']
+checkpoint_dict = {'3passes_01_2503': 'Self-explainer'}
+metric_list = ['mask_c', 'background_c', 'c_IOU', 'sal', 'background_entropy', 'combined_sal_wo_mean', 'classification_metrics']
 #metric_list = ['classification_metrics']
 
 table = Texttable()
@@ -61,6 +65,8 @@ for results_file in result_files:
         results = merge(results, int_results)
 
 results = find_checkpoint(results)
+if len(results) == 0:
+    raise ValueError('No results found.')
 
 metric_names = [metrics_dict[m] for m in metric_list]
 if 'classification_metrics' in metric_list:
@@ -95,21 +101,25 @@ for model in results:
 # Calculate best entry per metric and boldface it
 if find_best_metric:
     best_metrics = dict.fromkeys(metric_names,(-1000, -1))
-    if 'Saliency' in best_metrics:
-        best_metrics['Saliency'] = (1000, -1)
+    if 'Insertion' in best_metrics:
+        best_metrics['Insertion'] = (1000, -1)
+    if 'Deletion' in best_metrics:
+        best_metrics['Deletion'] = (1000, -1)
+    if 'Combined' in best_metrics:
+        best_metrics['Combined'] = (1000, -1)
     if 'Background cov.' in best_metrics:
         best_metrics['Background cov.'] = (1000, -1)
 
     for i, row in enumerate(rows[1:], 1):
         for j, m in enumerate(row[1:], 1):
-            if rows[0][j] in ['Saliency', 'Background cov.']:
+            if rows[0][j] in ['Insertion', 'Deletion', 'Combined', 'Background cov.']:
                 if m < best_metrics[rows[0][j]][0]:
                     best_metrics[rows[0][j]] = (m,i)
             else:
                 if m > best_metrics[rows[0][j]][0]:
                     best_metrics[rows[0][j]] = (m,i)
-    for metric, (best_m, best_idx) in best_metrics.items():
-        rows[best_idx][rows[0].index(metric)] = f'\\bfseries{{{float(rows[best_idx][rows[0].index(metric)]):.3f}}}'
+    # for metric, (best_m, best_idx) in best_metrics.items():
+    #     rows[best_idx][rows[0].index(metric)] = f'\\bfseries{{{float(rows[best_idx][rows[0].index(metric)]):.3f}}}'
 table.add_rows(rows)
 latex_table = latextable.draw_latex(table, caption='Different models on Toy dataset')
 
