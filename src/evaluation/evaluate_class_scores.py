@@ -23,14 +23,14 @@ dataset = 'VOC'
 num_classes = 20
 img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
 classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
-selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/3passes_01_later.ckpt')
+selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/3passes_01_2503.ckpt')
 
 load_file = ''
-save_file = 'results/class_masks/VOC2007/explainer.npz'
+save_file = 'results/class_masks/VOC2007/sanity_check/selfexplainer_3passes.npz'
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
+masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/sanity_check')
 
-methods = ['explainer']
+methods = ['3passes_01_2503']
 
 mask_classes = ['bottle', 'car', 'cat', 'dog', 'person']
 target_dict = get_class_dictionary(dataset)
@@ -103,7 +103,7 @@ for batch in tqdm(data_module.test_dataloader()):
 
     image = image.to(device)
 
-    output_probs = torch.sigmoid(classifier(image))[0]
+    output_probs = torch.nn.Softmax(dim=1)(classifier(image))[0]
     intersection = set(target_classes) & set([target_dict[obj] for obj in mask_classes])
     if intersection:
         for target_class in intersection:
@@ -147,7 +147,6 @@ for batch in tqdm(data_module.test_dataloader()):
                                     outputs.append(output_probs[0][target_class].cpu().numpy())
                                 score = np.mean(outputs)
                         all_scores[method][target_class_name][mask_class].append(score)
-
 
 
 try:

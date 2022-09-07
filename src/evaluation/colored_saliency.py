@@ -20,15 +20,15 @@ from PIL import Image
 from tqdm import tqdm
 
 ############################## Change to your settings ##############################
-mask_base_path = '/users/dniederb/nn-explainer/src/evaluation/'
+mask_base_path = '/scratch/snx3000/dniederb/evaluation_data/VOC/sanity_check/'
 
-dataset = 'OI' # one of: ['VOC', 'TOY']
+dataset = 'VOC' # one of: ['VOC', 'TOY']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
+classifier_type = 'selfexplainer' # one of: ['vgg16', 'resnet50']
 
-method = 'explainer'
+method = '3passes_01_2503'
 
-file_list = ['4d17f7aedd224ef5', '0a843190a576c7b6', '3b11cab6188cd0e8', '09c7d492fc758623', '95eb70952254d8de', '2e4169d29fd631e5', '0c5c9efc0be37cb4']
+file_list = ['000010', '000043', '000067', '000075']
 
 
 #####################################################################################

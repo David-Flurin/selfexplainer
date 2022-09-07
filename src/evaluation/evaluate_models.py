@@ -83,7 +83,7 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
         
-        '''
+        '''    
         if not os.path.exists(segmentation_filename):
             continue
         '''
@@ -193,14 +193,14 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
         if intersection:
             output = model(image, targets)
             for mask_class in masks_for_classes:
-                mask = output['image'][0][0][mask_class].sigmoid()
+                mask = output['image'][0][0][mask_class].sigmoid() if 'image' in output else output[0][0][mask_class].sigmoid()
                 save_mask(mask, save_path / "class_masks" 
                                                 / "masks_for_class_{}".format(mask_class)
                                                 / filename, dataset=dataset)
 
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/ablation/")
+masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/classmasks/sanity_check/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -213,16 +213,16 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 dataset = "VOC"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/ablation/VOC2007/'
+checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/'
 
-checkpoints = ['wo_background_4381', 'wo_sim_1251', 'wo_mask']
+checkpoints = ['3passes_01_2503']
 
 load_file = ''
-save_file = 'results/selfexplainer/ablation/voc.npz'
-compute_masks = True
-class_masks = False
+save_file = 'results/selfexplainer/VOC2007/sanity_check/3passes_2503.npz'
+compute_masks = False
+class_masks = True
 
-masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
+masks_for_classes = [4, 6, 7, 11, 14]
 
 
 #################################################################################################################################
