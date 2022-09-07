@@ -103,7 +103,7 @@ for batch in tqdm(data_module.test_dataloader()):
 
     image = image.to(device)
 
-    output_probs = torch.sigmoid(classifier(image))[0]
+    output_probs = torch.nn.Softmax(dim=1)(classifier(image))[0]
     intersection = set(target_classes) & set([target_dict[obj] for obj in mask_classes])
     if intersection:
         for target_class in intersection:

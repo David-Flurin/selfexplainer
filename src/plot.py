@@ -626,12 +626,12 @@ def plot_attention_pooling(mask_size):
     
     tot_attr = mask_size**2 * 0.1
     avg_mask = np.ones((mask_size, mask_size)) * 0.1
-    kernel = cv2.getGaussianKernel(int(mask_size/1.5), 0.2*((int(mask_size/1.5)-1)/2 - 1) + 1.5)
+    kernel = cv2.getGaussianKernel(int(mask_size/1.5), 0.1*((int(mask_size/1.5)-1)/2 - 1) + 1.5)
     kernel = np.dot(kernel, kernel.T)
     narrow_mask = np.zeros((mask_size, mask_size))
     idx = mask_size // 6
     narrow_mask[idx:idx*5, idx:idx*5] = tot_attr * kernel
-    kernel = cv2.getGaussianKernel(mask_size//3, 0.2*((mask_size//3-1)/3 - 1) + 4.5)
+    kernel = cv2.getGaussianKernel(mask_size//3, 0.1*((mask_size//3-1)/3 - 1) + 1.5)
     kernel = np.dot(kernel, kernel.T)
     narrower_mask = np.zeros((mask_size, mask_size))
     idx = mask_size // 6
@@ -646,7 +646,7 @@ def plot_attention_pooling(mask_size):
     labelbottom=False,
     labelleft = False)
 
-    weight = lambda x: softmax_weighting(torch.from_numpy(x).unsqueeze(0).unsqueeze(0), 1).sum()
+    weight = lambda x: softmax_weighting(torch.from_numpy(x).unsqueeze(0).unsqueeze(0), 2).sum()
     #plt.figure(figsize=(mask_size, mask_size))
     plt.imshow(avg_mask, cmap='jet',  vmin=0, vmax=2)
     plt.tight_layout
@@ -664,7 +664,7 @@ def plot_attention_pooling(mask_size):
 
 
 
-# plot_attention_pooling(240)
+#plot_attention_pooling(240)
 #plot_generator_distribution(100000)
 
 
@@ -710,7 +710,32 @@ def plot_deletion_metrics():
     fig.tight_layout()
     plt.show()
 
-plot_deletion_metrics()
-    
 
+# qrand = np.sort(np.random.rand(60))[::-1]
+# qmask = np.zeros(100)
+# qmask[0:10] = 1
+# qmask[10:70] = qrand
+# qmask[70:] = 0
+# qmin = np.zeros(100)
+# qmin[0:10] = 1
+# qmax = np.zeros(100)
+# qmax[0:50] = 1
+# qmask_rest = np.zeros(100)
+# qmask_rest[50:70] = qrand[40:]
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), np.zeros(100), width=1.1, color='black')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmin, width=1.1, color='red')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmax, width=1.1, color='blue')
+# plt.yticks([0,1])
+# plt.show()
+# fig = plt.figure(figsize=(10,1))
+# plt.bar(np.linspace(0, 100, 100), qmask_rest, width=1.1, color='black')
+# plt.yticks([0,1])
+# plt.show()
 

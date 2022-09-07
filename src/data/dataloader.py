@@ -15,8 +15,8 @@ from xml.etree.ElementTree import parse as ETparse
 
 
 
-from utils.helper import calc_class_weights, get_class_dictionary
-from data.dataset import COCODataset, CUB200Dataset, ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset, OIDataset
+from utils.helper import get_class_dictionary
+from data.dataset import ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset, OIDataset
 
 class VOCDataModule(pl.LightningDataModule):
 
@@ -29,7 +29,6 @@ class VOCDataModule(pl.LightningDataModule):
             self.download = False
         else:
             self.download = True
-        #self.download=False
         print('Data augmentation:', use_data_augmentation)
         self.train_transformer = get_training_image_transformer(use_data_augmentation)
         self.test_transformer = get_testing_image_transformer()
@@ -236,109 +235,6 @@ class OIDataModule(pl.LightningDataModule):
 
         img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
         return img_weights
-
-
-
-
-class MNISTDataModule(pl.LightningDataModule):
-
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
-        super().__init__()
-
-        self.data_path = Path(data_path)
-
-        if os.path.exists(self.data_path) and len(os.listdir(self.data_path)) > 2:
-            self.download = False
-        else:
-            self.download = True
-
-        self.train_transformer = get_training_image_transformer(use_data_augmentation, bw=True)
-        self.test_transformer = get_testing_image_transformer(bw=True)
-
-        self.train_batch_size = train_batch_size
-        self.val_batch_size = val_batch_size
-        self.test_batch_size = test_batch_size
-        
-    def prepare_data(self):
-        pass
-
-    def setup(self, stage: Optional[str] = None):
-        trainval = MNIST(root=self.data_path, train=True, download=self.download, transform=self.train_transformer)
-        self.train, self.val   = torch.utils.data.random_split(trainval, (40000, 20000))
-        self.test  = MNIST(root=self.data_path, train=False, download=self.download, transform=self.test_transformer)
-
-    def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
-class COCODataModule(pl.LightningDataModule):
-
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
-        super().__init__()
-
-        self.data_path = Path(data_path)
-        self.annotations_path = self.data_path / 'annotations'
-
-        self.train_transformer = get_training_image_transformer(use_data_augmentation)
-        self.test_transformer = get_testing_image_transformer()
-
-        self.train_batch_size = train_batch_size
-        self.val_batch_size = val_batch_size
-        self.test_batch_size = test_batch_size
-
-    def prepare_data(self):
-        pass
-
-    def setup(self, stage: Optional[str] = None):
-        self.train = COCODataset(root=self.data_path / 'train2014', annotation=self.annotations_path / 'train2014_train_split.json', transform_fn=self.train_transformer)
-        self.val = COCODataset(root=self.data_path / 'train2014', annotation=self.annotations_path / 'train2014_val_split.json', transform_fn=self.test_transformer)
-        self.test = COCODataset(root=self.data_path / 'val2014', annotation=self.annotations_path / 'instances_val2014.json', transform_fn=self.test_transformer)
-
-    def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
-class CUB200DataModule(pl.LightningDataModule):
-
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
-        super().__init__()
-
-        self.data_path = Path(data_path)
-        self.annotations_path = self.data_path / 'annotations'
-
-        self.train_transformer = get_training_image_transformer(use_data_augmentation)
-        self.test_transformer = get_testing_image_transformer()
-
-        self.train_batch_size = train_batch_size
-        self.val_batch_size = val_batch_size
-        self.test_batch_size = test_batch_size
-
-    def prepare_data(self):
-        pass
-
-    def setup(self, stage: Optional[str] = None):
-        self.train = CUB200Dataset(root=self.data_path / 'train', annotations=self.annotations_path / 'train.txt', transform_fn=self.train_transformer)
-        self.val = CUB200Dataset(root=self.data_path / 'val', annotations=self.annotations_path / 'val.txt', transform_fn=self.test_transformer)
-        self.test = CUB200Dataset(root=self.data_path / 'test', annotations=self.annotations_path / 'test.txt', transform_fn=self.test_transformer)
-
-    def train_dataloader(self):
-        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def test_dataloader(self):
-        return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
 class ToyDataModule(pl.LightningDataModule):
 

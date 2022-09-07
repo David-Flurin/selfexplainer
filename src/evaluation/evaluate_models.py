@@ -83,10 +83,11 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
         
-        
+        '''
         if not os.path.exists(segmentation_filename):
             continue
-        
+        '''
+
         image = image.to(device)
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
@@ -199,7 +200,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
 
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("/scratch/snx3000/dniederb/evaluation_data")
+masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/ablation/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -212,13 +213,13 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 dataset = "VOC"
 multilabel = True
 classifiers = ["resnet50"]
-checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/'
+checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/ablation/VOC2007/'
 
-checkpoints = ["3passes_01_later" ]
+checkpoints = ['wo_background_4381', 'wo_sim_1251', 'wo_mask']
 
 load_file = ''
-save_file = 'results/selfexplainer/VOC2007/1koeff_3passes_01_later.npz'
-compute_masks = False
+save_file = 'results/selfexplainer/ablation/voc.npz'
+compute_masks = True
 class_masks = False
 
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
@@ -280,7 +281,7 @@ for checkpoint in checkpoints:
             save_path = masks_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
             classification_metrics = np.load(save_path / 'classification_metrics.npz' , allow_pickle=True)["classification_metrics"].item()
 
-        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
+        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy, bg_entropy, entropy, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
                                                                                                                         masks_path=masks_path, 
                                                                                                                         segmentations_path=segmentations_path, 
                                                                                                                         dataset_name=dataset, 
@@ -302,6 +303,14 @@ for checkpoint in checkpoints:
         d["d_IOU"] = d_IOU
         d["c_IOU"] = c_IOU
         d["sal"] = sal
+        d["bg_sal"] = bg_sal
+        d["combined_sal"] = combined_sal
+        d["combined_sal_wo_mean"] = combined_sal_wo_mean
+        d['log_a'] = log_a
+        d['log_pmask'] = log_pmask
+        d['log_entropy'] = log_entropy
+        d['background_entropy'] = bg_entropy
+        d['normalized entropy'] = entropy
         d["over"] = over
         d["background_c"] = background_c
         d["mask_c"] = mask_c

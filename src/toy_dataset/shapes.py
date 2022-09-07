@@ -1,9 +1,5 @@
-from cv2 import exp
-from matplotlib.pyplot import draw
 from matplotlib.colors import to_rgb
 import numpy as np
-import cv2
-import turtle
 from numpy_turtle import Turtle as np_turtle
 import math
 import scipy
@@ -11,6 +7,7 @@ from skimage.segmentation import flood_fill
 from .utils import rotate
 
 class Shape():
+
     FOOTPRINT = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
 
     def __init__(self, radius, pos, img_size):
@@ -46,13 +43,6 @@ class Shape():
         from matplotlib import pyplot as plt
         plt.imshow(self.mask, interpolation='nearest')
         plt.show()
-
-    
-
-                        
-
-
-
 
 class Circle(Shape):
     def __init__(self, radius, pos, img_size, rotation):
@@ -91,9 +81,6 @@ class Triangle(Shape):
         
         self.mask = canvas[:, :, 3]
         flood_fill(self.mask, self.pos, 1., footprint=self.FOOTPRINT, in_place=True)
-
-        
-
 
 class Square(Shape):
     def __init__(self, radius, center, img_size, rotation):
@@ -292,26 +279,15 @@ class Cross(Shape):
             t.forward(l)
             t.rotate(a_s)
 
-        self.mask = canvas[:, :, 3]
-
-        
+        self.mask = canvas[:, :, 3]        
         flood_fill(self.mask, self.pos, 1., footprint=self.FOOTPRINT, in_place=True)
             
-
-
 class Heart(Shape):
     def __init__(self, radius, pos, img_size, rotation):
         super().__init__(radius, pos, img_size)
         self.seg_color = np.array(to_rgb('darkgreen'))
-        
-        from matplotlib import pyplot as plt
-
         self.mask = np.zeros(img_size, dtype=np.float32)
         xx, yy = np.mgrid[:img_size[0], :img_size[1]]
-        # heartline = -((yy - pos[1])**2 + (xx - pos[0])**2 - radius**2)**3 - ((yy - pos[1])**2 * (xx - pos[0])**3) * 2*radius
-        # self.mask[np.where(heartline > 1)] = 1
-        # self.mask = scipy.ndimage.rotate(self.mask, rotation, reshape=False)
-        # self.mask[np.where(self.mask < 0.9)] = 0
         heartline = -((yy - img_size[0]//2)**2 + (xx - img_size[1]//2)**2 - radius**2)**3 - ((yy - img_size[0]//2)**2 * (xx - img_size[1]//2)**3) * 2*radius
         self.mask[np.where(heartline > 1)] = 1.
         self.mask = scipy.ndimage.rotate(self.mask, rotation, reshape=False)

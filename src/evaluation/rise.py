@@ -16,11 +16,11 @@ from models.resnet50 import Resnet50
 from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
-dataset = 'VOC' # one of: ['VOC', 'TOY']
-save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/')
+dataset = 'OI' # one of: ['VOC', 'TOY']
+save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/baselines/')
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
+classifier_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/oi_pretrained.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
 TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
 TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
@@ -28,7 +28,7 @@ OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segment
 OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
 OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
 
-mode = 'classes'
+mode = 'seg'
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
 #####################################################################################

@@ -20,13 +20,16 @@ from PIL import Image
 from tqdm import tqdm
 
 ############################## Change to your settings ##############################
-mask_base_path = '/scratch/snx3000/dniederb/evaluation_data/singlelabel/'
+mask_base_path = '/users/dniederb/nn-explainer/src/evaluation/'
 
-dataset = 'TOY' # one of: ['VOC', 'TOY']
+dataset = 'OI' # one of: ['VOC', 'TOY']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-classifier_type = 'selfexplainer' # one of: ['vgg16', 'resnet50']
+classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 
-method = '1_pass'
+method = 'explainer'
+
+file_list = ['4d17f7aedd224ef5', '0a843190a576c7b6', '3b11cab6188cd0e8', '09c7d492fc758623', '95eb70952254d8de', '2e4169d29fd631e5', '0c5c9efc0be37cb4']
+
 
 #####################################################################################
     
@@ -79,7 +82,9 @@ for batch in tqdm(data_module.test_dataloader()):
         if filename[-4] == '.':
             filename = filename[:-4]
 
-        if not os.path.exists(save_path / (filename + '.png')):
+        if not os.path.exists(save_path / (filename + '.npz')):
+            continue
+        if len(file_list) > 0 and filename not in file_list:
             continue
 
         #mask = Image.open(save_path / (filename + '.png'))
@@ -89,3 +94,4 @@ for batch in tqdm(data_module.test_dataloader()):
         masked_img = show_cam_on_image(get_unnormalized_image(image[0]).permute(1,2,0).numpy(), saliencies, use_rgb=True)
         Image.fromarray(masked_img).save(save_path / ('images_overlaid/' + filename + '.png'))
         
+

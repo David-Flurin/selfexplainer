@@ -1,13 +1,9 @@
 import torch
 import torch.nn.functional as F
 import pytorch_lightning as pl
-
 import math
 from copy import deepcopy
-
 from torch import nn
-
-from matplotlib import pyplot as plt
 
 class TotalVariationConv(pl.LightningModule):
     def __init__(self):
@@ -122,41 +118,21 @@ def entropy_loss(logits):
 
     return entropy_loss
 
-
-def mask_similarity_loss(logits, targets, imask, omask):
-    '''Compute L1 loss over pixel distances between initial mask and object mask.'''
-
-    #older version
-    #batch_losses = ((imask - omask).abs() * imask).sum((1,2)) / imask.sum((1,2))
-    
-    #new version
-    # abs_diff = (imask - omask).abs()
-    # count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
-    # abs_diff = torch.where(abs_diff >= 0.1, 0, abs_diff)
-    # abs_diff_sum = abs_diff.sum(1).sum(1)
-    # batch_losses = torch.div(abs_diff_sum, count + 1)
-
-    #newer version
-    # max_mask = torch.where(imask > omask, imask, omask)
-    # batch_losses = ((imask - omask).abs() * max_mask).sum((1,2)) / max_mask.sum((1,2))
-
-    return nn.functional.cross_entropy(logits, targets)
-
-    return batch_losses.mean()
-
-def weighted_loss(l_1, l_2, steepness, offset):
-    loss1 = l_1.detach().item()
-    return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
-
 def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='rel'):
-    similarity_loss = torch.zeros((1), device=target_vector.device)
+    loss = torch.zeros((1), device=target_vector.device)
     max_objects = 0
+    
+    # Find max number of objects per sample in this batch
     for b in range(target_vector.size(0)):
         if target_vector[b].sum() > max_objects:
             max_objects = int(target_vector[b].sum().item())
+
+    # Iterate over number of objects (1. object of each sample, 2. object of each sample that has two or more objects, 3. object...)
     for i in range(max_objects):
+        # Find samples with i+1 or more objects
         batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
         seg_indices_list = []
+        # Find target indices for each sample
         for b_idx in batch_indices:
             seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
         seg_indices = torch.cat(seg_indices_list)
@@ -166,9 +142,12 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='rel'):
         elif mode=='rel':
             single_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
             for b in range(batch_indices.size(0)):
+                # Copy logits of each batch from image pass
                 single_target[b] = deepcopy(output['image'][3][batch_indices[b]].detach())
+                # Calculate mean value of non-target logit
                 n_t = (target_vector[b] == 0.).nonzero()
                 n_t_mean = output['image'][3][b][n_t].mean()
+                # Replace target logits which are not corresponding to the current class with mean non-target logit value
                 t = (target_vector[b] == 1.).nonzero()
                 non_target_objects = torch.cat([t[0:i], t[i+1:]])
                 single_target[b][non_target_objects] = n_t_mean
@@ -179,18 +158,33 @@ def similarity_loss_fn(output, target_vector, loss_fn, regularizer, mode='rel'):
             single_target_probs = torch.sigmoid(single_target)
         else:
             single_target_probs = single_target
-        similarity_loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target_probs)
-    return similarity_loss
+        loss += regularizer * loss_fn(output[f'object_{i}'][3], single_target_probs)
+    return loss
 
-# t = torch.zeros((2, 224, 224))
-# t[0, 0:50, 0:50] += torch.ones((50, 50))
-# t[1, 0:50, 0:50] += torch.ones((50, 50)) * 0.5
-# z = torch.zeros((2, 224, 224))
-# m = mask_similarity_loss(t, z)
-# print(m)
+
+######### Loss functions below were not used in the final version of the Self-Explainer.
+
+def mask_similarity_loss(imask, omask):
+    '''Compute L1 loss over pixel distances between initial mask and object mask.
+    
+    Not used in final version of Self-Explainer.'''
+
+    abs_diff = (imask - omask).abs()
+    count = torch.where(abs_diff > 0.1, 1, 0).sum(1).sum(1) #.unsqueeze(1).unsqueeze(2)
+    abs_diff = torch.where(abs_diff >= 0.1, 0, abs_diff)
+    abs_diff_sum = abs_diff.sum(1).sum(1)
+    batch_losses = torch.div(abs_diff_sum, count + 1)
+
+    return batch_losses.mean()
+
+def weighted_loss(l_1, l_2, steepness, offset):
+    loss1 = l_1.detach().item()
+    return (min(1., math.exp(-steepness * (loss1 - offset))) * l_2).squeeze()
+
 
 def bg_loss(segmentations, target_vector, loss):
-#def bg_loss(segmentations):
+    '''Not used in final version of Self-Explainer.
+    '''
     b, c, h, w = segmentations.size()
 
     if loss == 'logits_ce': 

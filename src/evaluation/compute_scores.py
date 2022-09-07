@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1, inverted_saliency, extended_saliency
+from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1, background_saliency, combined_saliency_wo_mean, combined_saliency, background_entropy
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
 from data.dataloader import OIDataModule, ToyData_Saved_Module, VOCDataModule, VOC2012DataModule, COCODataModule, ToyDataModule
 from models.classifier import VGG16ClassifierModel, Resnet50ClassifierModel
@@ -32,7 +32,7 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
         if model_name == "vgg16":
             model = VGG16ClassifierModel.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
         elif model_name == "resnet50":
-            model = Resnet50.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
+            model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
     elif dataset_name == "COCO":
         data_module = COCODataModule(data_path, test_batch_size=1)
         if model_name == "vgg16":
@@ -41,16 +41,16 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
             model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=91, dataset=dataset_name)
     elif dataset_name in ["TOY", "TOY_MULTI"]:
         data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI')
+        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI', weighted_sampling=False)
     elif dataset_name == 'OI_SMALL':
         data_module = OIDataModule(data_path, test_batch_size=1)
-        model = Resnet50.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name)
+        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name)
     elif dataset_name == 'OI':
         data_module = OIDataModule(data_path, test_batch_size=1)
-        model = Resnet50.load_from_checkpoint(model_path, num_classes=13, dataset=dataset_name)
+        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=13, dataset=dataset_name)
     elif dataset_name == 'OI_LARGE':
         data_module = OIDataModule(data_path, test_batch_size=1)
-        model = Resnet50.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
+        model = Resnet50ClassifierModel.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
     else:
         raise ValueError('Unknown dataset')
 
@@ -158,11 +158,13 @@ def gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, mode
                 npz_name = Path(str(filename)[:-4] + ".npz")
                 mask = np.load(masks_path_method / npz_name, dataset_name)["arr_0"]
             except:
+                print(masks_path_method)
                 continue
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
         if compute_p:
-            logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
+            #logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
+            logits_fn = lambda y:torch.nn.functional.softmax(y, dim=1)
 
             x = x.to(device)
             logits = model.forward(x)
@@ -212,18 +214,25 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
 
 
-
-        logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
+        #from matplotlib import pyplot as plt
+        #logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
+        logits_fn = lambda y:torch.nn.functional.softmax(y, dim=1)
         x = x.to(model.device)
         logits = model.forward(x)[3]
         p = logits_fn(logits).detach().cpu().numpy().squeeze()
-
+    
         x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(model.device) * x
         logits_mask = model.forward(x_masked)[3]
         p_mask = logits_fn(logits_mask).detach().cpu().numpy().squeeze()
+        #print(p_mask)
+        #plt.imshow(x_masked[0].permute(1,2,0).detach().cpu())
+        #plt.show()
         x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(model.device) * x
         logits_background = model.forward(x_background)[3]
         p_background = logits_fn(logits_background).detach().cpu().numpy().squeeze()
+        #print(p_background)
+        #plt.imshow(x_background[0].permute(1,2,0).detach().cpu())
+        #plt.show()
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 
 
@@ -249,7 +258,11 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     bg_sal = []
     combined_sal = []
     combined_sal_wo_mean = []
-
+    log_a = []
+    log_pmask = []
+    log_entropy = []
+    bg_entropy = []
+    entropy = []
 
     over = []
     background_c = []
@@ -283,12 +296,25 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         d_IOU.append(discrete_IOU(mask, seg_mask))
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
-        sal.append(saliency(p_mask, category_id, mask))
-        bg_sal.append(inverted_saliency(p_background, category_id, mask))
-        combined_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
-        combined_sal_wo_mean.append(extended_saliency(p_mask, p_background, category_id, mask))
-
-
+        sali, log_ai, log_pmaski = saliency(p_mask, category_id, mask)
+        sal.append(sali)
+        log_a.append(log_ai)
+        log_pmask.append(log_pmaski)
+        bg_sali, log_entropyi = background_saliency(p_background, mask)
+        bg_sal.append(bg_sali)
+        log_entropy.append(log_entropyi)
+        combined_sal.append(combined_saliency(p_mask, p_background, category_id, mask))
+        combined_sal_wo_mean.append(combined_saliency_wo_mean(p_mask, p_background, category_id, mask))
+        bg_ent, ent = background_entropy(p_background, mask)
+        bg_entropy.append(bg_ent)
+        entropy.append(ent)
+        '''
+        print("######")
+        print(p_mask)
+        print(p_background)
+        print(log_entropy[-1])
+        print(bg_sal[-1])
+        '''
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))
         mask_c.append(mask_coverage(mask, seg_mask))
@@ -296,10 +322,10 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         sr.append(sim_ratio(mask, seg_mask))
 
         
-    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr
+    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy, bg_entropy, entropy,  over, background_c, mask_c, sr
 
         
-def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, multilabel=multilabel, compute_p=True, aux_classifier=False):
+def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, multilabel, compute_p=True, aux_classifier=False):
 #     sparsity = []
 #     sparsity_masked = []
 #     sparsity_background = []
@@ -321,6 +347,12 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
     bg_sal = []
     combined_sal = []
     combined_sal_wo_mean = []
+    log_a = []
+    log_pmask = []
+    log_entropy = []
+    bg_entropy = []
+    entropy = []
+
 
     over = []
     background_c = []
@@ -349,10 +381,18 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
         d_IOU.append(discrete_IOU(mask, seg_mask))
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
-        sal.append(saliency(p_mask, category_id, mask))
-        bg_sal.append(inverted_saliency(p_background, category_id, mask))
-        combined_sal.append(extended_saliency(p_mask, p_background, category_id, mask))
-        combined_sal_wo_mean.append(extended_saliency(p_mask, p_background, category_id, mask))
+        sali, log_ai, log_pmaski = saliency(p_mask, category_id, mask)
+        sal.append(sali)
+        log_a.append(log_ai)
+        log_pmask.append(log_pmaski)
+        bg_sali, log_entropyi = background_saliency(p_background, mask)
+        bg_sal.append(bg_sali)
+        log_entropy.append(log_entropyi)
+        combined_sal.append(combined_saliency(p_mask, p_background, category_id, mask))
+        combined_sal_wo_mean.append(combined_saliency_wo_mean(p_mask, p_background, category_id, mask))
+        bg_ent, ent = background_entropy(p_background, mask)
+        bg_entropy.append(bg_ent)
+        entropy.append(ent)
 
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))
@@ -361,4 +401,4 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
         sr.append(sim_ratio(mask, seg_mask))
 
         
-    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, over, background_c, mask_c, sr
+    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy,  bg_entropy, entropy, over, background_c, mask_c, sr
