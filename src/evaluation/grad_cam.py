@@ -12,7 +12,6 @@ from data.dataloader import *
 from utils.helper import *
 from utils.image_display import *
 from models.resnet50 import Resnet50
-from models.classifier import Resnet50ClassifierModel
 from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import *
 
@@ -21,7 +20,7 @@ dataset = 'VOC' # one of: ['VOC', 'TOY']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
-classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
+classifier_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
@@ -31,7 +30,7 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/baselines/')
+save_base_path = Path('.')
 
 # Whether to compute a target attribution mask (seg) or per-class masks (classes)
 mode = 'seg' #['seg', 'classes']
@@ -67,7 +66,7 @@ elif dataset == 'OI_LARGE':
 else:
     raise Exception("Unknown dataset " + dataset)
 
-save_path = save_base_path / '{}_{}_{}/'.format(dataset, classifier_type, "rise")
+save_path = save_base_path / '{}_{}_{}/'.format(dataset, classifier_type, "grad_cam")
 if not os.path.isdir(save_path):
     os.makedirs(save_path)
 
@@ -134,6 +133,7 @@ class GradCAMModel(pl.LightningModule):
             global total_time
             total_time += end_time - start_time
 
+            print(save_path)
             save_mask(saliency_map, save_path / filename, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
 
         elif mode == 'classes':
