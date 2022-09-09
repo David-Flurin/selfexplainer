@@ -16,50 +16,6 @@ import numpy as np
 from toy_dataset import generator
 from color_dataset import generator as color_generator
 
-class OISmallDataset(Dataset):
-    def __init__(
-        self,
-        root,
-        transform_fn=None,
-        gt_field="ground_truth",
-        classes=None,
-    ):
-        with open(root/'labels.json', 'r') as jsonfile:
-            labels = json.load(jsonfile)
-        self.root = root
-        classes = labels['classes']
-        
-        labels = labels['labels']
-        target_classes = {classes.index('Cat'):'cat', classes.index('Dog'):'dog', classes.index('Bird'):'bird'}
-        self.labels = {}
-        for img, l in labels.items():
-            if l == None:
-                continue
-            for i, c in target_classes.items():
-                if i in l:
-                    self.labels[img] = [c] if img not in self.labels else self.labels[img] + [c]
-        
-        self.images = list(self.labels.keys())
-        print('Cats:', sum('cat' in value for value in self.labels.values()))
-        print('Dogs:', sum('dog' in value for value in self.labels.values()))
-        print('Sheeps:', sum('bird' in value for value in self.labels.values()))
-
-        self.transforms = transform_fn
-        
-
-    def __getitem__(self, idx):
-        img_path = self.root / 'data' / (self.images[idx] +'.jpg')
-
-        img = Image.open(img_path).convert("RGB")
-
-        if self.transforms is not None:
-            img = self.transforms(img)
-
-        return img, {'annotation':{'object': [{'name': name} for name in self.labels[self.images[idx]]], 'filename': self.images[idx]}}
-
-
-    def __len__(self):
-        return len(self.images)
 
 class OIDataset(Dataset):
     def __init__(

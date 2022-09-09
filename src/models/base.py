@@ -1,27 +1,21 @@
-from cv2 import threshold
 import torch
 from torchmetrics import Accuracy
-import pytorch_lightning as pl
-import os
 import json
-import random
-
-from matplotlib import pyplot as plt 
 
 import pytorch_lightning
-from torch import device, nn, softmax
+from torch import  nn
 from torch.optim import Adam
 from pathlib import Path
+import pytorch_lightning as pl
 
 from copy import deepcopy
-from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_target_dictionary, get_class_weights
+from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations, extract_masks, Distribution, get_targets_from_segmentations, LogitStats, get_VOC_dictionary, get_class_weights
 from utils.image_display import save_all_class_masked_images, save_mask, save_masked_image, save_background_logits, save_image, save_all_class_masks, get_unnormalized_image
 from utils.loss import TotalVariationConv, ClassMaskAreaLoss, entropy_loss, mask_similarity_loss, weighted_loss, bg_loss, relu_classification, similarity_loss_fn
-from utils.metrics import IoU, MultiLabelMetrics, SingleLabelMetrics, ClassificationMultiLabelMetrics
+from utils.metrics import ClassificationMultiLabelMetrics
 from utils.weighting import softmax_weighting
 #from plot import plot_class_metrics
 
-from matplotlib import pyplot as plt
 
 VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
 SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC2007/SegmentationClass/")
@@ -243,7 +237,7 @@ class BaseModel(pl.LightningModule):
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
         
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['TOY', 'VOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'TOY_MULTI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -258,36 +252,14 @@ class BaseModel(pl.LightningModule):
         output = self(image, target_vector)
 
         if self.use_similarity_loss or self.use_background_loss:
-            classification_loss_initial = self.classification_loss_fn(output['image'][3], target_vector)
+            classification_loss = self.classification_loss_fn(output['image'][3], target_vector)
         else:
-            classification_loss_initial = self.classification_loss_fn(output[3], target_vector)
+            classification_loss = self.classification_loss_fn(output[3], target_vector)
         
-
-        classification_loss = classification_loss_initial
         self.log('classification_loss', classification_loss.item(), on_epoch=False)   
-        
-        '''
-        if self.use_similarity_loss:
-            self.log('classification_loss_1Pass', classification_loss)  
-            max_objects = 0
-            for b in range(target_vector.size(0)):
-                if target_vector[b].sum() > max_objects:
-                    max_objects = int(target_vector[b].sum().item())
-            for i in range(max_objects):
-                batch_indices = (target_vector.sum(1) > i).nonzero().squeeze(1)
-                seg_indices_list = []
-                for b_idx in batch_indices:
-                    seg_indices_list.append((target_vector[b_idx] == 1.).nonzero()[i])
-                seg_indices = torch.cat(seg_indices_list)
-                s_target = torch.zeros((batch_indices.size(0), target_vector.size(1)), device=target_vector.device)
-                s_target[torch.arange(batch_indices.size(0)), seg_indices] = 1.
-                self.sim_losses[f'object_{i}'] =  torch.nn.functional.cross_entropy(output[f'object_{i}'][3].detach(), s_target)
-            self.log('classification_loss_2Pass', self.sim_losses)     
-        '''
         loss = classification_loss
         
         obj_back_loss = torch.tensor(0., device=image.device)
-
         # Foreground similarity loss
         if self.use_similarity_loss:
             if self.multilabel:
@@ -318,7 +290,6 @@ class BaseModel(pl.LightningModule):
         if self.use_mask_variation_loss:
             mask_loss += mask_variation_loss
 
-
         bounding_area_loss = self.mask_area_constraint_regularizer * (self.class_mask_area_loss_fn(output['image'][0] if 'image' in output else output[0], target_vector)) #+ self.class_mask_area_loss_fn(output['object'][0], target_vectori))
         self.log('Bounding area loss', bounding_area_loss.item(), on_epoch=False)
         if self.use_bounding_loss:
@@ -340,15 +311,14 @@ class BaseModel(pl.LightningModule):
         # Weighting scheme for foreground, background and mask losses
         if self.use_weighted_loss:
             if self.use_similarity_loss or self.use_background_loss:
-                loss += weighted_loss(loss, obj_back_loss, self.object_loss_weighting_params[0], self.object_loss_weighting_params[1])
-                
+                loss += weighted_loss(loss, obj_back_loss, self.object_loss_weighting_params[0], self.object_loss_weighting_params[1])      
             if self.use_mask_area_loss or self.use_bounding_loss:
                 loss  += weighted_loss(loss, mask_loss, self.mask_loss_weighting_params[0], self.mask_loss_weighting_params[1])  
         else:
             loss += obj_back_loss + mask_loss
 
         # Tensorboard logging 
-        if self.i % 5 == 4:
+        if self.i % 5 == 4 and self.logger != None:
             masked_image = (output['image'][1] if 'image' in output else output[1]).detach().unsqueeze(1) * image
             self.logger.experiment.add_image('Train Masked Images', get_unnormalized_image(masked_image), self.i, dataformats='NCHW')
             self.logger.experiment.add_image('Train Images', get_unnormalized_image(image), self.i, dataformats='NCHW')
@@ -392,7 +362,6 @@ class BaseModel(pl.LightningModule):
         for k,v in m.items():
             self.log(f'{k}', v, prog_bar=True, logger=False)
         self.train_metrics.reset()
-
         
         for g in self.trainer.optimizers[0].param_groups:
             self.log('lr', g['lr'], prog_bar=True)

@@ -16,7 +16,7 @@ import pathlib
 from xml.etree import cElementTree as ElementTree
 from utils.weighting import softmax_weighting
 
-from utils.assessment_metrics import background_saliency, background_entropy
+from utils.assessment_metrics import background_entropy
 
 from math import sqrt
 import itertools
