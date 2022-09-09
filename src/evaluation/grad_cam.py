@@ -30,7 +30,7 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 # Whether to compute a target attribution mask (seg) or per-class masks (classes)
-mode = 'classes' #['seg', 'classes']
+mode = 'seg' #['seg', 'classes']
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
 #####################################################################################
