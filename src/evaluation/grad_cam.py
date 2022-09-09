@@ -19,8 +19,10 @@ from pytorch_grad_cam.utils.image import *
 ############################## Change to your settings ##############################
 dataset = 'VOC' # one of: ['VOC', 'TOY']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 classifier_checkpoint = '../checkpoints/resnet50/voc2007_pretrained.ckpt'
+
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -28,6 +30,8 @@ TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/te
 OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
+
+save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/baselines/')
 
 # Whether to compute a target attribution mask (seg) or per-class masks (classes)
 mode = 'classes' #['seg', 'classes']
@@ -63,7 +67,7 @@ elif dataset == 'OI_LARGE':
 else:
     raise Exception("Unknown dataset " + dataset)
 
-save_path = Path('{}_{}_{}/'.format(dataset, classifier_type, "grad_cam"))
+save_path = save_base_path / '{}_{}_{}/'.format(dataset, classifier_type, "rise")
 if not os.path.isdir(save_path):
     os.makedirs(save_path)
 
