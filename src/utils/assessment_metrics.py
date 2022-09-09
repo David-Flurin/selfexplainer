@@ -40,24 +40,8 @@ Piotr", Dabkowski and Gal.
         for e in c:
             pclass += pvec[e]
        
-        #normalized_pclass = pclass / len(c)
-    return np.log(a) - np.log(pclass), np.log(a), np.log(pclass)
+    return np.log(a) - np.log(pclass)
 
-def background_saliency(pvec, mask):
-    """
-    Continuous saliency measure for the inverse masked image.
-
-
-    """
-    a = np.maximum(np.mean(mask), 0.05)
-
-    max_entropy = -np.log(1/pvec.size)
- 
-    entropy = (-pvec * np.log(pvec)).sum()
-    normalized_entropy = entropy / max_entropy
-
-    #return np.log(a) - np.log(normalized_entropy), np.log(normalized_entropy)
-    return np.log(a) - normalized_entropy, normalized_entropy
 
 def background_entropy(pvec, mask):
     """
@@ -74,44 +58,11 @@ def background_entropy(pvec, mask):
 
     return  -normalized_entropy - np.log(1-a), normalized_entropy
 
+
 def combined_saliency(pvec, inv_pvec, c, mask):
     """
-    Extended saliency measure. 
+    Combination of saliency and background entropy. 
     
-    Adaptation from "Real Time Image Saliency for Black Box Classifiers
-Piotr", Dabkowski and Gal.
-
-    For pvec of the masked image, the lower the better for the masked image.
-    
-    This measure does not make sense for the inverse masked image.
-    """
-    a = np.maximum(np.mean(mask), 0.05)
-
-    max_entropy = -np.log(1/inv_pvec.size)
- 
-    entropy = (-inv_pvec * np.log(inv_pvec)).sum()
-    normalized_entropy = entropy / max_entropy
-
-    if isinstance(c, int):
-        pclass = pvec[c]
-    else:
-        pclass = 0
-        for e in c:
-            pclass += pvec[e]
-        #normalized_pclass = pclass / len(c)
-
-    return np.log(a) - (np.log(pclass) + np.log(normalized_entropy))*0.5
-
-def combined_saliency_wo_mean(pvec, inv_pvec, c, mask):
-    """
-    Extended saliency measure. 
-    
-    Adaptation from "Real Time Image Saliency for Black Box Classifiers
-Piotr", Dabkowski and Gal.
-
-    For pvec of the masked image, the lower the better for the masked image.
-    
-    This measure does not make sense for the inverse masked image.
     """
     a = np.maximum(np.mean(mask), 0.05)
 
@@ -125,9 +76,7 @@ Piotr", Dabkowski and Gal.
         pclass = 0
         for e in c:
             pclass += pvec[e]
-        #normalized_pclass = pclass / len(c)
 
-    #return np.log(a) - np.log(pclass) - np.log(normalized_entropy)
     return np.log(a) - np.log(pclass) - normalized_entropy
 
 

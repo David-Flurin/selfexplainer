@@ -1,9 +1,5 @@
-from wsgiref.simple_server import WSGIRequestHandler
 import torch
-import os
 import random
-
-
 
 def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, toy_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
@@ -44,30 +40,14 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 def get_filename_from_annotations(annotations, dataset):
     if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
         filename = annotations[0]['annotation']['filename']
-
-    elif dataset == "COCO":
+    elif dataset in ["TOY", 'TOY_SAVED', 'TOY_MULTI', 'COLOR']:
         filename = annotations[0]['filename']
-
-    elif dataset == "CUB":
-        filename = annotations[0]['filename']
-
-    elif dataset in ["TOY", 'TOY_SAVED', 'TOY_MULTI']:
-        filename = annotations[0]['filename']
-
-    elif dataset == "COLOR":
-        filename = annotations[0]['filename']
-
-    elif dataset == 'MNIST':
-        filename = f'{annotations[0]}_{random.randint(0,10000)}'
-
-
-
     else:
         raise Exception("Unknown dataset: " + dataset)
 
     return filename
 
-def get_target_dictionary(include_background_class):
+def get_VOC_dictionary(include_background_class):
     if include_background_class:
         target_dict = {'background' : 0, 'aeroplane' : 1, 'bicycle' : 2, 'bird' : 3, 'boat' : 4, 'bottle' : 5, 'bus' : 6, 'car' : 7, 
                 'cat' : 8, 'chair' : 9, 'cow' : 10, 'diningtable' : 11, 'dog' : 12, 'horse' : 13, 'motorbike' : 14, 'person' : 15, 
@@ -91,7 +71,6 @@ def get_OI_dictionary(include_background_class):
 
 def get_large_OI_dictionary(include_background_class):
     
-
     target_dict = {'flower': 0, 'fish': 1, 'monkey': 2, 'cake': 3, 'sculpture': 4, 'lizard': 5, 'mobile phone': 6, 'camera': 7, 'bread': 8, 
                     'guitar': 9, 'snake': 10, 'handbag': 11, 'pastry': 12, 'ball': 13, 'flag': 14, 'piano': 15, 'rabbit': 16, 'book': 17, 'mushroom': 18, 'dress': 19}
 
@@ -136,7 +115,7 @@ def get_color_dictionary(include_background_class, rgb=True):
 
 def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
     if dataset in ['VOC', 'VOC2012']:
-        return get_target_dictionary(include_background_class=include_background_class)
+        return get_VOC_dictionary(include_background_class=include_background_class)
     elif dataset == 'OI':
         return get_OI_dictionary(include_background_class=include_background_class)
     elif dataset == 'OI_LARGE':

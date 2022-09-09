@@ -18,7 +18,7 @@ from torchray.attribution.extremal_perturbation import extremal_perturbation, co
 
 
 
-from utils.helper import get_target_dictionary
+from utils.helper import get_VOC_dictionary
 
 def merge_mask(masks):
     if len(masks) > 1:
@@ -104,7 +104,7 @@ def compute_and_save_masks(model, data_module, path_segmentation, path_masks, me
             filename = Path(os.path.splitext(filename)[0] + '.png')
         except:
             filename = Path(meta[0]['annotation']["filename"][:-4]+".png")
-            target_dict = get_target_dictionary(include_background_class=False)
+            target_dict = get_VOC_dictionary(include_background_class=False)
             objects = meta[0]['annotation']['object']
             category_id = [target_dict[e["name"]] for e in objects]
         segmentation_filename =  path_segmentation / filename

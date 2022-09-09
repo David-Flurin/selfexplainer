@@ -64,71 +64,39 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
     model.eval()
 
     data_module.setup()
-
-    total_time = 0.0
-    print(checkpoint_base_path+checkpoint+".ckpt")
-
     logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
-    thresh_preds = []
     preds = []
     trues = []
-    #trues_roc = []
 
-    #i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
-
-
-
         filename = get_filename_from_annotations(annotations, dataset=dataset)
         segmentation_filename = (segmentations_directory / os.path.splitext(filename)[0]).with_suffix( '.png')
         
-        '''
         if not os.path.exists(segmentation_filename):
             continue
-        '''
-
+        
         image = image.to(device)
         targets = get_targets_from_annotations(annotations, dataset=dataset)
 
-        start_time = default_timer()
         output = model(image, targets)
         mask = output[1]
         logits = (output[3])
         pred = logits_fn(logits)
         preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
-        #thresh_preds.append(pred.detach().cpu().squeeze().numpy() > 0.5)
         trues.append(targets.int().cpu().squeeze().numpy())
-        # if multilabel:
-        #     trues_roc.append(targets.int().cpu().squeeze().numpy())
-        # else:
-        #     trues_roc.append(np.where(targets.int().cpu().squeeze().numpy() == 1)[0])
-
-
-        end_time = default_timer()
-        total_time += end_time - start_time
 
         save_mask(mask, save_path / filename, dataset)
         save_masked_image(image, mask, save_path / "images" / filename, dataset)
 
-        #i += 1
-        #if i == 6:
-        #    break
-
     averages = ['micro', 'weighted']
     classification_metrics = {'f1':{}, 'precision':{}, 'recall':{}}
-    #trues = np.stack(trues, axis=0)
-    #trues_roc = np.stack(trues_roc, axis=0)
     for avg in averages:
         classification_metrics['f1'][avg] = f1_score(trues, preds, average=avg)
         classification_metrics['precision'][avg] = precision_score(trues, preds, average=avg)
         classification_metrics['recall'][avg] = recall_score(trues, preds, average=avg)
 
     np.savez(save_path / "classification_metrics.npz", classification_metrics=classification_metrics)
-
-
-
-    print("Total time for masking process of the Selfexplainer with dataset {} and model {}: {} seconds".format(dataset, checkpoint, total_time))
     return classification_metrics
 
 def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, masks_for_classes, aux_classifier, multilabel):
@@ -172,13 +140,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
     device = get_device()
     model.to(device)
     model.eval()
-
     data_module.setup()
-
-    total_time = 0.0
-    print(checkpoint_base_path+checkpoint+".ckpt")
-
-    logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
 
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
@@ -202,6 +164,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
 ############################################## Change to your settings ##########################################################
 masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/ablation/")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
+
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
 TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
@@ -210,18 +173,18 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "VOC"
+dataset = "VOC" # ['VOC', 'VOC2012', 'TOY', 'TOY_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = True
-classifiers = ["resnet50"]
 checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/ablation/VOC2007/'
-
 checkpoints = ['wo_background_4381', 'wo_sim_1251', 'wo_mask']
-
 load_file = ''
 save_file = 'results/selfexplainer/ablation/voc.npz'
-compute_masks = True
-class_masks = False
 
+# If no masks for the test set have been computed yet
+compute_masks = True
+
+# If we want to evaluate per-class masks
+class_masks = False
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
 
@@ -281,7 +244,7 @@ for checkpoint in checkpoints:
             save_path = masks_path / Path('{}_{}_{}/'.format(dataset, "selfexplainer", checkpoint))
             classification_metrics = np.load(save_path / 'classification_metrics.npz' , allow_pickle=True)["classification_metrics"].item()
 
-        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy, bg_entropy, entropy, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
+        d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_entropy, combined_sal, over, background_c, mask_c, sr = selfexplainer_compute_numbers(data_path=data_path,
                                                                                                                         masks_path=masks_path, 
                                                                                                                         segmentations_path=segmentations_path, 
                                                                                                                         dataset_name=dataset, 
@@ -303,14 +266,8 @@ for checkpoint in checkpoints:
         d["d_IOU"] = d_IOU
         d["c_IOU"] = c_IOU
         d["sal"] = sal
-        d["bg_sal"] = bg_sal
         d["combined_sal"] = combined_sal
-        d["combined_sal_wo_mean"] = combined_sal_wo_mean
-        d['log_a'] = log_a
-        d['log_pmask'] = log_pmask
-        d['log_entropy'] = log_entropy
         d['background_entropy'] = bg_entropy
-        d['normalized entropy'] = entropy
         d["over"] = over
         d["background_c"] = background_c
         d["mask_c"] = mask_c
@@ -320,8 +277,6 @@ for checkpoint in checkpoints:
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
         # except:
         #     print("Cannot compute scores for: {} - {} - {}!".format(dataset, classifier, method))
-
-
 
         np.savez(save_file, results=results)
 

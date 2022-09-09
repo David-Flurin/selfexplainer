@@ -255,14 +255,8 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
     d_IOU = []
     c_IOU = []
     sal = []
-    bg_sal = []
     combined_sal = []
-    combined_sal_wo_mean = []
-    log_a = []
-    log_pmask = []
-    log_entropy = []
     bg_entropy = []
-    entropy = []
 
     over = []
     background_c = []
@@ -296,25 +290,10 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         d_IOU.append(discrete_IOU(mask, seg_mask))
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
-        sali, log_ai, log_pmaski = saliency(p_mask, category_id, mask)
-        sal.append(sali)
-        log_a.append(log_ai)
-        log_pmask.append(log_pmaski)
-        bg_sali, log_entropyi = background_saliency(p_background, mask)
-        bg_sal.append(bg_sali)
-        log_entropy.append(log_entropyi)
+        sal.append(saliency(p_mask, category_id, mask))
+        bg_entropy.append(background_entropy(p_background, mask))
         combined_sal.append(combined_saliency(p_mask, p_background, category_id, mask))
-        combined_sal_wo_mean.append(combined_saliency_wo_mean(p_mask, p_background, category_id, mask))
-        bg_ent, ent = background_entropy(p_background, mask)
-        bg_entropy.append(bg_ent)
-        entropy.append(ent)
-        '''
-        print("######")
-        print(p_mask)
-        print(p_background)
-        print(log_entropy[-1])
-        print(bg_sal[-1])
-        '''
+
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))
         mask_c.append(mask_coverage(mask, seg_mask))
@@ -322,7 +301,7 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
         sr.append(sim_ratio(mask, seg_mask))
 
         
-    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy, bg_entropy, entropy,  over, background_c, mask_c, sr
+    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_entropy, combined_sal, over, background_c, mask_c, sr
 
         
 def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, multilabel, compute_p=True, aux_classifier=False):
@@ -344,15 +323,8 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
     d_IOU = []
     c_IOU = []
     sal = []
-    bg_sal = []
     combined_sal = []
-    combined_sal_wo_mean = []
-    log_a = []
-    log_pmask = []
-    log_entropy = []
     bg_entropy = []
-    entropy = []
-
 
     over = []
     background_c = []
@@ -381,18 +353,9 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
         d_IOU.append(discrete_IOU(mask, seg_mask))
         c_IOU.append(continuous_IOU(mask, seg_mask))
 
-        sali, log_ai, log_pmaski = saliency(p_mask, category_id, mask)
-        sal.append(sali)
-        log_a.append(log_ai)
-        log_pmask.append(log_pmaski)
-        bg_sali, log_entropyi = background_saliency(p_background, mask)
-        bg_sal.append(bg_sali)
-        log_entropy.append(log_entropyi)
+        sal.append(saliency(p_mask, category_id, mask))
+        bg_entropy.append(background_entropy(p_background, mask))
         combined_sal.append(combined_saliency(p_mask, p_background, category_id, mask))
-        combined_sal_wo_mean.append(combined_saliency_wo_mean(p_mask, p_background, category_id, mask))
-        bg_ent, ent = background_entropy(p_background, mask)
-        bg_entropy.append(bg_ent)
-        entropy.append(ent)
 
         over.append(overlap(mask, seg_mask))
         background_c.append(background_coverage(mask, seg_mask))
@@ -401,4 +364,4 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
         sr.append(sim_ratio(mask, seg_mask))
 
         
-    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_sal, combined_sal, combined_sal_wo_mean, log_a, log_pmask, log_entropy,  bg_entropy, entropy, over, background_c, mask_c, sr
+    return d_f1_25,d_f1_50,d_f1_75,c_f1,a_f1s, aucs, d_IOU, c_IOU, sal, bg_entropy, combined_sal, over, background_c, mask_c, sr

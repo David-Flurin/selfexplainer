@@ -110,11 +110,6 @@ def entropy_loss(logits):
     log_probs = probs.log()
     entropy = (-probs * log_probs)
     entropy_loss = -entropy.mean()
-    '''
-    b, c = logits.size()
-    sm = nn.functional.softmax(logits, dim=-1)
-    entropy_loss = abs(-(sm + (c-1)/c).log()).sum(1).mean()
-    '''
 
     return entropy_loss
 

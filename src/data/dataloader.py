@@ -12,11 +12,8 @@ from torch.utils.data import DataLoader, WeightedRandomSampler
 from typing import Optional
 from pathlib import Path
 from xml.etree.ElementTree import parse as ETparse
-
-
-
 from utils.helper import get_class_dictionary
-from data.dataset import ColorDataset, ToyDataset, ToyDataset_Saved, OISmallDataset, OIDataset
+from data.dataset import ColorDataset, ToyDataset, ToyDataset_Saved, OIDataset
 
 class VOCDataModule(pl.LightningDataModule):
 
@@ -121,63 +118,6 @@ class VOC2012DataModule(VOCDataModule):
         class_weights = np.array([1/c for c in obj_img_count])
         img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
         return img_weights
-
-class OISmallDataModule(pl.LightningDataModule):
-
-    def __init__(self, data_path, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False, weighted_sampling=False):
-        super().__init__()
-
-        self.data_path = Path(data_path)
-
-        self.weighted_sampling = weighted_sampling
-
-        self.train_transformer = get_training_image_transformer(use_data_augmentation)
-        self.test_transformer = get_testing_image_transformer()
-
-        self.train_batch_size = train_batch_size
-        self.val_batch_size = val_batch_size
-        self.test_batch_size = test_batch_size
-
-    def prepare_data(self):
-        pass
-
-    def setup(self, stage: Optional[str] = None):
-        self.train = OISmallDataset(root=self.data_path / 'train', transform_fn=self.train_transformer)
-        self.val = OISmallDataset(root=self.data_path / 'validation', transform_fn=self.test_transformer)
-        #self.test = OISmallDataset(root=self.data_path / 'test', transform_fn=self.test_transformer)
-
-    def train_dataloader(self):
-        if self.weighted_sampling:
-            weights = self.calculate_weights()
-            generator=torch.Generator(device='cpu')
-            generator.manual_seed(42)
-            return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=False, num_workers=4, pin_memory=torch.cuda.is_available(), 
-                sampler=WeightedRandomSampler(weights, len(weights), generator=generator))
-        return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def val_dataloader(self):
-        return DataLoader(self.val, batch_size=self.val_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
-
-    def test_dataloader(self):
-        return None
-
-    def calculate_weights(self):
-        oi_classes = get_class_dictionary('OISMALL', include_background_class=False)
-        img_classes = {}
-        obj_img_count = [0] * len(oi_classes)
-        for img, classes in self.train.labels.items():
-            target_indices = [0]*len(oi_classes)
-            for c in classes:
-                obj_img_count[oi_classes[c.lower()]] += 1
-                target_indices[oi_classes[c.lower()]] = 1
-            img_classes[img] = np.array(target_indices)
-
-        class_weights = np.array([1/(c+1) for c in obj_img_count])
-        class_weights = np.array([c if c < 1 else 0 for c in class_weights])
-
-        img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
-        return img_weights
-
 
 class OIDataModule(pl.LightningDataModule):
 
