@@ -203,9 +203,6 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
         if np.sum(np.isnan(mask)):
             mask = np.zeros(shape=mask.shape, dtype=np.float32)
 
-
-        #from matplotlib import pyplot as plt
-        #logits_fn =  lambda y: torch.sigmoid(y) if multilabel else lambda y :torch.nn.functional.softmax(y, dim=1)
         logits_fn = lambda y:torch.nn.functional.softmax(y, dim=1)
         x = x.to(model.device)
         logits = model.forward(x)['image'][3]
@@ -214,26 +211,13 @@ def selfexplainer_evaluation(data_module, masks_path, segmentations_path, datase
         x_masked = torch.tensor(np.reshape(mask, [1,1, *mask.shape])).to(model.device) * x
         logits_mask = model.forward(x_masked)['image'][3]
         p_mask = logits_fn(logits_mask).detach().cpu().numpy().squeeze()
-        #print(p_mask)
-        #plt.imshow(x_masked[0].permute(1,2,0).detach().cpu())
-        #plt.show()
         x_background = torch.tensor(np.reshape(1-mask, [1,1, *mask.shape])).to(model.device) * x
         logits_background = model.forward(x_background)['image'][3]
         p_background = logits_fn(logits_background).detach().cpu().numpy().squeeze()
-        #print(p_background)
-        #plt.imshow(x_background[0].permute(1,2,0).detach().cpu())
-        #plt.show()
         yield mask, seg_mask, p, p_mask, p_background, category_id, x.detach().cpu().numpy().squeeze()
 
 
 def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, aux_classifier=False, multilabel=False):
-#     sparsity = []
-#     sparsity_masked = []
-#     sparsity_background = []
-
-#     entropy = []
-#     entropy_masked = []
-#     entropy_background = []
 
     d_f1_25 = []
     d_f1_50 = []
@@ -263,13 +247,7 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
 
     for mask, seg_mask, p, p_mask, p_background, category_id, x in selfexplainer_evaluation(data_module, masks_path, segmentations_path, dataset_name, model, model_name, method, multilabel=multilabel):
 
-#         sparsity.append(prob_sparsity(p))
-#         sparsity_masked.append(prob_sparsity(p_mask))
-#         sparsity_background.append(prob_sparsity(p_background))
 
-#         entropy.append(prob_entropy(p))
-#         entropy_masked.append(prob_entropy(p_mask))
-#         entropy_background.append(prob_entropy(p_background))
         d_f1_25.append(discrete_f1(mask, seg_mask, 0.25))
         d_f1_50.append(discrete_f1(mask, seg_mask, 0.50))
         d_f1_75.append(discrete_f1(mask, seg_mask, 0.75))
@@ -295,13 +273,6 @@ def selfexplainer_compute_numbers(data_path, masks_path, segmentations_path, dat
 
         
 def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, multilabel, compute_p=True, aux_classifier=False):
-#     sparsity = []
-#     sparsity_masked = []
-#     sparsity_background = []
-
-#     entropy = []
-#     entropy_masked = []
-#     entropy_background = []
 
     d_f1_25 = []
     d_f1_50 = []
@@ -326,13 +297,6 @@ def compute_numbers(data_path, masks_path, segmentations_path, dataset_name, mod
 
     for mask, seg_mask, p, p_mask, p_background, category_id, x in gen_evaluation(data_path, masks_path, segmentations_path, dataset_name, model_name, model_path, method, compute_p=compute_p, multilabel=multilabel, aux_classifier=aux_classifier):
 
-#         sparsity.append(prob_sparsity(p))
-#         sparsity_masked.append(prob_sparsity(p_mask))
-#         sparsity_background.append(prob_sparsity(p_background))
-
-#         entropy.append(prob_entropy(p))
-#         entropy_masked.append(prob_entropy(p_mask))
-#         entropy_background.append(prob_entropy(p_background))
         d_f1_25.append(discrete_f1(mask, seg_mask, 0.25))
         d_f1_50.append(discrete_f1(mask, seg_mask, 0.50))
         d_f1_75.append(discrete_f1(mask, seg_mask, 0.75))

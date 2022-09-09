@@ -3,24 +3,20 @@ import os
 
 sys.path.insert(0, os.path.abspath(".."))
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
-import pandas as pd
 
 from tqdm import tqdm
 from pathlib import Path
 from torchray.utils import get_device
 from timeit import default_timer
 
-
 from models.resnet50 import Resnet50
 from data.dataloader import *
 from utils.helper import *
 from utils.image_display import *
 
-from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+from sklearn.metrics import f1_score, precision_score, recall_score
 sys.path.insert(0, os.path.abspath("/users/dniederb/nn-explainer/"))
-from src.models.classifier import Resnet50ClassifierModel
 
 def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     # Set up data module
@@ -55,7 +51,6 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
     else:
         raise Exception("Unknown dataset " + dataset)
 
-    #model = Resnet50ClassifierModel.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, dataset=dataset, learning_rate=1e-4, use_imagenet_pretraining=False, fix_classifier_backbone=True, metrics_threshold=0.0)
     model = Resnet50.load_from_checkpoint(checkpoint_base_path+checkpoint+".ckpt", num_classes=num_classes, multilabel=multilabel, weighted_sampling=False, dataset=dataset, pretrained=False, aux_classifier=aux_classifier)
     device = get_device()
     model.to(device)
@@ -63,16 +58,10 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 
     data_module.setup()
 
-    total_time = 0.0
-    print(checkpoint_base_path+checkpoint+".ckpt")
-
     logits_fn = torch.sigmoid if multilabel else lambda x: torch.nn.functional.softmax(x, dim=1)
-    thresh_preds = []
     preds = []
     trues = []
-    #trues_roc = []
 
-    #i = 0
     for batch in tqdm(data_module.test_dataloader()):
         image, annotations = batch
 
@@ -83,15 +72,12 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         logits = model(image)
         pred = logits_fn(logits)
         preds.append(pred.detach().cpu().squeeze().numpy() >= 0.5)
-        #thresh_preds.append(pred.detach().cpu().squeeze().numpy() > 0.5)
         trues.append(targets.int().cpu().squeeze().numpy())
         end_time = default_timer()
         total_time += end_time - start_time
 
     averages = ['micro', 'weighted']
     classification_metrics = {'f1':{}, 'precision':{}, 'recall':{}}
-    #trues = np.stack(trues, axis=0)
-    #trues_roc = np.stack(trues_roc, axis=0)
     for avg in averages:
         classification_metrics['f1'][avg] = f1_score(trues, preds, average=avg)
         classification_metrics['precision'][avg] = precision_score(trues, preds, average=avg)
@@ -102,12 +88,11 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 ############################################## Change to your settings ##########################################################
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "OI_LARGE"
+dataset = "OI_LARGE" # ['VOC', 'VOC2012', 'TOY', 'TOY_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = False
+
 checkpoints_base_path = "/scratch/snx3000/dniederb/experiments/thesis/resnet50/OI_LARGE/check/tb_logs/Selfexplainer/version_0/checkpoints/"
-
-
-checkpoints = ["epoch=1-step=26070"]
+checkpoints = ["epoch=1-step=26070"] # Evaluate multiple models at once
 
 load_file = ''
 save_file = 'resnet50_oilarge_check.npz'
@@ -153,13 +138,11 @@ for checkpoint in checkpoints:
             aux_classifier=False
         
         classification_metrics = compute_scores(dataset, checkpoint, checkpoints_base_path, multilabel=multilabel)
-
      
         d = {}
         d['classification_metrics'] = classification_metrics
         results[checkpoint] = d
         print("Scores computed for: {} - {}".format(dataset, checkpoint))
-
 
         np.savez(save_file, results=results)
 

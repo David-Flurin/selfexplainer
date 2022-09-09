@@ -28,7 +28,8 @@ OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segment
 OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
 OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
 
-mode = 'seg'
+# Whether to compute a target attribution mask (seg) or per-class masks (classes)
+mode = 'classes' #['seg', 'classes']
 masks_for_classes = [0, 2, 4, 6, 7, 9, 10, 11, 12, 14]
 
 #####################################################################################
@@ -38,10 +39,6 @@ if dataset == "VOC":
     num_classes = 20
     data_path = Path(data_base_path) / "VOC2007"
     data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == "COCO":
-    num_classes = 91
-    data_path = Path(data_base_path) / "COCO2014"
-    data_module = COCODataModule(data_path=data_path, test_batch_size=1)
 elif dataset == 'TOY':
     num_classes = 8
     data_path = Path(data_base_path) / "TOY"

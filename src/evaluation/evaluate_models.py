@@ -177,7 +177,7 @@ dataset = "VOC" # ['VOC', 'VOC2012', 'TOY', 'TOY_MULTI', 'OI_SMALL', 'OI', 'OI_L
 multilabel = True
 
 checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/'
-checkpoints = ['3passes_01_2503']
+checkpoints = ['3passes_01_2503'] # Evaluate multiple models at once
 load_file = ''
 save_file = 'test_voc.npz'
 
