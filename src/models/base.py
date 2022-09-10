@@ -453,8 +453,8 @@ class BaseModel(pl.LightningModule):
 
 
     def test_step(self, batch, batch_idx):
-        # This was used for evaluating stuff during development in the early stage, not for the evaluation of the final model.
-        # Might have some weird stuff.
+        # This was used for evaluating things during development in the early stage, not for the evaluation of the final model.
+        # Might have some weird stuff going on.
 
         self.test_i += 1
         if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'TOY_SAVED', 'TOY_MULTI']:
@@ -462,7 +462,7 @@ class BaseModel(pl.LightningModule):
         else:
             image, seg, annotations = batch
             targets = get_targets_from_segmentations(seg, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu, include_background_class=False)
-        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, num_classes=self.num_classes, gpu=self.gpu)
+        target_vector = get_targets_from_annotations(annotations, dataset=self.dataset, gpu=self.gpus)
 
         output = self(image, target_vector)
 
