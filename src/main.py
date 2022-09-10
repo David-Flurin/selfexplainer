@@ -123,9 +123,9 @@ if args.model_to_train == "selfexplainer":
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, mask_variation_regularizer=args.mask_variation_regularizer,save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, class_loss=args.class_loss, frozen=args.frozen, 
+         save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, 
          weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode, class_mask_max_area=args.class_mask_max_area, class_mask_min_area=args.class_mask_min_area, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-         freeze_every=args.freeze_every, save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
+          save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
@@ -133,10 +133,10 @@ if args.model_to_train == "selfexplainer":
             num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, mask_variation_regularizer=args.mask_variation_regularizer,save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, class_loss=args.class_loss, frozen=args.frozen, 
+         save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, 
          weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, use_bounding_loss=args.use_bounding_loss, 
          similarity_loss_mode=args.similarity_loss_mode, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-         freeze_every=args.freeze_every, save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
+         save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
         )
 
 
@@ -230,9 +230,6 @@ if args.train_model:
         if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss'], plot_dir+'/val_losses.png')
     trainer.test(model=model, datamodule=data_module)
-    #if logger:
-        #if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
-        #    plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_entropy_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss', 'val_loss'], plot_dir+'/val_losses.png')
 else:
     trainer.test(model=model, datamodule=data_module)
 
