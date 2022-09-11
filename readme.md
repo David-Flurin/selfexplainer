@@ -23,5 +23,5 @@ To reproduce the results from the report, use the configuration files in the *co
 # Evaluate model
 To evaluate a model, use the file *evaluate_selfexplainer.py* in the *evaluation/* directory. Change the settings defined in the file to fit your environment. The attribution masks are first generated and then evaluated with a bunch of metrics (see file *compute_scores.py*). To print averaged metrics, run
 ```
-python print\_selfexplainer\_mean\_scores.py path\_to\_results\_file
+python print_selfexplainer_mean_scores.py path_to_results_file
 ```
