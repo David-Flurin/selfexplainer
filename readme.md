@@ -1,6 +1,6 @@
 # Self-Explainer
 
-This repository contains the code to train the Self-Explainer and conduct the experiments from the report. Most of the code was directly taken from [NN-Explainer](https://github.com/stevenstalder/NN-Explainer) and then adapted.
+This repository contains the code to train the Self-Explainer and conduct the experiments from the report. Most of the code was directly taken from [NN-Explainer](https://github.com/stevenstalder/NN-Explainer) and was then adapted to fit the objective.
 
 ## Directories & Files
 - main.py: Called to start a training
