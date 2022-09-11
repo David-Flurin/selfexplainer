@@ -11,3 +11,13 @@ This repository contains the code to train the Self-Explainer and conduct the ex
 - utils/: Different helper functions
 - synthetic_dataset/: Contains code to generate samples of the synthetic dataset.
 - color_dataset/: Pixel dataset used in the early stage of the thesis to verify certain loss properties. 
+
+## Run trainings
+
+Run a training by executing main.py with a configuration file like:
+    python main.py -c config_files/configuration.cfg
+To reproduce the results from the report, use the configuration files in the *config_files/* directory for the respecitve dataset. 
+
+# Evaluate model
+To evaluate a model, use the file *evaluate_selfexplainer.py* in the *evaluation/* directory. Change the settings defined in the file to fit your environment. The attribution masks are first generated and then evaluated with a bunch of metrics (see file *compute_scores.py*). To print averaged metrics, run
+    python print\_selfexplainer\_mean\_scores.py path\_to\_results\_file
