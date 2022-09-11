@@ -15,7 +15,7 @@ This repository contains the code to train the Self-Explainer and conduct the ex
 ## Run trainings
 
 Run a training by executing main.py with a configuration file like:
-    python main.py -c config_files/configuration.cfg
+	python main.py -c config_files/configuration.cfg
 To reproduce the results from the report, use the configuration files in the *config_files/* directory for the respecitve dataset. 
 
 # Evaluate model
