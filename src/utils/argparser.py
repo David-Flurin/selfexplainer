@@ -23,7 +23,7 @@ def get_parser():
     # Dataset parameters
     parser.add_argument('--dataset', default='VOC', type=str, help='which dataset to use')
     parser.add_argument('--data_base_path', default='../datasets/', type=str, help='Base bath of the datasets. Should contain subdirectories with the different datasets.')
-    parser.add_argument('--epoch_length', default=1000, type=int, help='Number of training samples per epoch when using synthetic dataset.')
+    parser.add_argument('--epoch_length', default=400, type=int, help='Number of training samples per epoch when using synthetic dataset.')
     parser.add_argument('--test_samples', default=100, type=int, help='Number of test samples when using synthetic dataset.')
     parser.add_argument('--rgb', default=True, type=str2bool, help='Whether the color dataset generates grayscale or color images')
     parser.add_argument('--multilabel', default=False, type=str2bool, help='Whether the objective is multilabel or singlelabel.')
