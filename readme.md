@@ -18,7 +18,7 @@ Run a training by executing main.py with a configuration file like:
 ```
 python main.py -c config_files/configuration.cfg
 ```
-To reproduce the results from the report, use the configuration files in the *config_files/* directory for the respecitve dataset. 
+To reproduce the results from the report, use the configuration files in the *config_files/* directory for the respective dataset. To change the synthetic dataset from single-label to multi-label mode, set the configuration field *multilabel=True*.
 
 # Evaluate model
 To evaluate a model, use the file *evaluate_selfexplainer.py* in the *evaluation/* directory. Change the settings defined in the file to fit your environment. The attribution masks are first generated and then evaluated with a bunch of metrics (see file *compute_scores.py*). To print averaged metrics, run
