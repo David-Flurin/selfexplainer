@@ -11,7 +11,7 @@ import json
 from utils.helper import get_class_dictionary
 import torch
 from matplotlib.ticker import FormatStrFormatter
-from toy_dataset.generator import Generator
+from synthetic_dataset.generator import Generator
 import pathlib
 from xml.etree import cElementTree as ElementTree
 from utils.weighting import softmax_weighting
