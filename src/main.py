@@ -1,5 +1,3 @@
-from plot import plot_losses
-
 import torch
 import os
 import sys
@@ -14,7 +12,7 @@ from data.dataloader import ColorDataModule, OIDataModule, ToyDataModule, VOCDat
 from models.resnet50 import Resnet50
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
-from plot import plot_metrics_from_file
+from plot import plot_losses
 
 main_dir = Path(os.path.dirname(os.path.abspath(__file__)))
 
@@ -23,8 +21,6 @@ args = parser.parse_args()
 print(args)
 if args.arg_log:
     write_config_file(args)
-
-print('Dir: ',args.save_path)
 
 # Set up Logging
 if args.use_tensorboard_logger:
@@ -82,6 +78,13 @@ elif args.dataset == "TOY":
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8
+elif args.dataset == "TOY_MULTI":
+    data_path = main_dir / args.data_base_path / 'TOY_MULTI'
+    data_module = ToyData_Saved_Module(
+        data_path=data_path, segmentation=(args.toy_segmentations), 
+        train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
+    )
+    num_classes = 8 
 elif args.dataset == "TOY_SAVED":
     data_path = main_dir / args.data_base_path / 'TOY'
     data_module = ToyData_Saved_Module(
@@ -117,48 +120,31 @@ if args.save_path:
 
 
 # Set up model
-
 if args.model_to_train == "selfexplainer":
     model = SelfExplainer(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, mask_variation_regularizer=args.mask_variation_regularizer,save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, 
-         weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode, class_mask_max_area=args.class_mask_max_area, class_mask_min_area=args.class_mask_min_area, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-          save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
+         save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, 
+         use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode, class_mask_max_area=args.class_mask_max_area, class_mask_min_area=args.class_mask_min_area, weighted_sampling=args.weighted_sampling, 
+         background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
+          save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, 
+          use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
     )
     if args.checkpoint != None:
         model = model.load_from_checkpoint(
-            args.checkpoint,
-            num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
+        args.checkpoint, num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, pretrained=args.use_imagenet_pretraining, use_weighted_loss=args.use_weighted_loss, 
         use_similarity_loss=args.use_similarity_loss, similarity_regularizer=args.similarity_regularizer, use_background_loss = args.use_background_loss, bg_loss_regularizer=args.bg_loss_regularizer, 
         use_mask_area_loss=args.use_mask_area_loss, use_mask_variation_loss=args.use_mask_variation_loss, mask_variation_regularizer=args.mask_variation_regularizer,save_path=args.save_path, save_masked_images=args.save_masked_images,
-         save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, 
-         weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, use_bounding_loss=args.use_bounding_loss, 
-         similarity_loss_mode=args.similarity_loss_mode, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling,
-         save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
+        save_masks=args.save_masks, gpu=args.gpu, frozen=args.frozen, weighting_koeff=args.weighting_koeff, mask_total_area_regularizer=args.mask_total_area_regularizer, aux_classifier=args.aux_classifier, multilabel=args.multilabel, 
+        use_bounding_loss=args.use_bounding_loss, similarity_loss_mode=args.similarity_loss_mode, weighted_sampling=args.weighted_sampling, background_loss_scheduling=args.background_loss_scheduling, similarity_loss_scheduling=args.similarity_loss_scheduling, 
+        mask_loss_scheduling=args.mask_loss_scheduling, use_loss_scheduling=args.use_loss_scheduling, save_all_class_masks=args.save_all_class_masks, background_loss=args.background_loss, ncmask_total_area_regularizer=args.ncmask_total_area_regularizer, metrics_threshold=args.metrics_threshold, 
+        mask_area_constraint_regularizer=args.mask_area_constraint_regularizer, use_mask_logit_loss=args.use_mask_logit_loss, mask_logit_loss_regularizer=args.mask_logit_loss_regularizer, object_loss_weighting_params=args.object_loss_weighting_params, mask_loss_weighting_params=args.mask_loss_weighting_params
         )
-
-
 elif args.model_to_train == "resnet50":
     model = Resnet50(
         num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, 
        gpu=args.gpu, metrics_threshold=args.metrics_threshold, multilabel=args.multilabel, weighted_sampling=args.weighted_sampling, use_imagenet_pretraining=args.use_imagenet_pretraining, fix_classifier_backbone=args.fix_classifier_backbone
-    )
-
-elif args.model_to_train == 'simple':
-    model = Simple_Model(
-        num_classes=num_classes, pretrained=False, aux_classifier=args.aux_classifier, learning_rate=args.learning_rate, dataset = args.dataset, multilabel=args.multilabel
-    )
-elif args.model_to_train == "resnet50_steven":
-    model = Resnet50ClassifierModel(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_imagenet_pretraining=args.use_imagenet_pretraining, 
-        fix_classifier_backbone=args.fix_classifier_backbone, metrics_threshold=args.metrics_threshold, multilabel=args.multilabel
-    )
-elif args.model_to_train == "resnet50_steven_original":
-    model = Resnet50ClassifierModel(
-        num_classes=num_classes, dataset=args.dataset, learning_rate=args.learning_rate, use_imagenet_pretraining=args.use_imagenet_pretraining, 
-        fix_classifier_backbone=args.fix_classifier_backbone
     )
 else:
     raise Exception("Unknown model type: " + args.model_to_train)
@@ -166,7 +152,6 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    #monitor="loss" if args.dataset in ['TOY', 'COLOR'] else "val_loss",
     monitor='loss' if args.dataset == 'TOY' else 'val_loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
@@ -190,30 +175,18 @@ if args.dataset in ['OI_SMALL', 'OI', 'OI_LARGE']:
         logger = logger,
         callbacks = [early_stop_callback, k_checkpoint_callback],
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
-        #detect_anomaly = True,
-        #log_every_n_steps = 80//args.train_batch_size,
         log_every_n_steps = 5,
         val_check_interval = 100,
         limit_val_batches = 50,
         enable_checkpointing = args.checkpoint_callback
-        #amp_backend='apex',
-        #amp_level='02'
-        #profiler=profiler
     )
 else:
     trainer = pl.Trainer(
         logger = logger,
         callbacks = [early_stop_callback, k_checkpoint_callback],
         gpus = [args.gpu] if torch.cuda.is_available() else 0,
-        #detect_anomaly = True,
-        #log_every_n_steps = 80//args.train_batch_size,
         log_every_n_steps = 5,
-        # val_check_interval = 200,
-        # limit_val_batches = 100,
         enable_checkpointing = args.checkpoint_callback,
-        #amp_backend='apex',
-        #amp_level='02'
-        #profiler=profiler
     )
 
 
@@ -225,8 +198,6 @@ if args.train_model:
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'background_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss'], plot_dir+'/train_losses.png')
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'classification_loss_2Pass'], plot_dir+'/classification_losses.png')
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'classification_loss_2Pass', 'similarity_loss'], plot_dir+'/classification_similarity_losses.png')
-
-
         if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss'], plot_dir+'/val_losses.png')
     trainer.test(model=model, datamodule=data_module)

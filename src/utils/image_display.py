@@ -279,7 +279,7 @@ def show_image(image):
     plt.imshow(np.stack(image.squeeze(), axis=2))
 
 def get_target_labels(dataset, include_background_class):
-    return get_class_dictionary(dataset, include_background_class).keys()
+    return list(get_class_dictionary(dataset, include_background_class).keys())
 
 
 
