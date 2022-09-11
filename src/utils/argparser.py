@@ -27,7 +27,7 @@ def get_parser():
     parser.add_argument('--test_samples', default=100, type=int, help='Number of test samples when using synthetic dataset.')
     parser.add_argument('--rgb', default=True, type=str2bool, help='Whether the color dataset generates grayscale or color images')
     parser.add_argument('--multilabel', default=False, type=str2bool, help='Whether the objective is multilabel or singlelabel.')
-    parser.add_argument('--toy_segmentations', default=False, type=str2bool, help='Whether the toy dataset loader should provide segmentation masks.')
+    parser.add_argument('--synthetic_segmentations', default=False, type=str2bool, help='Whether the synthetic dataset loader should provide segmentation masks.')
 
 
     # Data processing parameters

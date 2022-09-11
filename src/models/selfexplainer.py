@@ -208,7 +208,7 @@ class SelfExplainer(pl.LightningModule):
         if self.use_loss_scheduling:
             self.check_loss_schedulings()
         
-        if self.dataset in ['TOY', 'VOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'TOY_MULTI']:
+        if self.dataset in ['SYN', 'VOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'SYN_MULTI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -339,7 +339,7 @@ class SelfExplainer(pl.LightningModule):
 
 
     def validation_step(self, batch, batch_idx):
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
+        if self.dataset in ['SYN', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
             image, annotations = batch
         else:
             image, seg, annotations = batch
@@ -456,7 +456,7 @@ class SelfExplainer(pl.LightningModule):
         # Might have some weird stuff going on.
 
         self.test_i += 1
-        if self.dataset in ['TOY', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'TOY_SAVED', 'TOY_MULTI']:
+        if self.dataset in ['SYN', 'VOC', 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE', 'SYN_SAVED', 'SYN_MULTI']:
             image, annotations = batch
         else:
             image, seg, annotations = batch

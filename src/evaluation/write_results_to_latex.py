@@ -121,7 +121,7 @@ if find_best_metric:
     # for metric, (best_m, best_idx) in best_metrics.items():
     #     rows[best_idx][rows[0].index(metric)] = f'\\bfseries{{{float(rows[best_idx][rows[0].index(metric)]):.3f}}}'
 table.add_rows(rows)
-latex_table = latextable.draw_latex(table, caption='Different models on Toy dataset')
+latex_table = latextable.draw_latex(table, caption='Different models on Synthetic dataset')
 
 latex_table = latex_table.replace('_', '\_')
 print(latex_table)

@@ -16,7 +16,7 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
-dataset = 'VOC' # one of: ['VOC', 'TOY']
+dataset = 'VOC' # one of: ['VOC', 'SYN']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
@@ -24,8 +24,8 @@ classifier_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
-TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
-TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+SYN_segmentations_path = Path(data_base_path / 'SYN/segmentations/textures/')
+SYN_MULTI_segmentations_path = Path(data_base_path / 'SYN_MULTI/segmentations/textures/')
 OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
@@ -43,14 +43,14 @@ if dataset == "VOC":
     num_classes = 20
     data_path = Path(data_base_path) / "VOC2007"
     data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == 'TOY':
+elif dataset == 'SYN':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY"
-    data_module = ToyData_Saved_Module(data_path=data_path)
-elif dataset == 'TOY_MULTI':
+    data_path = Path(data_base_path) / "SYN"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
+elif dataset == 'SYN_MULTI':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY_MULTI"
-    data_module = ToyData_Saved_Module(data_path=data_path)
+    data_path = Path(data_base_path) / "SYN_MULTI"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
 elif dataset == 'OI_SMALL':
     num_classes = 3
     data_path = Path(data_base_path) / "OI_SMALL"
@@ -79,7 +79,7 @@ class GradCAMModel(pl.LightningModule):
         self.use_cuda = (torch.cuda.device_count() > 0)
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='SYN' if dataset=='SYN_MULTI' else dataset, weighted_sampling=False, fix_classifier_backbone=False, multilabel = True if dataset in ['SYN_MULTI', 'VOC'] else False)
             self.target_layer = self.model.feature_extractor[-2][-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -96,16 +96,16 @@ class GradCAMModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         torch.set_grad_enabled(True)
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
-        filename = get_filename_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
+        targets = get_targets_from_annotations(annotations, dataset='SYN' if dataset=='SYN_MULTI' else dataset)
+        filename = get_filename_from_annotations(annotations, dataset='SYN' if dataset=='SYN_MULTI' else dataset)
 
         if mode == 'seg':
             if dataset == "VOC":
                 segmentation_filename = VOC_segmentations_path / (os.path.splitext(filename)[0] + '.png')
-            elif dataset == "TOY":
-                segmentation_filename = TOY_segmentations_path / (filename + '.png')
-            elif dataset == "TOY_MULTI":
-                segmentation_filename = TOY_MULTI_segmentations_path / (filename + '.png')
+            elif dataset == "SYN":
+                segmentation_filename = SYN_segmentations_path / (filename + '.png')
+            elif dataset == "SYN_MULTI":
+                segmentation_filename = SYN_MULTI_segmentations_path / (filename + '.png')
             
             elif dataset == "OI_SMALL":
                 segmentation_filename = OI_SMALL_segmentations_path / (filename + '.png')
@@ -134,7 +134,7 @@ class GradCAMModel(pl.LightningModule):
             total_time += end_time - start_time
 
             print(save_path)
-            save_mask(saliency_map, save_path / filename, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
+            save_mask(saliency_map, save_path / filename, dataset='SYN' if dataset=='SYN_MULTI' else dataset)
 
         elif mode == 'classes':
             target_classes = [index for index, value in enumerate(targets[0]) if value == 1.0]

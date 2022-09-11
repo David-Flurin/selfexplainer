@@ -21,8 +21,8 @@ explainer_classifier_checkpoint = '/users/dniederb/selfexplainer/src/checkpoints
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
-TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
-TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+SYN_segmentations_path = Path(data_base_path / 'SYN/segmentations/textures/')
+SYN_MULTI_segmentations_path = Path(data_base_path / 'SYN_MULTI/segmentations/textures/')
 OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
@@ -46,14 +46,14 @@ elif dataset == "OI_LARGE":
     num_classes = 20
     data_path = Path(data_base_path) / "OI_LARGE"
     data_module = OIDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == "TOY":
+elif dataset == "SYN":
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY"
-    data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
-elif dataset == "TOY_MULTI":
+    data_path = Path(data_base_path) / "SYN"
+    data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+elif dataset == "SYN_MULTI":
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY_MULTI"
-    data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    data_path = Path(data_base_path) / "SYN_MULTI"
+    data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
 else:
     raise Exception("Unknown dataset " + dataset)
 

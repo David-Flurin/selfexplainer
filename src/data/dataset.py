@@ -13,7 +13,7 @@ from xml.etree import cElementTree as ElementTree
 import json
 import numpy as np
 
-from toy_dataset import generator
+from synthetic_dataset import generator
 from color_dataset import generator as color_generator
 
 
@@ -59,7 +59,7 @@ class OIDataset(Dataset):
     def __len__(self):
         return len(self.images)
 
-class ToyDataset(Dataset):
+class SyntheticDataset(Dataset):
     def __init__(self, epoch_length, transform_fn=None, segmentation=True, multilabel=False, target='texture'):
         self.ids = range(0, epoch_length)
         self.transform = transform_fn
@@ -101,7 +101,7 @@ class ToyDataset(Dataset):
         return len(self.ids)
 
 
-class ToyDataset_Saved(Dataset):
+class SyntheticDataset_Saved(Dataset):
     def __init__(self, root, mode, transform_fn=None, segmentation=False, target='texture'):
         self.root = root
         self.ids = []

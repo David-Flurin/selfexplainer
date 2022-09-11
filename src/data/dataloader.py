@@ -13,7 +13,7 @@ from typing import Optional
 from pathlib import Path
 from xml.etree.ElementTree import parse as ETparse
 from utils.helper import get_class_dictionary
-from data.dataset import ColorDataset, ToyDataset, ToyDataset_Saved, OIDataset
+from data.dataset import ColorDataset, SyntheticDataset, SyntheticDataset_Saved, OIDataset
 
 class VOCDataModule(pl.LightningDataModule):
 
@@ -176,7 +176,7 @@ class OIDataModule(pl.LightningDataModule):
         img_weights =  [class_weights[targets == 1].sum() / targets.sum() for targets in img_classes.values()]
         return img_weights
 
-class ToyDataModule(pl.LightningDataModule):
+class SyntheticDataModule(pl.LightningDataModule):
 
     def __init__(self, epoch_length, test_samples, segmentation=False, multilabel=False, train_batch_size=16, val_batch_size=16, test_batch_size=16, use_data_augmentation=False):
         super().__init__()
@@ -197,8 +197,8 @@ class ToyDataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        self.train = ToyDataset(self.epoch_length, transform_fn=self.train_transformer, segmentation=self.segmentation, multilabel=self.multilabel)
-        self.test = ToyDataset(self.test_samples, transform_fn=self.test_transformer, segmentation=self.segmentation, multilabel=self.multilabel)
+        self.train = SyntheticDataset(self.epoch_length, transform_fn=self.train_transformer, segmentation=self.segmentation, multilabel=self.multilabel)
+        self.test = SyntheticDataset(self.test_samples, transform_fn=self.test_transformer, segmentation=self.segmentation, multilabel=self.multilabel)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
@@ -210,7 +210,7 @@ class ToyDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(self.test, batch_size=self.test_batch_size, collate_fn=collate_fn, num_workers=4, pin_memory=torch.cuda.is_available())
 
-class ToyData_Saved_Module(pl.LightningDataModule):
+class SyntheticData_Saved_Module(pl.LightningDataModule):
 
     def __init__(self, data_path, segmentation=False, train_batch_size=16, val_batch_size=16, test_batch_size=1, use_data_augmentation=False):
         super().__init__()
@@ -229,9 +229,9 @@ class ToyData_Saved_Module(pl.LightningDataModule):
         pass
 
     def setup(self, stage: Optional[str] = None):
-        self.train = ToyDataset_Saved(self.data_path, 'train', transform_fn=self.train_transformer, segmentation=self.segmentation)
-        self.val = ToyDataset_Saved(self.data_path, 'val', transform_fn=self.test_transformer, segmentation=self.segmentation)
-        self.test = ToyDataset_Saved(self.data_path, 'test', transform_fn=self.test_transformer, segmentation=self.segmentation)
+        self.train = SyntheticDataset_Saved(self.data_path, 'train', transform_fn=self.train_transformer, segmentation=self.segmentation)
+        self.val = SyntheticDataset_Saved(self.data_path, 'val', transform_fn=self.test_transformer, segmentation=self.segmentation)
+        self.test = SyntheticDataset_Saved(self.data_path, 'test', transform_fn=self.test_transformer, segmentation=self.segmentation)
 
     def train_dataloader(self):
         return DataLoader(self.train, batch_size=self.train_batch_size, collate_fn=collate_fn, shuffle=True, num_workers=4, pin_memory=torch.cuda.is_available())

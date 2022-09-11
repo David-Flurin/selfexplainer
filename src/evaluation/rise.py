@@ -16,14 +16,14 @@ from models.resnet50 import Resnet50
 from torchray.attribution.rise import rise
 
 ############################## Change to your settings ##############################
-dataset = 'OI' # one of: ['VOC', 'TOY']
+dataset = 'OI' # one of: ['VOC', 'SYN']
 save_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/baselines/')
 data_base_path = '/scratch/snx3000/dniederb/datasets/'
 classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
 classifier_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/oi_pretrained.ckpt'
 VOC_segmentations_directory = '/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/'
-TOY_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY/segmentations/textures/"
-TOY_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/TOY_MULTI/segmentations/textures/"
+SYN_segmentations_directory = "/scratch/snx3000/dniederb/datasets/SYN/segmentations/textures/"
+SYN_MULTI_segmentations_directory = "/scratch/snx3000/dniederb/datasets/SYN_MULTI/segmentations/textures/"
 OI_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI/test/segmentations/'
 OI_LARGE_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_LARGE/test/segmentations/'
 OI_SMALL_segmentations_directory = '/scratch/snx3000/dniederb/datasets/OI_SMALL/test/segmentations/'
@@ -39,14 +39,14 @@ if dataset == "VOC":
     num_classes = 20
     data_path = Path(data_base_path) / "VOC2007"
     data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == 'TOY':
+elif dataset == 'SYN':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY"
-    data_module = ToyData_Saved_Module(data_path=data_path)
-elif dataset == 'TOY_MULTI':
+    data_path = Path(data_base_path) / "SYN"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
+elif dataset == 'SYN_MULTI':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY_MULTI"
-    data_module = ToyData_Saved_Module(data_path=data_path)
+    data_path = Path(data_base_path) / "SYN_MULTI"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
 elif dataset == 'OI_SMALL':
     num_classes = 3
     data_path = Path(data_base_path) / "OI_SMALL"
@@ -73,7 +73,7 @@ class RISEModel(pl.LightningModule):
         super().__init__()
         # Set up model
         if classifier_type == "resnet50":
-            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='TOY' if dataset=='TOY_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['TOY_MULTI', 'VOC'] else False)
+            self.model = Resnet50.load_from_checkpoint(classifier_checkpoint, num_classes=num_classes, dataset='SYN' if dataset=='SYN_MULTI' else dataset, weighted_sampling=False, multiclass = True if dataset in ['SYN_MULTI', 'VOC'] else False)
             self.target_layer = self.model.model.layer4[-1]
         else:
             raise Exception("Unknown classifier type " + classifier_type)
@@ -89,15 +89,15 @@ class RISEModel(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
         image, annotations = batch
-        targets = get_targets_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
-        filename = get_filename_from_annotations(annotations, dataset='TOY' if dataset=='TOY_MULTI' else dataset)
+        targets = get_targets_from_annotations(annotations, dataset='SYN' if dataset=='SYN_MULTI' else dataset)
+        filename = get_filename_from_annotations(annotations, dataset='SYN' if dataset=='SYN_MULTI' else dataset)
         if mode == 'seg': 
             if dataset == "VOC":
                 segmentation_filename = VOC_segmentations_directory + os.path.splitext  (filename)[0] + '.png'
-            elif dataset == "TOY":
-                segmentation_filename = TOY_segmentations_directory + filename + '.png'
-            elif dataset == "TOY_MULTI":
-                segmentation_filename = TOY_MULTI_segmentations_directory + filename + '.png'
+            elif dataset == "SYN":
+                segmentation_filename = SYN_segmentations_directory + filename + '.png'
+            elif dataset == "SYN_MULTI":
+                segmentation_filename = SYN_MULTI_segmentations_directory + filename + '.png'
             elif dataset == "OI_SMALL":
                 segmentation_filename = OI_SMALL_segmentations_directory + filename + '.png'
             elif dataset == "OI":

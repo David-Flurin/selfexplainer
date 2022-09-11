@@ -9,7 +9,7 @@ import matplotlib as mpl
 
 from PIL import Image
 
-from .helper import get_class_dictionary, get_small_OI_dictionary, get_toy_target_dictionary, get_color_dictionary
+from .helper import get_class_dictionary
 
 def show_max_activation(image, segmentations, class_id):
     nat_image = get_unnormalized_image(image)

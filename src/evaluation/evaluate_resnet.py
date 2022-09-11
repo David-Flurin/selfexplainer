@@ -40,14 +40,14 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
         num_classes = 3
         data_path = Path(data_base_path) / "OI_SMALL"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
-    elif dataset == "TOY":
+    elif dataset == "SYN":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
-    elif dataset == "TOY_MULTI":
+        data_path = Path(data_base_path) / "SYN"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "SYN_MULTI":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY_MULTI"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+        data_path = Path(data_base_path) / "SYN_MULTI"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
     else:
         raise Exception("Unknown dataset " + dataset)
 
@@ -88,7 +88,7 @@ def compute_scores(dataset, checkpoint, checkpoint_base_path, multilabel):
 ############################################## Change to your settings ##########################################################
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-dataset = "OI_LARGE" # ['VOC', 'VOC2012', 'TOY', 'TOY_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
+dataset = "OI_LARGE" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = False
 
 checkpoints_base_path = "/scratch/snx3000/dniederb/experiments/thesis/resnet50/OI_LARGE/check/tb_logs/Selfexplainer/version_0/checkpoints/"
@@ -118,10 +118,10 @@ for checkpoint in checkpoints:
             data_path = data_base_path / "VOC2007"
         elif dataset == 'VOC2012':
             data_path = data_base_path / "VOC2012"
-        elif dataset == 'TOY':
-            data_path = data_base_path / "TOY"
-        elif dataset == 'TOY_MULTI':
-            data_path = data_base_path / "TOY_MULTI"
+        elif dataset == 'SYN':
+            data_path = data_base_path / "SYN"
+        elif dataset == 'SYN_MULTI':
+            data_path = data_base_path / "SYN_MULTI"
         elif dataset == 'OI_SMALL':
             data_path = data_base_path / "OI_SMALL"
         elif dataset == 'OI':

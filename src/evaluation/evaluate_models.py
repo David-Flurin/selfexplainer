@@ -43,14 +43,14 @@ def compute_masks_and_f1(save_path, dataset, checkpoint, checkpoint_base_path, s
         num_classes = 20
         data_path = Path(data_base_path) / "OI_LARGE"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
-    elif dataset == "TOY":
+    elif dataset == "SYN":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
-    elif dataset == "TOY_MULTI":
+        data_path = Path(data_base_path) / "SYN"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "SYN_MULTI":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY_MULTI"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+        data_path = Path(data_base_path) / "SYN_MULTI"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
     else:
         raise Exception("Unknown dataset " + dataset)
 
@@ -121,14 +121,14 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
         num_classes = 20
         data_path = Path(data_base_path) / "OI_LARGE"
         data_module = OIDataModule(data_path=data_path, test_batch_size=1)
-    elif dataset == "TOY":
+    elif dataset == "SYN":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
-    elif dataset == "TOY_MULTI":
+        data_path = Path(data_base_path) / "SYN"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+    elif dataset == "SYN_MULTI":
         num_classes = 8
-        data_path = Path(data_base_path) / "TOY_MULTI"
-        data_module = ToyData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
+        data_path = Path(data_base_path) / "SYN_MULTI"
+        data_module = SyntheticData_Saved_Module(data_path=data_path, segmentation=False, test_batch_size=1)
     else:
         raise Exception("Unknown dataset " + dataset)
 
@@ -167,13 +167,13 @@ data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
 VOC2012_segmentations_path = Path(data_base_path / 'VOC2012/VOCdevkit/VOC2012/SegmentationClass/')
-TOY_segmentations_path = Path(data_base_path / 'TOY/segmentations/textures/')
-TOY_MULTI_segmentations_path = Path(data_base_path / 'TOY_MULTI/segmentations/textures/')
+SYN_segmentations_path = Path(data_base_path / 'SYN/segmentations/textures/')
+SYN_MULTI_segmentations_path = Path(data_base_path / 'SYN_MULTI/segmentations/textures/')
 OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "VOC" # ['VOC', 'VOC2012', 'TOY', 'TOY_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
+dataset = "VOC" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = True
 
 checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/'
@@ -211,12 +211,12 @@ for checkpoint in checkpoints:
         if dataset == 'VOC2012':
             data_path = data_base_path / "VOC2012"
             segmentations_path = VOC2012_segmentations_path
-        elif dataset == 'TOY':
-            data_path = data_base_path / "TOY"
-            segmentations_path = TOY_segmentations_path
-        elif dataset == 'TOY_MULTI':
-            data_path = data_base_path / "TOY_MULTI"
-            segmentations_path = TOY_MULTI_segmentations_path
+        elif dataset == 'SYN':
+            data_path = data_base_path / "SYN"
+            segmentations_path = SYN_segmentations_path
+        elif dataset == 'SYN_MULTI':
+            data_path = data_base_path / "SYN_MULTI"
+            segmentations_path = SYN_MULTI_segmentations_path
         elif dataset == 'OI_SMALL':
             data_path = data_base_path / "OI_SMALL"
             segmentations_path = OI_SMALL_segmentations_path

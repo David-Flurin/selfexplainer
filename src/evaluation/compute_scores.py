@@ -11,7 +11,7 @@ from pathlib import Path
 
 from utils.assessment_metrics import prob_entropy, saliency, continuous_IOU, discrete_IOU, prob_sparsity, discrete_f1, soft_f1, combined_saliency, background_entropy
 from utils.assessment_metrics import mask_coverage, background_coverage, overlap, sim_ratio, f1s, auc
-from data.dataloader import OIDataModule, ToyData_Saved_Module, VOCDataModule, VOC2012DataModule, ToyDataModule
+from data.dataloader import OIDataModule, SyntheticData_Saved_Module, VOCDataModule, VOC2012DataModule, SyntheticDataModule
 from models.resnet50 import Resnet50
 from utils.helper import get_class_dictionary
 
@@ -29,9 +29,9 @@ def get_model_and_data(data_path, dataset_name, model_name, model_path):
     if dataset_name == "VOC":
         data_module = VOCDataModule(data_path, test_batch_size=1)
         model = Resnet50.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name)
-    elif dataset_name in ["TOY", "TOY_MULTI"]:
-        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
-        model = Resnet50.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'TOY_MULTI', weighted_sampling=False)
+    elif dataset_name in ["SYN", "SYN_MULTI"]:
+        data_module = SyntheticData_Saved_Module(data_path, test_batch_size=1)
+        model = Resnet50.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, multilabel = dataset_name == 'SYN_MULTI', weighted_sampling=False)
     elif dataset_name == 'OI_SMALL':
         data_module = OIDataModule(data_path, test_batch_size=1)
         model = Resnet50.load_from_checkpoint(model_path, num_classes=3, dataset=dataset_name)
@@ -56,11 +56,11 @@ def get_selfexplainer_and_data(data_path, dataset_name, model_name, model_path, 
     elif dataset_name == "VOC2012":
         data_module = VOC2012DataModule(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=20, dataset=dataset_name, multilabel=multilabel, pretrained=False, aux_classifier=aux_classifier)
-    elif dataset_name == "TOY":
-        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
+    elif dataset_name == "SYN":
+        data_module = SyntheticData_Saved_Module(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
-    elif dataset_name == "TOY_MULTI":
-        data_module = ToyData_Saved_Module(data_path, test_batch_size=1)
+    elif dataset_name == "SYN_MULTI":
+        data_module = SyntheticData_Saved_Module(data_path, test_batch_size=1)
         model = SelfExplainer.load_from_checkpoint(model_path, num_classes=8, dataset=dataset_name, pretrained=False, multilabel=multilabel, aux_classifier=aux_classifier)
     elif dataset_name == "OI_SMALL":
         data_module = OIDataModule(data_path, test_batch_size=1)

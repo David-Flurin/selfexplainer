@@ -22,7 +22,7 @@ from tqdm import tqdm
 ############################## Change to your settings ##############################
 mask_base_path = '/scratch/snx3000/dniederb/evaluation_data/VOC/sanity_check/'
 
-dataset = 'VOC' # one of: ['VOC', 'TOY']
+dataset = 'VOC' # one of: ['VOC', 'SYN']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 classifier_type = 'selfexplainer' # one of: ['vgg16', 'resnet50']
 
@@ -38,18 +38,14 @@ if dataset == "VOC":
     num_classes = 20
     data_path = Path(data_base_path) / "VOC2007"
     data_module = VOCDataModule(data_path=data_path, test_batch_size=1)
-elif dataset == "COCO":
-    num_classes = 91
-    data_path = Path(data_base_path) / "COCO2014"
-    data_module = COCODataModule(data_path=data_path, test_batch_size=1)
-elif dataset == 'TOY':
+elif dataset == 'SYN':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY"
-    data_module = ToyData_Saved_Module(data_path=data_path)
-elif dataset == 'TOY_MULTI':
+    data_path = Path(data_base_path) / "SYN"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
+elif dataset == 'SYN_MULTI':
     num_classes = 8
-    data_path = Path(data_base_path) / "TOY_MULTI"
-    data_module = ToyData_Saved_Module(data_path=data_path)
+    data_path = Path(data_base_path) / "SYN_MULTI"
+    data_module = SyntheticData_Saved_Module(data_path=data_path)
 elif dataset == 'OI_SMALL':
     num_classes = 3
     data_path = Path(data_base_path) / "OI_SMALL"

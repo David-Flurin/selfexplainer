@@ -1,7 +1,7 @@
 import torch
 import random
 
-def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, toy_target='texture'):
+def get_targets_from_segmentations(segmentation, dataset, num_classes, include_background_class=True, gpu=0, synthetic_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
 
     if segmentation.dim() == 3:
@@ -10,9 +10,9 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
         b,h,w,_ = segmentation.size()
     targets = torch.zeros((b, num_classes, h, w), device=device)
 
-    if dataset == "TOY":
+    if dataset == "SYN":
         for i in range(b):
-            for c,color in enumerate(get_toy_class_colors(include_background_class=include_background_class, toy_target=toy_target)):
+            for c,color in enumerate(get_synthetic_class_colors(include_background_class=include_background_class, synthetic_target=synthetic_target)):
                 targets[i, c] = torch.where(torch.all((segmentation[i] == torch.tensor(color, device=device)), dim=-1), 1., 0.)
 
     if dataset == "COLOR":
@@ -40,7 +40,7 @@ def get_targets_from_segmentations(segmentation, dataset, num_classes, include_b
 def get_filename_from_annotations(annotations, dataset):
     if dataset in ["VOC", 'SMALLVOC', 'VOC2012', 'OI_SMALL', 'OI', 'OI_LARGE']:
         filename = annotations[0]['annotation']['filename']
-    elif dataset in ["TOY", 'TOY_SAVED', 'TOY_MULTI', 'COLOR']:
+    elif dataset in ["SYN", 'SYN_SAVED', 'SYN_MULTI', 'COLOR']:
         filename = annotations[0]['filename']
     else:
         raise Exception("Unknown dataset: " + dataset)
@@ -87,11 +87,11 @@ def get_small_OI_dictionary(include_background_class):
 
     return target_dict
 
-def get_toy_target_dictionary(include_background_class, toy_target):
-    if toy_target == 'texture':
+def get_synthetic_target_dictionary(include_background_class, synthetic_target):
+    if synthetic_target == 'texture':
         target_dict = {'bubblewrap' : 0, 'forest' : 1, 'fur' : 2, 'moss' : 3, 'paint' : 4, 'rock' : 5, 'wood' : 6, 'splatter': 7 
                 }
-    elif toy_target == 'shape':
+    elif synthetic_target == 'shape':
         target_dict = {'circle' : 0, 'triangle' : 1, 'square' : 2, 'pentagon' : 3, 'hexagon' : 4, 'octagon' : 5, 'heart' : 6, 'star': 7, 'cross': 8
                 }
     else:
@@ -113,7 +113,7 @@ def get_color_dictionary(include_background_class, rgb=True):
     
     return target
 
-def get_class_dictionary(dataset, include_background_class=False, toy_target='texture', rgb=True):
+def get_class_dictionary(dataset, include_background_class=False, synthetic_target='texture', rgb=True):
     if dataset in ['VOC', 'VOC2012']:
         return get_VOC_dictionary(include_background_class=include_background_class)
     elif dataset == 'OI':
@@ -122,15 +122,15 @@ def get_class_dictionary(dataset, include_background_class=False, toy_target='te
         return get_large_OI_dictionary(include_background_class=include_background_class)
     elif dataset in ['SMALLVOC', 'OI_SMALL']:
         return get_small_OI_dictionary(include_background_class=include_background_class)
-    elif dataset in ['TOY', 'TOY_SAVED', 'TOY_MULTI']:
-        return get_toy_target_dictionary(include_background_class=include_background_class, toy_target=toy_target)
+    elif dataset in ['SYN', 'SYN_SAVED', 'SYN_MULTI']:
+        return get_synthetic_target_dictionary(include_background_class=include_background_class, synthetic_target=synthetic_target)
     elif dataset == 'COLOR':
         return get_color_dictionary(include_background_class=include_background_class, rgb=rgb)
     else:
         raise ValueError('Dataset not known.')
 
 
-def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, toy_target='texture'):
+def get_targets_from_annotations(annotations, dataset, include_background_class=False, gpu=0, synthetic_target='texture'):
     device = torch.device(f'cuda:{gpu}' if torch.cuda.is_available() else "cpu")
     
     if dataset in ["VOC", 'VOC2012', 'OI_LARGE']:
@@ -187,14 +187,14 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
                 target_vectors[i][target] = 1.0
 
 
-    elif dataset in ["TOY", "TOY_SAVED", "TOY_MULTI"]:
-        target_dict = get_toy_target_dictionary(include_background_class=False, toy_target=toy_target)
+    elif dataset in ["SYN", "SYN_SAVED", "SYN_MULTI"]:
+        target_dict = get_synthetic_target_dictionary(include_background_class=False, synthetic_target=synthetic_target)
         batch_size = len(annotations)
         target_vectors = torch.full((batch_size, 8), fill_value=0.0, device=device)
         for i in range(batch_size):
             targets = annotations[i]['objects']
             for obj in targets:
-                if toy_target == 'texture':
+                if synthetic_target == 'texture':
                     name = obj[1]
                 else:
                     name = obj[0]
@@ -211,10 +211,10 @@ def get_targets_from_annotations(annotations, dataset, include_background_class=
 
     return target_vectors
 
-def get_toy_class_colors(include_background_class, toy_target):
-    if toy_target == 'texture':
+def get_synthetic_class_colors(include_background_class, synthetic_target):
+    if synthetic_target == 'texture':
         class_colors = [[238, 30, 218], [11, 174, 227], [91, 187, 25], [104, 30, 191], [171, 88, 222], [253, 114, 104], [133, 10, 11], [230, 132, 230]]
-    elif toy_target == 'shape':
+    elif synthetic_target == 'shape':
         class_colors = [[208, 70, 121], [137, 218, 162], [115, 10, 147], [32, 201, 254], [215, 0, 57], [227, 161, 150], [135, 239, 205], [18, 222, 136], [111, 21, 62]]
     else:
         raise ValueError('Target type must be texture or shape')

@@ -8,7 +8,7 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.profiler import AdvancedProfiler
 from pathlib import Path
 
-from data.dataloader import ColorDataModule, OIDataModule, ToyDataModule, VOCDataModule, ToyData_Saved_Module, VOC2012DataModule
+from data.dataloader import ColorDataModule, OIDataModule, SyntheticDataModule, VOCDataModule, SyntheticData_Saved_Module, VOC2012DataModule
 from models.resnet50 import Resnet50
 from utils.argparser import get_parser, write_config_file
 from models.selfexplainer import SelfExplainer
@@ -72,29 +72,29 @@ elif args.dataset == "SMALLVOC":
         test_batch_size=args.test_batch_size, use_data_augmentation=args.use_data_augmentation
     )
     num_classes = 3
-elif args.dataset == "TOY":
-    data_module = ToyDataModule(
-        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), multilabel=args.multilabel, 
+elif args.dataset == "SYN":
+    data_module = SyntheticDataModule(
+        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.synthetic_segmentations), multilabel=args.multilabel, 
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8
-elif args.dataset == "TOY_MULTI":
-    data_path = main_dir / args.data_base_path / 'TOY_MULTI'
-    data_module = ToyData_Saved_Module(
-        data_path=data_path, segmentation=(args.toy_segmentations), 
+elif args.dataset == "SYN_MULTI":
+    data_path = main_dir / args.data_base_path / 'SYN_MULTI'
+    data_module = SyntheticData_Saved_Module(
+        data_path=data_path, segmentation=(args.synthetic_segmentations), 
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8 
-elif args.dataset == "TOY_SAVED":
-    data_path = main_dir / args.data_base_path / 'TOY'
-    data_module = ToyData_Saved_Module(
-        data_path=data_path, segmentation=(args.toy_segmentations), 
+elif args.dataset == "SYN_SAVED":
+    data_path = main_dir / args.data_base_path / 'SYN'
+    data_module = SyntheticData_Saved_Module(
+        data_path=data_path, segmentation=(args.synthetic_segmentations), 
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size
     )
     num_classes = 8 
 elif args.dataset == "COLOR":
     data_module = ColorDataModule(
-        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.toy_segmentations), multilabel=args.multilabel,
+        epoch_length=args.epoch_length, test_samples=args.test_samples, segmentation=(args.synthetic_segmentations), multilabel=args.multilabel,
         train_batch_size=args.train_batch_size, val_batch_size=args.val_batch_size, test_batch_size=args.test_batch_size, rgb=args.rgb
     )
     num_classes = 3
@@ -152,7 +152,7 @@ else:
 
 # Define Early Stopping condition
 early_stop_callback = EarlyStopping(
-    monitor='loss' if args.dataset == 'TOY' else 'val_loss',
+    monitor='loss' if args.dataset == 'SYN' else 'val_loss',
     min_delta=args.early_stop_min_delta,
     patience=args.early_stop_patience,
     verbose=False,
@@ -165,7 +165,7 @@ checkpoint_callback = ModelCheckpoint(
 )
 
 k_checkpoint_callback = ModelCheckpoint(
-    monitor='loss' if args.dataset == 'TOY' else 'val_loss',
+    monitor='loss' if args.dataset == 'SYN' else 'val_loss',
     save_top_k=10
 )
 
@@ -198,7 +198,7 @@ if args.train_model:
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'background_loss', 'similarity_loss', 'mask_area_loss', 'mask_loss', 'inv_mask_loss', 'bg_logits_loss'], plot_dir+'/train_losses.png')
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'classification_loss_2Pass'], plot_dir+'/classification_losses.png')
         plot_losses(logger.log_dir, ['classification_loss_1Pass', 'classification_loss_2Pass', 'similarity_loss'], plot_dir+'/classification_similarity_losses.png')
-        if args.dataset not in ['TOY', 'COLOR', 'TOY_SAVED']:
+        if args.dataset not in ['SYN', 'COLOR', 'SYN_SAVED']:
            plot_losses(logger.log_dir, ['val_classification_loss', 'val_background_loss', 'val_similarity_loss', 'val_mask_area_loss', 'val_mask_loss', 'val_inv_mask_loss', 'val_bg_logits_loss'], plot_dir+'/val_losses.png')
     trainer.test(model=model, datamodule=data_module)
 else:

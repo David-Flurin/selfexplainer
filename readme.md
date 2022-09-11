@@ -8,5 +8,6 @@ This repository contains the code to train the Self-Explainer and conduct the ex
 - models/: Contains Self-Explainer and Resnet50 modes
 - data/: Defined dataloaders and datasets for the different datasets the Self-Explainer was tested on
 - evaluation/: Different scripts used for the evaluation of the Self-Explainer and baselines
-- utils:/ Different helper functions
--  
+- utils/: Different helper functions
+- synthetic_dataset/: Contains code to generate samples of the synthetic dataset.
+- color_dataset/: Pixel dataset used in the early stage of the thesis to verify certain loss properties. 
