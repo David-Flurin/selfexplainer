@@ -16,10 +16,10 @@ from pytorch_grad_cam import GradCAM
 from pytorch_grad_cam.utils.image import *
 
 ############################## Change to your settings ##############################
-dataset = 'VOC' # one of: ['VOC', 'SYN']
+dataset = 'VOC' # one of: ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
-classifier_type = 'resnet50' # one of: ['vgg16', 'resnet50']
+classifier_type = 'resnet50' 
 classifier_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt'
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')

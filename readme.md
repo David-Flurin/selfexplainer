@@ -7,8 +7,8 @@ This repository contains the code to train the Self-Explainer and conduct the ex
 - plot.py: Some plotting functions used for the report
 - models/: Contains Self-Explainer and Resnet50 modes
 - data/: Defined dataloaders and datasets for the different datasets the Self-Explainer was tested on
-- evaluation/: Different scripts used for the evaluation of the Self-Explainer and baselines
-- utils/: Different helper functions
+- evaluation/: Various scripts used for the evaluation of the Self-Explainer and baselines
+- utils/: Various helper functions
 - synthetic_dataset/: Contains code to generate samples of the synthetic dataset.
 - color_dataset/: Pixel dataset used in the early stage of the thesis to verify certain loss properties. 
 
@@ -21,7 +21,7 @@ python main.py -c config_files/configuration.cfg
 To reproduce the results from the report, use the configuration files in the *config_files/* directory for the respective dataset. To change the synthetic dataset from single-label to multi-label mode, set the configuration field *multilabel=True*.
 
 ## Evaluate model
-To evaluate a model, use the file *evaluate_selfexplainer.py* in the *evaluation/* directory. Change the settings defined in the file to fit your environment. The attribution masks are first generated and then evaluated with a bunch of metrics (see file *compute_scores.py*). To print averaged metrics, run
+To evaluate a model, use the file *evaluate_selfexplainer.py* in the *evaluation/* directory. Change the settings defined in the file (from line 164-192) to fit your environment. The attribution masks are first generated and then evaluated with a bunch of metrics (see file *compute_scores.py*). To print averaged metrics, run
 ```
 python print_selfexplainer_mean_scores.py path_to_results_file
 ```
