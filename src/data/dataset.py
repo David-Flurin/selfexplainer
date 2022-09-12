@@ -66,7 +66,7 @@ class SyntheticDataset(Dataset):
         self.segmentation = segmentation
         self.target = target
         base = '/'.join(generator.__file__.split('/')[0:-1])
-        self.generator = generator.Generator(pathlib.Path(base, 'foreground.txt'), pathlib.Path(base, 'background.txt'))
+        self.generator = generator.Generator()
         self.shapes = {}
         self.foreground_textures = {}
         self.background_textures = {}

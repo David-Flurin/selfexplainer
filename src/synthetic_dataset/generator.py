@@ -10,6 +10,7 @@ from tqdm import tqdm
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import hashlib
+import pathlib
 
 
 def get_i(idx, list):
@@ -28,16 +29,19 @@ class Generator:
     shapes = [Circle, Triangle, Square, Pentagon, Hexagon, Heart, Cross, Star]
 
     base = '../synthetic_dataset_instance'
+    f_textures = pathlib.Path(__file__).parent / 'foreground.txt'
+    b_textures = pathlib.Path(__file__).parent / 'background.txt'
     img_size = (224,224)
     min_radius = 30
     max_radius = 80
 
-    def __init__(self, f_textures, b_textures):
+    def __init__(self):
+
 
         
-        with open(f_textures, 'r') as f:
+        with open(self.f_textures, 'r') as f:
             f_textures_files = f.read().splitlines()
-        with open(b_textures, 'r') as f:
+        with open(self.b_textures, 'r') as f:
             b_textures_files = f.read().splitlines()
 
         base_dir = '/'.join(__file__.split('/')[0:-1])
@@ -57,19 +61,7 @@ class Generator:
         self.num_f_tex = len(self.f_textures)
         self.num_b_tex = len(self.b_textures)
 
-
-    def create_easy(self, total, proportions):
-        mkdir(Path(self.base, 'images'))
-        mkdir(Path(self.base, 'segmentations'))
-        mkdir(Path(self.base, 'annotations'))
-
-        train = []
-        val = []
-        test = []
-        for i in range(total):
-            sample = self.generate_sample(1)
-            self.__save(sample)
-            
+           
         
     def generate_sample(self, num_objects):
         if num_objects > 2:
@@ -80,13 +72,17 @@ class Generator:
         return self.__generate(get_i(idx, self.shapes))
 
     
-    def create_set(self, number_per_shape, proportions, multiclass=False):
+    def create_set(self, save_path, number_per_shape, proportions, multilabel=False):
         '''Create a set of samples.
         Parameters:
+            save_path (str)              -- Where to save dataset
             number_per_shape (int)       -- Number of samples generates for each shape
             proportions (List of float)  -- Proportions of samples for train, validation and test set 
             multilabel (bool)            -- Whether to have multilabel samples in the dataset or not
         '''
+
+        if len(save_path) > 0:
+            self.base = save_path
 
         proportions = [float(x) for x in proportions]
         if len(proportions) != 3 or sum(proportions) != 1.0:
@@ -101,7 +97,7 @@ class Generator:
             for _ in range(number_per_shape):
                 for shape in self.shapes:
                     gen_shapes = [shape]
-                    if multiclass:
+                    if multilabel:
                         r = randint(1, 2)
                         if r == 2:
                             shape_2 = choice(self.shapes)

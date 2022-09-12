@@ -373,7 +373,7 @@ def stack_hist(ax, stacked_data, sty_cycle, bottoms=None,
 
 
 def plot_generator_distribution(num_samples):
-    g = Generator(pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'foreground.txt'), pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'background.txt'))
+    g = Generator()
     # shapes = {k: {} for k in g.f_texture_names}
     # sizes = {k: [] for k in g.f_texture_names}
     # bg_tex = {k: {} for k in g.f_texture_names}
@@ -512,7 +512,7 @@ def plot_generator_distribution(num_samples):
 #---------------------------------------------------
 
 def plot_toydata_distribution(data_path):
-    g = Generator(pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'foreground.txt'), pathlib.Path('/home/david/Documents/Master/Thesis/selfexplainer/src/toy_dataset', 'background.txt'))
+    g = Generator()
 
     shapes = {k: {} for k in g.f_texture_names}
     #sizes = {k: [] for k in g.f_texture_names}
@@ -711,31 +711,32 @@ def plot_deletion_metrics():
     plt.show()
 
 
-# qrand = np.sort(np.random.rand(60))[::-1]
-# qmask = np.zeros(100)
-# qmask[0:10] = 1
-# qmask[10:70] = qrand
-# qmask[70:] = 0
-# qmin = np.zeros(100)
-# qmin[0:10] = 1
-# qmax = np.zeros(100)
-# qmax[0:50] = 1
-# qmask_rest = np.zeros(100)
-# qmask_rest[50:70] = qrand[40:]
-# fig = plt.figure(figsize=(10,1))
-# plt.bar(np.linspace(0, 100, 100), np.zeros(100), width=1.1, color='black')
-# plt.yticks([0,1])
-# plt.show()
-# fig = plt.figure(figsize=(10,1))
-# plt.bar(np.linspace(0, 100, 100), qmin, width=1.1, color='red')
-# plt.yticks([0,1])
-# plt.show()
-# fig = plt.figure(figsize=(10,1))
-# plt.bar(np.linspace(0, 100, 100), qmax, width=1.1, color='blue')
-# plt.yticks([0,1])
-# plt.show()
-# fig = plt.figure(figsize=(10,1))
-# plt.bar(np.linspace(0, 100, 100), qmask_rest, width=1.1, color='black')
-# plt.yticks([0,1])
-# plt.show()
+def plot_bounding_loss_illustration():
+    qrand = np.sort(np.random.rand(60))[::-1]
+    qmask = np.zeros(100)
+    qmask[0:10] = 1
+    qmask[10:70] = qrand
+    qmask[70:] = 0
+    qmin = np.zeros(100)
+    qmin[0:10] = 1
+    qmax = np.zeros(100)
+    qmax[0:50] = 1
+    qmask_rest = np.zeros(100)
+    qmask_rest[50:70] = qrand[40:]
+    fig = plt.figure(figsize=(10,1))
+    plt.bar(np.linspace(0, 100, 100), np.zeros(100), width=1.1, color='black')
+    plt.yticks([0,1])
+    plt.show()
+    fig = plt.figure(figsize=(10,1))
+    plt.bar(np.linspace(0, 100, 100), qmin, width=1.1, color='red')
+    plt.yticks([0,1])
+    plt.show()
+    fig = plt.figure(figsize=(10,1))
+    plt.bar(np.linspace(0, 100, 100), qmax, width=1.1, color='blue')
+    plt.yticks([0,1])
+    plt.show()
+    fig = plt.figure(figsize=(10,1))
+    plt.bar(np.linspace(0, 100, 100), qmask_rest, width=1.1, color='black')
+    plt.yticks([0,1])
+    plt.show()
 
