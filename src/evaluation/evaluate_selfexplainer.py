@@ -162,7 +162,7 @@ def compute_class_masks(save_path, dataset, checkpoint, checkpoint_base_path, ma
 
 
 ############################################## Change to your settings ##########################################################
-masks_path = Path("/scratch/snx3000/dniederb/evaluation_data/VOC/sanity_check/")
+masks_path = Path("")
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 
 VOC_segmentations_path = Path(data_base_path / 'VOC2007/VOCdevkit/VOC2007/SegmentationClass/')
@@ -176,10 +176,10 @@ OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations
 dataset = "SYN_MULTI" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = True
 
-checkpoints_base_path = '/scratch/snx3000/dniederb/experiments/test/SYN_MULTI/tb_logs/Selfexplainer/version_0/checkpoints/'
-checkpoints = ['epoch=52-step=2649'] # File name(s) without '.ckpt'-suffix
+checkpoints_base_path = 'checkpoints/'
+checkpoints = [''] # File name(s) without '.ckpt'-suffix
 load_file = '' # if there is already a result file to which the results are appended
-save_file = 'test.npz'
+save_file = 'results.npz'
 
 # If no masks for this model on the test set have been generated yet
 compute_masks = True
