@@ -8,17 +8,10 @@ from torch.optim import Adam
 from pathlib import Path
 
 from torchvision import models
-#from torchviz import make_dot
 
 from utils.helper import get_class_dictionary, get_targets_from_annotations, get_targets_from_segmentations, LogitStats, get_class_weights
 from utils.metrics import MultiLabelMetrics, ClassificationMultiLabelMetrics
 from plot import plot_class_metrics
-
-import GPUtil
-from matplotlib import pyplot as plt
-
-VOC_segmentations_path = Path("../../datasets/VOC2007/VOCdevkit/VOC2007/SegmentationClass/")
-SMALLVOC_segmentations_path = Path("../../datasets/VOC2007_small/VOCdevkit/VOC2007/SegmentationClass/")
 
 
 class Resnet50(pl.LightningModule):

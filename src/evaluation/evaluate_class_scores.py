@@ -11,7 +11,6 @@ from PIL import Image
 from pathlib import Path
 from torchray.utils import get_device
 
-from models.classifier import Resnet50ClassifierModel
 from models.resnet50 import Resnet50
 from models.selfexplainer import SelfExplainer
 from utils.helper import get_class_dictionary, get_filename_from_annotations, get_targets_from_annotations
@@ -21,16 +20,16 @@ from data.dataloader import VOCDataModule
 
 dataset = 'VOC'
 num_classes = 20
-img_path = Path('/scratch/snx3000/dniederb/datasets/VOC2007/VOCdevkit/VOC2007/JPEGImages/')
-classifier_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/resnet50/voc2007_pretrained.ckpt')
-selfexplainer_checkpoint = Path('/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/3passes_01_2503.ckpt')
+img_path = Path('')
+classifier_checkpoint = Path('')
+selfexplainer_checkpoint = Path('')
 
 load_file = ''
-save_file = 'results/class_masks/VOC2007/sanity_check/selfexplainer_3passes.npz'
-data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
-masks_base_path = Path('/scratch/snx3000/dniederb/evaluation_data/classmasks/sanity_check')
+save_file = 'results.npz'
+data_base_path = Path('')
+masks_base_path = Path('')
 
-methods = ['3passes_01_2503']
+methods = ['']
 
 mask_classes = ['bottle', 'car', 'cat', 'dog', 'person']
 target_dict = get_class_dictionary(dataset)

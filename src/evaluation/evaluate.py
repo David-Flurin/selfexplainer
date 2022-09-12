@@ -22,7 +22,8 @@ OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
 
-datasets = ["TOY_MULTI"]
+datasets = ["SYN"]
+multilabel = True
 classifiers = ["resnet50"]
 resnet50_toy_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/toy_singlelabel.ckpt'
 resnet50_toy_multi_checkpoint = '/scratch/snx3000/dniederb/checkpoints/resnet50/toy_multilabel.ckpt'
@@ -35,9 +36,8 @@ selfexplainer_toy_checkpoint = "../checkpoints/selfexplainer/toy.ckpt"
 selfexplainer_voc_checkpoint = "../checkpoints/selfexplainer/voc.ckpt"
 
 load_file = ''
-save_file = 'results/baselines/TOY_MULTI/newer_saliency/gradcam_rise.npz'
+save_file = 'results.npz'
 
-multilabel = True
 methods = ["grad_cam", "rise"]
 #################################################################################################################################
 

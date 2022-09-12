@@ -20,15 +20,15 @@ from PIL import Image
 from tqdm import tqdm
 
 ############################## Change to your settings ##############################
-mask_base_path = '/scratch/snx3000/dniederb/evaluation_data/VOC/sanity_check/'
+mask_base_path = '.'
 
 dataset = 'VOC' # one of: ['VOC', 'SYN']
 data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 classifier_type = 'selfexplainer' # one of: ['vgg16', 'resnet50']
 
-method = '3passes_01_2503'
+method = ''
 
-file_list = ['000010', '000043', '000067', '000075']
+file_list = []
 
 
 #####################################################################################

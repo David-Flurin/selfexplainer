@@ -91,11 +91,11 @@ data_base_path = Path("/scratch/snx3000/dniederb/datasets/")
 dataset = "OI_LARGE" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = False
 
-checkpoints_base_path = "/scratch/snx3000/dniederb/experiments/thesis/resnet50/OI_LARGE/check/tb_logs/Selfexplainer/version_0/checkpoints/"
-checkpoints = ["epoch=1-step=26070"] # Evaluate multiple models at once
+checkpoints_base_path = "checkpoints/"
+checkpoints = [''] # Evaluate multiple models at once
 
 load_file = ''
-save_file = 'resnet50_oilarge_check.npz'
+save_file = 'results.npz.npz'
 
 
 #################################################################################################################################

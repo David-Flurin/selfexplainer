@@ -46,8 +46,6 @@ Piotr", Dabkowski and Gal.
 def background_entropy(pvec, mask):
     """
     Continuous saliency measure for the inverse masked image.
-
-
     """
     a = np.maximum(np.mean(mask), 0.05)
 
