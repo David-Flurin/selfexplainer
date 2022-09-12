@@ -54,7 +54,7 @@ def get_parser():
     parser.add_argument('--fix_classifier_backbone', default=True, type=str2bool, help='Whether to fix the pretrained classifier backbone of ResNet50 during training.')
     parser.add_argument('--model_to_train', default='selfexplainer', type=str, help='which model architecture should be used for training or testing')
     parser.add_argument('--checkpoint', default=None, type=str, help='Path to the .ckpt file that contains the weights of a pretrained self-explainer.')
-    parser.add_argument('--frozen', default=False, type=str2bool, help='If the object and background pass of selfexplainer models has frozen weights')
+    parser.add_argument('--frozen', default=True, type=str2bool, help='If the object and background pass of selfexplainer models has frozen weights')
     parser.add_argument('--weighting_koeff', default=1.0, type=float, help='Koefficient of the softmax weighting scheme to generate logits.')
     parser.add_argument('--aux_classifier', default=False, type=str2bool, help='Use an auxiliary classifier head.')
 
