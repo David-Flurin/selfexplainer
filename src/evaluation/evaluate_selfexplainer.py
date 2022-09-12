@@ -173,7 +173,7 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "SYN_MULTI" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
+dataset = "VOC" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = True
 
 checkpoints_base_path = 'checkpoints/'
