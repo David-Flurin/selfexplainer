@@ -173,16 +173,16 @@ OI_segmentations_path = Path(data_base_path / 'OI/test/segmentations/')
 OI_LARGE_segmentations_path = Path(data_base_path / 'OI_LARGE/test/segmentations/')
 OI_SMALL_segmentations_path = Path(data_base_path / 'OI_SMALL/test/segmentations/')
 
-dataset = "VOC" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
+dataset = "SYN_MULTI" # ['VOC', 'VOC2012', 'SYN', 'SYN_MULTI', 'OI_SMALL', 'OI', 'OI_LARGE'] 
 multilabel = True
 
-checkpoints_base_path = '/scratch/snx3000/dniederb/checkpoints/VOC2007/1koeff/sanity_check/'
-checkpoints = ['3passes_01_2503'] # Evaluate multiple models at once
-load_file = ''
-save_file = 'test_voc.npz'
+checkpoints_base_path = '/scratch/snx3000/dniederb/experiments/test/SYN_MULTI/tb_logs/Selfexplainer/version_0/checkpoints/'
+checkpoints = ['epoch=52-step=2649'] # File name(s) without '.ckpt'-suffix
+load_file = '' # if there is already a result file to which the results are appended
+save_file = 'test.npz'
 
-# If no masks for the test set have been computed yet
-compute_masks = False
+# If no masks for this model on the test set have been generated yet
+compute_masks = True
 
 # If we want to evaluate per-class masks
 class_masks = False
