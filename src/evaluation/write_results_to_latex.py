@@ -37,7 +37,7 @@ def merge(a, b, path=None):
     return a
 
 
-result_files = ['/home/david/Documents/Master/Thesis/selfexplainer/src/evaluation/results/selfexplainer/VOC2007/sanity_check/3passes_2503.npz']
+result_files = ['results.npz']
 for f in result_files:
     if not os.path.isfile(f):
         raise FileNotFoundError(f)
@@ -51,8 +51,8 @@ find_best_metric = True
 
 
 mode = 'micro'
-checkpoint_dict = {'3passes_01_2503': 'Self-explainer'}
-metric_list = ['mask_c', 'background_c', 'c_IOU', 'sal', 'background_entropy', 'combined_sal_wo_mean', 'classification_metrics']
+checkpoint_dict = {'results.ckpt': 'Self-explainer'}
+metric_list = ['mask_c', 'background_c', 'c_IOU', 'sal', 'background_entropy', 'combined_sal', 'classification_metrics']
 #metric_list = ['classification_metrics']
 
 table = Texttable()
